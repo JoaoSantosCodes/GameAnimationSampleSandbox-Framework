@@ -21,6 +21,8 @@ class SANDBOXCHARACTER_API USBMovementComponent : public USBBehaviorStackCompone
 public:
 	USBMovementComponent();
 
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
 	// ISBComponentInterface
 	virtual void OnComponentCreated_Implementation() override {}
 	virtual void OnPreInitialize_Implementation() override {}
@@ -83,6 +85,12 @@ protected:
 
 	UPROPERTY(Transient)
 	FSBRPCRateLimiter MovementRPCLimiter;
+
+	UPROPERTY(Transient)
+	FVector LastValidatedLocation = FVector::ZeroVector;
+
+	UPROPERTY(Transient)
+	bool bHasLastValidatedLocation = false;
 
 public:
 	// Helper para encontrar instâncias tipadas

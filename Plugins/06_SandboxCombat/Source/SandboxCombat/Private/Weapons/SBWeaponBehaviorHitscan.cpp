@@ -7,6 +7,7 @@
 #include "Engine/World.h"
 #include "CollisionQueryParams.h"
 #include "Subsystems/SBLagCompensationSubsystem.h"
+#include "Utilities/SBLogCategories.h"
 
 USBWeaponBehaviorHitscan::USBWeaponBehaviorHitscan()
 {
@@ -92,14 +93,39 @@ void USBWeaponBehaviorHitscan::PerformHitscanTrace(const FSBBehaviorContext& Con
 	if (bHit && HitResult.GetActor())
 	{
 		AActor* HitActor = HitResult.GetActor();
-		USBAttributeComponent* HitAttrComp = HitActor->FindComponentByClass<USBAttributeComponent>();
 		
-		if (HitAttrComp && WeaponDefinition)
+		// Anti-Cheat: Validação de Linha de Visão Física contra Wall-Clipping
+		bool bLoSBlocked = false;
+		if (World)
 		{
-			FGameplayTag HealthTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Health"));
-			float CurrentHealth = HitAttrComp->GetAttributeValue(HealthTag);
-			float NewHealth = FMath::Max(0.0f, CurrentHealth - WeaponDefinition->Damage);
-			HitAttrComp->SetAttributeBaseValue(HealthTag, NewHealth);
+			FVector BodyCenter = Character->GetActorLocation() + FVector(0,0,50); // Altura aproximada do tórax
+			FVector ImpactPoint = HitResult.ImpactPoint;
+			
+			FHitResult ObstacleHit;
+			FCollisionQueryParams LoSParams(SCENE_QUERY_STAT(AntiCheatLoS), true, Character);
+			LoSParams.AddIgnoredActor(HitActor);
+
+			bool bObstacleFound = World->LineTraceSingleByChannel(ObstacleHit, BodyCenter, ImpactPoint, ECC_Visibility, LoSParams);
+			if (bObstacleFound && ObstacleHit.GetActor())
+			{
+				if (ObstacleHit.GetActor()->GetRootComponent() && ObstacleHit.GetActor()->GetRootComponent()->Mobility == EComponentMobility::Static)
+				{
+					bLoSBlocked = true;
+					UE_LOG(LogSandboxCombat, Warning, TEXT("Anti-Cheat: Disparo rejeitado de %s. Linha de visão física do corpo obstruída por obstáculo estático (%s)."), *Character->GetName(), *ObstacleHit.GetActor()->GetName());
+				}
+			}
+		}
+
+		if (!bLoSBlocked)
+		{
+			USBAttributeComponent* HitAttrComp = HitActor->FindComponentByClass<USBAttributeComponent>();
+			if (HitAttrComp && WeaponDefinition)
+			{
+				FGameplayTag HealthTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Health"));
+				float CurrentHealth = HitAttrComp->GetAttributeValue(HealthTag);
+				float NewHealth = FMath::Max(0.0f, CurrentHealth - WeaponDefinition->Damage);
+				HitAttrComp->SetAttributeBaseValue(HealthTag, NewHealth);
+			}
 		}
 	}
 }

@@ -7,6 +7,8 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
 #include "Engine/World.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Utilities/SBLogCategories.h"
 
 USBMovementComponent::USBMovementComponent()
 	: Super()
@@ -14,6 +16,66 @@ USBMovementComponent::USBMovementComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.bStartWithTickEnabled = true;
 	PrimaryComponentTick.TickGroup = TG_PrePhysics; // Garante processamento antes da física
+}
+
+void USBMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	AActor* Owner = GetOwner();
+	if (!Owner || !Owner->HasAuthority() || DeltaTime <= 0.0f)
+	{
+		return;
+	}
+
+	ACharacter* CharOwner = Cast<ACharacter>(Owner);
+	if (!CharOwner || !CharOwner->GetCharacterMovement())
+	{
+		return;
+	}
+
+	if (!bHasLastValidatedLocation)
+	{
+		LastValidatedLocation = Owner->GetActorLocation();
+		bHasLastValidatedLocation = true;
+		return;
+	}
+
+	FVector CurrentLocation = Owner->GetActorLocation();
+	
+	// Validação 2D e Total
+	float Distance2D = FVector::Dist2D(CurrentLocation, LastValidatedLocation);
+	float MaxSpeed = CharOwner->GetCharacterMovement()->GetMaxSpeed();
+
+	// Margem de segurança para acomodar latência, frames lentos e desvios aceitáveis
+	float ExtraTolerance = 300.0f;
+	float MaxAllowedDistance = (MaxSpeed + ExtraTolerance) * DeltaTime + 200.0f;
+
+	bool bIsCheatDetected = false;
+
+	// 1. Detecção de Velocidade excessiva (Speedhack)
+	if (Distance2D > MaxAllowedDistance)
+	{
+		bIsCheatDetected = true;
+	}
+
+	// 2. Detecção de Teleporte instantâneo (Warp Hack - limite de 3000 unidades)
+	if (FVector::Dist(CurrentLocation, LastValidatedLocation) > 3000.0f)
+	{
+		bIsCheatDetected = true;
+	}
+
+	if (bIsCheatDetected)
+	{
+		UE_LOG(LogSandboxCharacter, Warning, TEXT("Anti-Cheat: Movimento anômalo detectado em %s! Distancia2D: %f (Max Permitido: %f). Executando Rollback."), *Owner->GetName(), Distance2D, MaxAllowedDistance);
+		
+		// Força o rollback
+		Owner->TeleportTo(LastValidatedLocation, Owner->GetActorRotation(), false, true);
+	}
+	else
+	{
+		LastValidatedLocation = Owner->GetActorLocation();
+	}
 }
 
 void USBMovementComponent::OnInitialize_Implementation()
