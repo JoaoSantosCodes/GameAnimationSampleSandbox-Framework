@@ -12,6 +12,8 @@ class SANDBOXCOMBAT_API USBWeaponBehaviorDefinition : public USBGameplayBehavior
 
 public:
 
+	USBWeaponBehaviorDefinition();
+
 	// Dano base aplicado autoritativamente pelo disparo no servidor
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Behavior|Combat")
 	float Damage = 20.0f;
@@ -27,4 +29,16 @@ public:
 	// Custo de mana por disparo
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Behavior|Attributes")
 	float ManaCost = 0.0f;
+
+	// Opcional: A classe do Actor da Arma Visual a ser spawnado
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Behavior|Visual")
+	TSubclassOf<AActor> WeaponActorClass;
+
+	// Opcional: Socket padrão no esqueleto do personagem para quando a arma estiver empunhada
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Behavior|Visual")
+	FName ActiveSocketName;
+
+	// Opcional: Socket padrão para quando a arma estiver guardada/holstered
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Behavior|Visual")
+	FName HolsterSocketName;
 };

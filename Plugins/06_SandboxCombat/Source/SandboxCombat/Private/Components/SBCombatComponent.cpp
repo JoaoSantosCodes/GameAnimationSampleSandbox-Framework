@@ -10,12 +10,69 @@
 #include "Subsystems/SBEventSubsystem.h"
 #include "UObject/UnrealType.h"
 #include "Engine/GameInstance.h"
+#include "Net/UnrealNetwork.h"
 
 USBCombatComponent::USBCombatComponent()
 	: Super()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.bStartWithTickEnabled = true;
+}
+
+void USBCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(USBCombatComponent, SpawnedWeapons);
+}
+
+void USBCombatComponent::SetWeaponVisualActive(FGameplayTag WeaponTag, bool bActive)
+{
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
+	AActor* WeaponActor = GetSpawnedWeaponActor(WeaponTag);
+	if (!WeaponActor)
+	{
+		return;
+	}
+
+	ACharacter* CharOwner = Cast<ACharacter>(GetOwner());
+	if (!CharOwner || !CharOwner->GetMesh())
+	{
+		return;
+	}
+
+	USBWeaponBehavior* WeaponBehavior = FindAvailableWeaponByTag(WeaponTag);
+	if (!WeaponBehavior)
+	{
+		return;
+	}
+
+	USBWeaponBehaviorDefinition* Def = WeaponBehavior->GetDefinition();
+	if (!Def)
+	{
+		return;
+	}
+
+	FName TargetSocket = bActive ? Def->ActiveSocketName : Def->HolsterSocketName;
+
+	FAttachmentTransformRules AttachRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepWorld, false);
+	WeaponActor->AttachToComponent(CharOwner->GetMesh(), AttachRules, TargetSocket);
+}
+
+AActor* USBCombatComponent::GetSpawnedWeaponActor(FGameplayTag WeaponTag) const
+{
+	for (const FSBSpawnedWeaponEntry& Entry : SpawnedWeapons)
+	{
+		if (Entry.WeaponTag == WeaponTag)
+		{
+			return Entry.WeaponActor;
+		}
+	}
+	return nullptr;
 }
 
 void USBCombatComponent::OnInitialize_Implementation()
@@ -57,6 +114,19 @@ void USBCombatComponent::OnInitialize_Implementation()
 
 void USBCombatComponent::OnShutdown_Implementation()
 {
+	AActor* Owner = GetOwner();
+	if (Owner && Owner->HasAuthority())
+	{
+		for (FSBSpawnedWeaponEntry& Entry : SpawnedWeapons)
+		{
+			if (Entry.WeaponActor)
+			{
+				Entry.WeaponActor->Destroy();
+			}
+		}
+		SpawnedWeapons.Empty();
+	}
+
 	Super::OnShutdown_Implementation();
 	LastExecutionTimes.Empty();
 }
@@ -106,7 +176,22 @@ void USBCombatComponent::LoadCombatConfig(USBCombatConfigDataAsset* NewConfig)
 	ActiveBehaviors.Empty();
 	AvailableBehaviors.Empty();
 
-	// Instancia os behaviors configurados
+	// Destrói atores visuais anteriores
+	AActor* Owner = GetOwner();
+	const bool bIsServer = Owner && Owner->HasAuthority();
+	if (bIsServer)
+	{
+		for (FSBSpawnedWeaponEntry& Entry : SpawnedWeapons)
+		{
+			if (Entry.WeaponActor)
+			{
+				Entry.WeaponActor->Destroy();
+			}
+		}
+		SpawnedWeapons.Empty();
+	}
+
+	// Instancia os behaviors configurados e spawna atores visuais
 	for (const FSBWeaponConfigEntry& Entry : NewConfig->ConfiguredWeapons)
 	{
 		if (Entry.BehaviorClass && Entry.DefinitionAsset)
@@ -114,6 +199,34 @@ void USBCombatComponent::LoadCombatConfig(USBCombatConfigDataAsset* NewConfig)
 			USBWeaponBehavior* NewBehavior = NewObject<USBWeaponBehavior>(this, Entry.BehaviorClass);
 			NewBehavior->Initialize(this, Entry.DefinitionAsset);
 			AvailableBehaviors.Add(NewBehavior);
+
+			if (bIsServer && Entry.DefinitionAsset->WeaponActorClass)
+			{
+				FActorSpawnParameters SpawnParams;
+				SpawnParams.Owner = Owner;
+				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+				
+				AActor* NewWeaponActor = GetWorld()->SpawnActor<AActor>(Entry.DefinitionAsset->WeaponActorClass, Owner->GetActorLocation(), Owner->GetActorRotation(), SpawnParams);
+				if (NewWeaponActor)
+				{
+					if (NewWeaponActor->GetRootComponent())
+					{
+						NewWeaponActor->GetRootComponent()->SetMobility(EComponentMobility::Movable);
+					}
+
+					FSBSpawnedWeaponEntry NewEntry;
+					NewEntry.WeaponTag = Entry.DefinitionAsset->BehaviorTag;
+					NewEntry.WeaponActor = NewWeaponActor;
+					SpawnedWeapons.Add(NewEntry);
+
+					ACharacter* CharOwner = Cast<ACharacter>(Owner);
+					if (CharOwner && CharOwner->GetMesh())
+					{
+						FAttachmentTransformRules AttachRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepWorld, false);
+						NewWeaponActor->AttachToComponent(CharOwner->GetMesh(), AttachRules, Entry.DefinitionAsset->HolsterSocketName);
+					}
+				}
+			}
 		}
 	}
 }
@@ -349,6 +462,37 @@ void USBCombatComponent::OnItemEquipped(FGameplayTag EventTag, UObject* Payload)
 					USBWeaponBehavior* NewBehavior = NewObject<USBWeaponBehavior>(this, BehaviorClass);
 					NewBehavior->Initialize(this, DefAsset);
 					AvailableBehaviors.Add(NewBehavior);
+
+					// Spawn do Actor Visual no Servidor
+					AActor* Owner = GetOwner();
+					if (Owner && Owner->HasAuthority() && DefAsset->WeaponActorClass)
+					{
+						FActorSpawnParameters SpawnParams;
+						SpawnParams.Owner = Owner;
+						SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+						
+						AActor* NewWeaponActor = GetWorld()->SpawnActor<AActor>(DefAsset->WeaponActorClass, Owner->GetActorLocation(), Owner->GetActorRotation(), SpawnParams);
+						if (NewWeaponActor)
+						{
+							if (NewWeaponActor->GetRootComponent())
+							{
+								NewWeaponActor->GetRootComponent()->SetMobility(EComponentMobility::Movable);
+							}
+
+							FSBSpawnedWeaponEntry NewEntry;
+							NewEntry.WeaponTag = WeaponTag;
+							NewEntry.WeaponActor = NewWeaponActor;
+							SpawnedWeapons.Add(NewEntry);
+
+							// Anexa inicialmente no holster
+							ACharacter* CharOwner = Cast<ACharacter>(Owner);
+							if (CharOwner && CharOwner->GetMesh())
+							{
+								FAttachmentTransformRules AttachRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepWorld, false);
+								NewWeaponActor->AttachToComponent(CharOwner->GetMesh(), AttachRules, DefAsset->HolsterSocketName);
+							}
+						}
+					}
 				}
 			}
 		}
@@ -375,6 +519,31 @@ void USBCombatComponent::OnItemUnequipped(FGameplayTag EventTag, UObject* Payloa
 				{
 					StopWeaponBehavior(WeaponTag, false);
 					AvailableBehaviors.Remove(Behavior);
+
+					// Destruição do Actor Visual no Servidor
+					AActor* Owner = GetOwner();
+					if (Owner && Owner->HasAuthority())
+					{
+						int32 FoundIndex = INDEX_NONE;
+						for (int32 i = 0; i < SpawnedWeapons.Num(); ++i)
+						{
+							if (SpawnedWeapons[i].WeaponTag == WeaponTag)
+							{
+								FoundIndex = i;
+								break;
+							}
+						}
+
+						if (FoundIndex != INDEX_NONE)
+						{
+							AActor* WeaponActor = SpawnedWeapons[FoundIndex].WeaponActor;
+							if (WeaponActor)
+							{
+								WeaponActor->Destroy();
+							}
+							SpawnedWeapons.RemoveAt(FoundIndex);
+						}
+					}
 				}
 			}
 		}

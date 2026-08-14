@@ -36,6 +36,17 @@ public:
 	TArray<FSBWeaponConfigEntry> ConfiguredWeapons;
 };
 
+USTRUCT(BlueprintType)
+struct FSBSpawnedWeaponEntry
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category = "Combat")
+	FGameplayTag WeaponTag;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Combat")
+	TObjectPtr<AActor> WeaponActor = nullptr;
+};
 
 UCLASS(BlueprintType, meta = (BlueprintSpawnableComponent))
 class SANDBOXCOMBAT_API USBCombatComponent : public USBBehaviorStackComponent
@@ -70,6 +81,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sandbox|Combat")
 	void LoadCombatConfig(USBCombatConfigDataAsset* NewConfig);
 
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Sandbox|Combat")
+	void SetWeaponVisualActive(FGameplayTag WeaponTag, bool bActive);
+
+	UFUNCTION(BlueprintPure, Category = "Sandbox|Combat")
+	AActor* GetSpawnedWeaponActor(FGameplayTag WeaponTag) const;
+
 	// RPCs de Disparo e Validação de Rede
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRequestFire(FGameplayTag BehaviorTag, int32 PredictionId);
@@ -84,6 +101,8 @@ public:
 	TArray<TObjectPtr<USBWeaponBehavior>> GetActiveWeapons() const;
 	TArray<TObjectPtr<USBWeaponBehavior>> GetAvailableWeapons() const;
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sandbox|Combat")
 	TObjectPtr<USBCombatConfigDataAsset> DefaultCombatConfig = nullptr;
@@ -96,6 +115,9 @@ protected:
 
 	UPROPERTY(Transient)
 	TObjectPtr<USBStateComponent> CachedStateComponent = nullptr;
+
+	UPROPERTY(Replicated, Transient, BlueprintReadOnly, Category = "Sandbox|Combat")
+	TArray<FSBSpawnedWeaponEntry> SpawnedWeapons;
 
 	// Gancho Virtual para notificação de rede por domínio
 	virtual void OnBehaviorEjected(FGameplayTag BehaviorTag, bool bSkipServerNotify, bool bSkipClientNotify) override;

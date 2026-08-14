@@ -70,6 +70,10 @@ bool USBWeaponBehavior::CanExit_Implementation(const FSBBehaviorContext& Context
 
 void USBWeaponBehavior::Enter_Implementation(const FSBBehaviorContext& Context)
 {
+	if (CombatComponent)
+	{
+		CombatComponent->SetWeaponVisualActive(GetBehaviorTag(), true);
+	}
 }
 
 void USBWeaponBehavior::Update_Implementation(float DeltaTime, const FSBBehaviorContext& Context)
@@ -78,6 +82,10 @@ void USBWeaponBehavior::Update_Implementation(float DeltaTime, const FSBBehavior
 
 void USBWeaponBehavior::Exit_Implementation(const FSBBehaviorContext& Context)
 {
+	if (CombatComponent)
+	{
+		CombatComponent->SetWeaponVisualActive(GetBehaviorTag(), false);
+	}
 }
 
 int32 USBWeaponBehavior::GetStackPriority() const
