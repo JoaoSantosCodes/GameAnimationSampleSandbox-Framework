@@ -1,0 +1,41 @@
+# Unreal Engine standard ignore list
+Binaries/
+Build/
+DerivedDataCache/
+Intermediate/
+Saved/
+.vs/
+*.sln
+*.slnx
+*.suo
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.opendb
+
+# Built/packaged outputs
+ArchivedBuilds/
+Windows/
+Mac/
+Linux/
+Android/
+iOS/
+
+# Ignore project visual assets (heavy binaries)
+Content/
+
+# Ignore third-party and Lyra dependency plugin assets
+Plugins/*/Content/
+
+# Keep Sandbox framework plugin assets if they exist
+!Plugins/01_SandboxCommon/Content/
+!Plugins/02_SandboxInterfaces/Content/
+!Plugins/03_SandboxAssets/Content/
+!Plugins/04_SandboxCore/Content/
+!Plugins/05_SandboxCharacter/Content/
+!Plugins/06_SandboxCombat/Content/
+!Plugins/07_SandboxInteraction/Content/
+!Plugins/08_SandboxInventory/Content/
+!Plugins/09_SandboxUI/Content/
+!Plugins/10_SandboxDebug/Content/
+!Plugins/11_SandboxEditor/Content/

@@ -1,0 +1,49 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0.0",
+	"FriendlyName": "Sandbox Combat Extension",
+	"Description": "Sandbox modular combat systems including weapons, abilities, resources, and attributes",
+	"Category": "Gameplay",
+	"CreatedBy": "Antigravity",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "SandboxCombat",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "01_SandboxCommon",
+			"Enabled": true
+		},
+		{
+			"Name": "02_SandboxInterfaces",
+			"Enabled": true
+		},
+		{
+			"Name": "05_SandboxCharacter",
+			"Enabled": true
+		},
+		{
+			"Name": "ModularGameplayActors",
+			"Enabled": true
+		}
+	],
+	"SandboxVersion": {
+		"Plugin": "1.0.0",
+		"API": 1,
+		"Assets": 1,
+		"Network": 1,
+		"Serialization": 1
+	}
+}

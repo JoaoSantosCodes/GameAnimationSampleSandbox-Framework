@@ -1,0 +1,61 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0.0",
+	"FriendlyName": "Sandbox Interaction",
+	"Description": "Modular Interaction Component, focus detection, and hold-to-interact behavior for Sandbox Framework.",
+	"Category": "Gameplay",
+	"CreatedBy": "Antigravity",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "SandboxInteraction",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "01_SandboxCommon",
+			"Enabled": true
+		},
+		{
+			"Name": "02_SandboxInterfaces",
+			"Enabled": true
+		},
+		{
+			"Name": "03_SandboxAssets",
+			"Enabled": true
+		},
+		{
+			"Name": "04_SandboxCore",
+			"Enabled": true
+		},
+		{
+			"Name": "05_SandboxCharacter",
+			"Enabled": true
+		},
+		{
+			"Name": "ModularGameplay",
+			"Enabled": true
+		},
+		{
+			"Name": "ModularGameplayActors",
+			"Enabled": true
+		}
+	],
+	"SandboxVersion": {
+		"Plugin": "1.0.0",
+		"API": 1,
+		"Assets": 1,
+		"Network": 1,
+		"Serialization": 1
+	}
+}
