@@ -34,7 +34,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sandbox|UI")
 	FGameplayTag WatchedAbilityTag;
 
+	UPROPERTY(BlueprintReadOnly, Category = "Sandbox|UI")
 	float CooldownDuration = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Sandbox|UI")
 	float CooldownRemaining = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Sandbox|UI")
 	bool bIsCooldownActive = false;
 };
