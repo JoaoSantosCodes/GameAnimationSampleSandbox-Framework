@@ -6,6 +6,7 @@
 #include "Interfaces/SBComponentInterface.h"
 #include "Types/SBCommonTypes.h"
 #include "Components/SBBehaviorStackComponent.h"
+#include "Subsystems/SBRPCRateLimiter.h"
 #include "SBCombatComponent.generated.h"
 
 class USBWeaponBehavior;
@@ -108,6 +109,9 @@ private:
 
 	UFUNCTION()
 	void OnItemUnequipped(FGameplayTag EventTag, UObject* Payload);
+
+	UPROPERTY(Transient)
+	FSBRPCRateLimiter CombatRPCLimiter;
 };
 
 UCLASS()

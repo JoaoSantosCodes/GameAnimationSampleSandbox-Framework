@@ -255,6 +255,16 @@ void USBCombatComponent::ServerRequestFire_Implementation(FGameplayTag BehaviorT
 
 bool USBCombatComponent::ServerRequestFire_Validate(FGameplayTag BehaviorTag, int32 PredictionId)
 {
+	if (!CombatRPCLimiter.AllowRPC(GetWorld(), 20.0f))
+	{
+		return false;
+	}
+
+	if (!FindAvailableWeaponByTag(BehaviorTag))
+	{
+		return false;
+	}
+
 	return true;
 }
 
@@ -265,6 +275,10 @@ void USBCombatComponent::ServerStopFire_Implementation(FGameplayTag BehaviorTag)
 
 bool USBCombatComponent::ServerStopFire_Validate(FGameplayTag BehaviorTag)
 {
+	if (!CombatRPCLimiter.AllowRPC(GetWorld(), 20.0f))
+	{
+		return false;
+	}
 	return true;
 }
 

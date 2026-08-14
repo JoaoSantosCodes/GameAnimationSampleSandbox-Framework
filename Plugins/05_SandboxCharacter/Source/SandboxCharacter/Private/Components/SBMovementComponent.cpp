@@ -150,6 +150,16 @@ USBMovementBehavior* USBMovementComponent::FindActiveBehaviorByTag(FGameplayTag 
 
 bool USBMovementComponent::ServerRequestBehavior_Validate(FGameplayTag BehaviorTag)
 {
+	if (!MovementRPCLimiter.AllowRPC(GetWorld(), 20.0f))
+	{
+		return false;
+	}
+
+	if (!FindAvailableBehaviorByTag(BehaviorTag))
+	{
+		return false;
+	}
+
 	return true;
 }
 
@@ -165,6 +175,10 @@ void USBMovementComponent::ServerRequestBehavior_Implementation(FGameplayTag Beh
 
 bool USBMovementComponent::ServerStopBehavior_Validate(FGameplayTag BehaviorTag)
 {
+	if (!MovementRPCLimiter.AllowRPC(GetWorld(), 20.0f))
+	{
+		return false;
+	}
 	return true;
 }
 

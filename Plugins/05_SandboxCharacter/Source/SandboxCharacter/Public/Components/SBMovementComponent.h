@@ -4,6 +4,7 @@
 #include "Components/SBBehaviorStackComponent.h"
 #include "GameplayTagContainer.h"
 #include "Types/SBCommonTypes.h"
+#include "Subsystems/SBRPCRateLimiter.h"
 #include "SBMovementComponent.generated.h"
 
 class USBMovementBehavior;
@@ -79,6 +80,9 @@ protected:
 
 	// Métodos Internos
 	void EvaluateActivation();
+
+	UPROPERTY(Transient)
+	FSBRPCRateLimiter MovementRPCLimiter;
 
 public:
 	// Helper para encontrar instâncias tipadas

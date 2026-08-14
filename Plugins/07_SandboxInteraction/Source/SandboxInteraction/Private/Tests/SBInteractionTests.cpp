@@ -373,8 +373,54 @@ void FSBInteractionTestsSpec::Define()
 		// O Jogador 2 deve ser cancelado/rejeitado ejetando seu hold
 		TestFalse("Jogador 2 deve ser rejeitado pelo Lock", InteractionComponent2->IsHoldingInteraction());
 		TestFalse("Tag Interacting do Jogador 2 deve ser limpa", StateComponent2->HasTag(InteractingTag));
-
+ 
 		// Limpa o Personagem 2
 		TestCharacter2->Destroy();
+	});
+
+	It("Cenário 6: Validação de Segurança de Rede (Anti-Cheat & Rate-Limiting)", [this]()
+	{
+		// 1. Rejeita Target nulo
+		TestFalse("ServerStartInteract_Validate deve rejeitar Target nulo", InteractionComponent->ServerStartInteract_Validate(nullptr));
+
+		// 2. Rejeita objeto muito distante (fora do alcance de 250 + 150 de tolerância)
+		FActorSpawnParameters SpawnParams;
+		ASBTestInteractableActor* DistantInteractable = TestWorld->SpawnActor<ASBTestInteractableActor>(
+			ASBTestInteractableActor::StaticClass(),
+			FVector(1000.f, 0.f, 0.f), // 1000 unidades de distância (limite é 400)
+			FRotator::ZeroRotator,
+			SpawnParams
+		);
+
+		TestFalse("ServerStartInteract_Validate deve rejeitar Target fora do alcance", InteractionComponent->ServerStartInteract_Validate(DistantInteractable));
+
+		// 3. Permite objeto próximo (deve validar com sucesso no primeiro frame)
+		ASBTestInteractableActor* NearInteractable = TestWorld->SpawnActor<ASBTestInteractableActor>(
+			ASBTestInteractableActor::StaticClass(),
+			FVector(100.f, 0.f, 0.f), // 100 unidades de distância (dentro do alcance)
+			FRotator::ZeroRotator,
+			SpawnParams
+		);
+
+		TestTrue("ServerStartInteract_Validate deve permitir Target dentro do alcance", InteractionComponent->ServerStartInteract_Validate(NearInteractable));
+
+		// 4. Rate Limiter (limite de 10 chamadas por segundo)
+		// A chamada "Near" anterior foi bem sucedida (contando como 1).
+		// Duas chamadas anteriores falharam na validação lógica mas contaram como tentativas no rate limiter (Total = 3).
+		// Restam 7 tentativas bem-sucedidas permitidas na janela de 10.
+		int32 SuccessfulCalls = 1;
+		for (int32 i = 0; i < 15; ++i)
+		{
+			if (InteractionComponent->ServerStartInteract_Validate(NearInteractable))
+			{
+				SuccessfulCalls++;
+			}
+		}
+
+		TestEqual("Deve permitir no máximo 8 chamadas bem-sucedidas devido às tentativas consumidas (total 10)", SuccessfulCalls, 8);
+		
+		// Limpeza
+		DistantInteractable->Destroy();
+		NearInteractable->Destroy();
 	});
 }

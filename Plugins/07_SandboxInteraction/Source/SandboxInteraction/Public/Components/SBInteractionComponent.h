@@ -6,6 +6,7 @@
 #include "Interfaces/SBComponentInterface.h"
 #include "Interfaces/SBInteractableInterface.h"
 #include "Subsystems/SBEventPayloads.h"
+#include "Subsystems/SBRPCRateLimiter.h"
 #include "SBInteractionComponent.generated.h"
 
 class USBStateComponent;
@@ -107,6 +108,9 @@ protected:
 	// Estado do Lock no Servidor
 	UPROPERTY(Transient)
 	FSBActiveInteractionState ActiveServerInteraction;
+
+	UPROPERTY(Transient)
+	FSBRPCRateLimiter InteractionRPCLimiter;
 
 	virtual void ScanForInteractables();
 	class USBEventSubsystem* GetEventSubsystem() const;

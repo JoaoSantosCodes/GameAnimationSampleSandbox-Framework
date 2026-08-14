@@ -283,6 +283,34 @@ float USBInteractionComponent::GetHoldProgressPercent() const
 
 bool USBInteractionComponent::ServerStartInteract_Validate(AActor* Target)
 {
+	if (!InteractionRPCLimiter.AllowRPC(GetWorld(), 10.0f))
+	{
+		return false;
+	}
+
+	if (!Target)
+	{
+		return false;
+	}
+
+	if (!Target->GetClass()->ImplementsInterface(USBInteractableInterface::StaticClass()))
+	{
+		return false;
+	}
+
+	AActor* Owner = GetOwner();
+	if (!Owner)
+	{
+		return false;
+	}
+
+	float DistSq = FVector::DistSquared(Owner->GetActorLocation(), Target->GetActorLocation());
+	float LimitSq = FMath::Square(InteractionRange + 150.0f);
+	if (DistSq > LimitSq)
+	{
+		return false;
+	}
+
 	return true;
 }
 
@@ -344,6 +372,10 @@ void USBInteractionComponent::ServerStartInteract_Implementation(AActor* Target)
 
 bool USBInteractionComponent::ServerStopInteract_Validate()
 {
+	if (!InteractionRPCLimiter.AllowRPC(GetWorld(), 10.0f))
+	{
+		return false;
+	}
 	return true;
 }
 
@@ -367,6 +399,34 @@ void USBInteractionComponent::ServerStopInteract_Implementation()
 
 bool USBInteractionComponent::ServerCompleteInteract_Validate(AActor* Target)
 {
+	if (!InteractionRPCLimiter.AllowRPC(GetWorld(), 10.0f))
+	{
+		return false;
+	}
+
+	if (!Target)
+	{
+		return false;
+	}
+
+	if (Target != ActiveServerInteraction.TargetActor.Get())
+	{
+		return false;
+	}
+
+	AActor* Owner = GetOwner();
+	if (!Owner)
+	{
+		return false;
+	}
+
+	float DistSq = FVector::DistSquared(Owner->GetActorLocation(), Target->GetActorLocation());
+	float LimitSq = FMath::Square(InteractionRange + 150.0f);
+	if (DistSq > LimitSq)
+	{
+		return false;
+	}
+
 	return true;
 }
 

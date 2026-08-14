@@ -289,6 +289,16 @@ void USBAbilityComponent::ServerRequestBehavior_Implementation(FGameplayTag Beha
 
 bool USBAbilityComponent::ServerRequestBehavior_Validate(FGameplayTag BehaviorTag, int32 PredictionId)
 {
+	if (!AbilityRPCLimiter.AllowRPC(GetWorld(), 20.0f))
+	{
+		return false;
+	}
+
+	if (!FindAvailableBehaviorByTag(BehaviorTag))
+	{
+		return false;
+	}
+
 	return true;
 }
 
@@ -299,6 +309,10 @@ void USBAbilityComponent::ServerStopBehavior_Implementation(FGameplayTag Behavio
 
 bool USBAbilityComponent::ServerStopBehavior_Validate(FGameplayTag BehaviorTag)
 {
+	if (!AbilityRPCLimiter.AllowRPC(GetWorld(), 20.0f))
+	{
+		return false;
+	}
 	return true;
 }
 

@@ -4,6 +4,7 @@
 #include "Components/SBBehaviorStackComponent.h"
 #include "GameplayTagContainer.h"
 #include "Net/Serialization/FastArraySerializer.h"
+#include "Subsystems/SBRPCRateLimiter.h"
 #include "SBAbilityComponent.generated.h"
 
 class USBAbility;
@@ -106,6 +107,9 @@ protected:
 
 	int32 LocalPredictionId = 0;
 	int32 CurrentServerPredictionId = 0;
+
+	UPROPERTY(Transient)
+	FSBRPCRateLimiter AbilityRPCLimiter;
 
 	void Input_AbilityInputPressed(FGameplayTag InputTag);
 	void Input_AbilityInputReleased(FGameplayTag InputTag);
