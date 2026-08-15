@@ -69,7 +69,10 @@ public:
 	void OnRep_ConfirmedPredictions();
 
 	UFUNCTION()
-	void OnRep_ReplicatedAttributes();
+	void OnRep_PublicAttributes();
+
+	UFUNCTION()
+	void OnRep_PrivateAttributes();
 
 	// ISBComponentInterface
 	virtual void OnComponentCreated_Implementation() override {}
@@ -95,6 +98,14 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Sandbox|Attributes")
 	float GetAttributeValue(FGameplayTag AttributeTag) const;
+
+	const TArray<FSBAttributeReplicationEntry>& GetPublicAttributes() const { return PublicAttributes; }
+	const TArray<FSBAttributeReplicationEntry>& GetPrivateAttributes() const { return PrivateAttributes; }
+
+	UFUNCTION()
+	void OnRep_ReplicatedAttributes();
+
+	bool IsAttributePrivate(FGameplayTag Tag) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Sandbox|Attributes")
 	void SetAttributeBaseValue(FGameplayTag AttributeTag, float NewValue);
@@ -136,9 +147,15 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_ConfirmedPredictions)
 	TArray<FSBConfirmedPredictionEntry> ConfirmedPredictions;
 
-	// Array replicado de atributos para sincronização de rede
-	UPROPERTY(ReplicatedUsing = OnRep_ReplicatedAttributes)
-	TArray<FSBAttributeReplicationEntry> ReplicatedAttributes;
+	// Array replicado de atributos públicos (sincronizados com todos os clientes)
+	UPROPERTY(ReplicatedUsing = OnRep_PublicAttributes)
+	TArray<FSBAttributeReplicationEntry> PublicAttributes;
+
+	// Array replicado de atributos privados (sincronizados apenas com o owner - COND_OwnerOnly)
+	UPROPERTY(ReplicatedUsing = OnRep_PrivateAttributes)
+	TArray<FSBAttributeReplicationEntry> PrivateAttributes;
+
+
 
 	void UpdateReplicatedAttribute(FGameplayTag Tag, const FSBAttribute& Attr);
 

@@ -19,7 +19,8 @@ void USBAttributeComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(USBAttributeComponent, ConfirmedPredictions);
-	DOREPLIFETIME(USBAttributeComponent, ReplicatedAttributes);
+	DOREPLIFETIME(USBAttributeComponent, PublicAttributes);
+	DOREPLIFETIME_CONDITION(USBAttributeComponent, PrivateAttributes, COND_OwnerOnly);
 }
 
 #include "Subsystems/SBSaveSubsystemConcrete.h"
@@ -406,10 +407,10 @@ void USBAttributeComponent::OnRep_ConfirmedPredictions()
 	CleanPendingPredictionsAndNotify();
 }
 
-void USBAttributeComponent::OnRep_ReplicatedAttributes()
+void USBAttributeComponent::OnRep_PublicAttributes()
 {
 	// Desempacota o array de replicação de volta no mapa de atributos local do cliente
-	for (const FSBAttributeReplicationEntry& Entry : ReplicatedAttributes)
+	for (const FSBAttributeReplicationEntry& Entry : PublicAttributes)
 	{
 		FSBAttribute* Attr = AttributesMap.Find(Entry.Tag);
 		float OldVal = GetAttributeValue(Entry.Tag);
@@ -433,13 +434,55 @@ void USBAttributeComponent::OnRep_ReplicatedAttributes()
 	CleanPendingPredictionsAndNotify();
 }
 
+void USBAttributeComponent::OnRep_PrivateAttributes()
+{
+	// Desempacota o array de replicação de volta no mapa de atributos local do cliente
+	for (const FSBAttributeReplicationEntry& Entry : PrivateAttributes)
+	{
+		FSBAttribute* Attr = AttributesMap.Find(Entry.Tag);
+		float OldVal = GetAttributeValue(Entry.Tag);
+
+		if (Attr)
+		{
+			*Attr = Entry.Attribute;
+		}
+		else
+		{
+			AttributesMap.Add(Entry.Tag, Entry.Attribute);
+		}
+
+		float NewVal = GetAttributeValue(Entry.Tag);
+		if (NewVal != OldVal)
+		{
+			OnAttributeChanged.Broadcast(Entry.Tag, NewVal, OldVal, GetOwner());
+		}
+	}
+
+	CleanPendingPredictionsAndNotify();
+}
+
+bool USBAttributeComponent::IsAttributePrivate(FGameplayTag Tag) const
+{
+	FString TagName = Tag.ToString();
+	return TagName.Contains(TEXT("Mana")) || TagName.Contains(TEXT("Stamina")) || TagName.Contains(TEXT("Ammo")) || TagName.Contains(TEXT("XP"));
+}
+
+void USBAttributeComponent::OnRep_ReplicatedAttributes()
+{
+	OnRep_PublicAttributes();
+	OnRep_PrivateAttributes();
+}
+
 void USBAttributeComponent::UpdateReplicatedAttribute(FGameplayTag Tag, const FSBAttribute& Attr)
 {
 	if (GetOwner() && !GetOwner()->HasAuthority() && !GIsAutomationTesting) return;
 
-	// Upsert no array de replicação de atributos
+	const bool bIsPrivate = IsAttributePrivate(Tag);
+	TArray<FSBAttributeReplicationEntry>& TargetArray = bIsPrivate ? PrivateAttributes : PublicAttributes;
+
+	// Upsert no array de replicação de atributos correto
 	bool bFound = false;
-	for (FSBAttributeReplicationEntry& Entry : ReplicatedAttributes)
+	for (FSBAttributeReplicationEntry& Entry : TargetArray)
 	{
 		if (Entry.Tag == Tag)
 		{
@@ -454,7 +497,7 @@ void USBAttributeComponent::UpdateReplicatedAttribute(FGameplayTag Tag, const FS
 		FSBAttributeReplicationEntry NewEntry;
 		NewEntry.Tag = Tag;
 		NewEntry.Attribute = Attr;
-		ReplicatedAttributes.Add(NewEntry);
+		TargetArray.Add(NewEntry);
 	}
 }
 
