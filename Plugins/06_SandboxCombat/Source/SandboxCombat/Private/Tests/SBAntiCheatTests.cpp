@@ -159,6 +159,27 @@ void FSBAntiCheatTestsSpec::Define()
 		TestEqual("Teleporte instantâneo extremo deve sofrer rollback", PostWarpLocation, ValidLocation);
 	});
 
+	It("Should allow teleport relocation when authorized by the server", [this]()
+	{
+		// Configura velocidade máxima inicial
+		Attacker->GetCharacterMovement()->MaxWalkSpeed = 600.f;
+
+		// 1. Executa um tick inicial para registrar a LastValidatedLocation
+		AttackerMovement->TickComponent(0.1f, LEVELTICK_All, nullptr);
+		FVector ValidLocation = Attacker->GetActorLocation();
+
+		// 2. Teleporta o personagem e autoriza a realocação
+		Attacker->SetActorLocation(ValidLocation + FVector(5000.f, 0.f, 0.f));
+		AttackerMovement->AuthorizeServerRelocation();
+
+		// 3. Executa o tick do movimento
+		AttackerMovement->TickComponent(0.1f, LEVELTICK_All, nullptr);
+
+		// 4. Valida que a localização não sofreu rollback e foi aceita
+		FVector PostTeleportLocation = Attacker->GetActorLocation();
+		TestEqual("Teleporte autorizado pelo servidor deve ser aceito sem rollback", PostTeleportLocation, ValidLocation + FVector(5000.f, 0.f, 0.f));
+	});
+
 	It("Should block damage traces that intersect physical obstacles (anti wall-clipping)", [this]()
 	{
 		// 1. Configura Definições de Combate do Rifle

@@ -8,6 +8,7 @@
 #include "GameFramework/PlayerState.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Components/SBAttributeComponent.h"
 #include "Utilities/SBLogCategories.h"
 
 USBMovementComponent::USBMovementComponent()
@@ -34,18 +35,53 @@ void USBMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 		return;
 	}
 
+	FVector CurrentLocation = Owner->GetActorLocation();
+
+	// Se for o primeiro frame ou acabamos de iniciar, inicializa LastValidatedLocation
 	if (!bHasLastValidatedLocation)
 	{
-		LastValidatedLocation = Owner->GetActorLocation();
+		LastValidatedLocation = CurrentLocation;
 		bHasLastValidatedLocation = true;
 		return;
 	}
 
-	FVector CurrentLocation = Owner->GetActorLocation();
-	
+	// Mecanismo de Realocação Autorizada (Teleportes lícitos do servidor)
+	if (bServerAuthorizedRelocation)
+	{
+		bServerAuthorizedRelocation = false;
+		LastValidatedLocation = CurrentLocation;
+		return;
+	}
+
 	// Validação 2D e Total
 	float Distance2D = FVector::Dist2D(CurrentLocation, LastValidatedLocation);
+	
+	// Cálculo dinâmico da velocidade teórica máxima baseado no CharacterMovement e modificadores do Aggregator
 	float MaxSpeed = CharOwner->GetCharacterMovement()->GetMaxSpeed();
+	if (SpeedModifierAggregator)
+	{
+		MaxSpeed = SpeedModifierAggregator->CalculateFinalValue(MaxSpeed);
+	}
+
+	// Se houver componente de atributos, verifica se existe modificador de velocidade de status effects (Attribute.Speed)
+	USBAttributeComponent* AttrComp = Owner->FindComponentByClass<USBAttributeComponent>();
+	if (AttrComp)
+	{
+		FGameplayTag SpeedTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Speed"), false);
+		FSBAttribute SpeedAttribute;
+		if (SpeedTag.IsValid() && AttrComp->GetAttribute(SpeedTag, SpeedAttribute))
+		{
+			float AttrSpeed = SpeedAttribute.CurrentValue;
+			if (SpeedModifierAggregator)
+			{
+				MaxSpeed = SpeedModifierAggregator->CalculateFinalValue(AttrSpeed);
+			}
+			else
+			{
+				MaxSpeed = AttrSpeed;
+			}
+		}
+	}
 
 	// Margem de segurança para acomodar latência, frames lentos e desvios aceitáveis
 	float ExtraTolerance = 300.0f;
@@ -74,8 +110,13 @@ void USBMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 	}
 	else
 	{
-		LastValidatedLocation = Owner->GetActorLocation();
+		LastValidatedLocation = CurrentLocation;
 	}
+}
+
+void USBMovementComponent::AuthorizeServerRelocation()
+{
+	bServerAuthorizedRelocation = true;
 }
 
 void USBMovementComponent::OnInitialize_Implementation()

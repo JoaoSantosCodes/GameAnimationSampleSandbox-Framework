@@ -64,6 +64,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Sandbox|Movement")
 	USBMovementModifierAggregator* GetSpeedModifierAggregator() const { return SpeedModifierAggregator; }
 
+	// Autoriza uma realocação física (teleporte) no próximo tick de validação
+	UFUNCTION(BlueprintCallable, Category = "Sandbox|Movement|AntiCheat")
+	void AuthorizeServerRelocation();
+
 protected:
 	// Data Asset contendo as configurações de comportamentos
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sandbox|Movement")
@@ -91,6 +95,9 @@ protected:
 
 	UPROPERTY(Transient)
 	bool bHasLastValidatedLocation = false;
+
+	UPROPERTY(Transient)
+	bool bServerAuthorizedRelocation = false;
 
 public:
 	// Helper para encontrar instâncias tipadas
