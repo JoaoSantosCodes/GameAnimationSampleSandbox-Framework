@@ -55,16 +55,53 @@ void USBMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 
 	// Validação 2D e Total
 	float Distance2D = FVector::Dist2D(CurrentLocation, LastValidatedLocation);
+
+	float CmcMaxWalkSpeed = CharOwner->GetCharacterMovement()->MaxWalkSpeed;
+
+	// Sincroniza e valida o atributo de velocidade contra desvios manuais de configuração
+	USBAttributeComponent* AttrComp = Owner->FindComponentByClass<USBAttributeComponent>();
+	if (AttrComp)
+	{
+		FGameplayTag SpeedTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Speed"), false);
+		FSBAttribute SpeedAttribute;
+		if (SpeedTag.IsValid() && AttrComp->GetAttribute(SpeedTag, SpeedAttribute))
+		{
+			if (!FMath::IsNearlyEqual(SpeedAttribute.BaseValue, CmcMaxWalkSpeed))
+			{
+				ensureMsgf(false, TEXT("Anti-Cheat Desync detected on %s! Attribute.Speed BaseValue (%f) diverges from CMC MaxWalkSpeed (%f). Auto-synchronizing in memory."), 
+					*Owner->GetName(), SpeedAttribute.BaseValue, CmcMaxWalkSpeed);
+
+				float BuffDelta = SpeedAttribute.CurrentValue - SpeedAttribute.BaseValue;
+				SpeedAttribute.BaseValue = CmcMaxWalkSpeed;
+				SpeedAttribute.CurrentValue = CmcMaxWalkSpeed + BuffDelta;
+				AttrComp->RegisterAttribute(SpeedTag, SpeedAttribute);
+			}
+		}
+	}
+
+	// Determina a velocidade base do CMC considerando o agachamento físico (Crouch)
+	float BaseSpeed = CmcMaxWalkSpeed;
+	if (CharOwner->GetCharacterMovement()->IsCrouching())
+	{
+		// Se o comportamento de Crouch NÃO estiver ativo na pilha (agachamento nativo fora da pilha),
+		// usamos MaxWalkSpeedCrouched como base direta. Caso contrário, usamos a base padrão (MaxWalkSpeed)
+		// e deixamos que o Aggregator aplique o modificador correspondente de forma predição síncrona.
+		FGameplayTag CrouchTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Crouching"), false);
+		bool bIsCrouchBehaviorActive = CrouchTag.IsValid() && HasBehavior(CrouchTag);
+		if (!bIsCrouchBehaviorActive)
+		{
+			BaseSpeed = CharOwner->GetCharacterMovement()->MaxWalkSpeedCrouched;
+		}
+	}
 	
 	// Cálculo dinâmico da velocidade teórica máxima baseada na velocidade máxima configurada pelo CMC e modificadores do Aggregator
-	float MaxSpeed = CharOwner->GetCharacterMovement()->MaxWalkSpeed;
+	float MaxSpeed = BaseSpeed;
 	if (SpeedModifierAggregator)
 	{
-		MaxSpeed = SpeedModifierAggregator->CalculateFinalValue(MaxSpeed);
+		MaxSpeed = SpeedModifierAggregator->CalculateFinalValue(BaseSpeed);
 	}
 
 	// Se houver componente de atributos, aplica o modificador de status effects (Attribute.Speed) proporcionalmente para combinar ambos
-	USBAttributeComponent* AttrComp = Owner->FindComponentByClass<USBAttributeComponent>();
 	if (AttrComp)
 	{
 		FGameplayTag SpeedTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Speed"), false);

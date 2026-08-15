@@ -185,15 +185,22 @@ void FSBAntiCheatTestsSpec::Define()
 		// 1. Configura velocidade máxima no CMC
 		Attacker->GetCharacterMovement()->MaxWalkSpeed = 600.f;
 
-		// 2. Registra o atributo de velocidade no Attacker com um buff de +100.f (total 700.f)
+		// 2. Registra o atributo de velocidade no Attacker
 		UGameplayTagsManager& TagsManager = UGameplayTagsManager::Get();
 		FGameplayTag SpeedTag = TagsManager.AddNativeGameplayTag(TEXT("Attribute.Speed"));
 		FSBAttribute SpeedAttr;
 		SpeedAttr.BaseValue = 600.f;
-		SpeedAttr.CurrentValue = 700.f; // +100.f de buff
+		SpeedAttr.CurrentValue = 600.f;
 		SpeedAttr.MaxValue = 1000.f;
 		SpeedAttr.MinValue = 0.f;
 		AttackerAttributes->RegisterAttribute(SpeedTag, SpeedAttr);
+
+		// Aplica modificador de velocidade de +100.f
+		FSBAttributeModifier SpeedMod;
+		SpeedMod.SourceTag = TagsManager.AddNativeGameplayTag(TEXT("Effect.SpeedBuff"));
+		SpeedMod.ModifierType = ESBAttributeModifierType::Additive;
+		SpeedMod.Magnitude = 100.f;
+		AttackerAttributes->ApplyModifier(SpeedTag, SpeedMod);
 
 		// 3. Aplica o modificador de Sprint (multiplier de 1.5x) no Aggregator
 		TArray<FSBModifierEntry> SprintModifiers;
@@ -204,26 +211,27 @@ void FSBAntiCheatTestsSpec::Define()
 		SprintModifiers.Add(SprintMod);
 		AttackerMovement->ApplyMovementModifiers(TagsManager.AddNativeGameplayTag(TEXT("State.Character.Sprinting")), SprintModifiers);
 
-		// Velocidade combinada esperada = 700.f * 1.5 = 1050.f
+		// Velocidade combinada esperada = 700.f (buff) * 1.5 (sprint) = 1050.f
+		// O limite dinâmico para DeltaTime = 0.1s é: (1050 + 300) * 0.1 + 200 = 335.f unidades
 
-		// 4. Executa um tick inicial
+		// 4. Executa um tick inicial para firmar a LastValidatedLocation
 		AttackerMovement->TickComponent(0.1f, LEVELTICK_All, nullptr);
 		FVector ValidLocation = Attacker->GetActorLocation();
 
-		// 5. Simula movimento lícito dentro da velocidade combinada (ex: se move a 900.f units/s)
-		Attacker->SetActorLocation(ValidLocation + FVector(90.f, 0.f, 0.f));
+		// 5. Simula movimento lícito no limiar do limite (330 unidades em 0.1s, menor que 335)
+		Attacker->SetActorLocation(ValidLocation + FVector(330.f, 0.f, 0.f));
 		AttackerMovement->TickComponent(0.1f, LEVELTICK_All, nullptr);
 
 		FVector PostMoveLocation = Attacker->GetActorLocation();
-		TestEqual("Movimento combinado de sprint + buff deve ser aceito sem rollback", PostMoveLocation, ValidLocation + FVector(90.f, 0.f, 0.f));
+		TestEqual("Deslocamento de 330 unidades (abaixo do limiar de 335) deve ser aceito", PostMoveLocation, ValidLocation + FVector(330.f, 0.f, 0.f));
 
-		// 6. Simula movimento ilícito excedendo a velocidade combinada
+		// 6. Simula movimento ilícito ligeiramente acima do limite (340 unidades em 0.1s, maior que 335)
 		FVector LastValid = Attacker->GetActorLocation();
-		Attacker->SetActorLocation(LastValid + FVector(300.f, 0.f, 0.f));
-		AttackerMovement->TickComponent(0.01f, LEVELTICK_All, nullptr);
+		Attacker->SetActorLocation(LastValid + FVector(340.f, 0.f, 0.f));
+		AttackerMovement->TickComponent(0.1f, LEVELTICK_All, nullptr);
 
 		FVector PostSpeedhackLocation = Attacker->GetActorLocation();
-		TestEqual("Movimento acima do limite combinado deve sofrer rollback", PostSpeedhackLocation, LastValid);
+		TestEqual("Deslocamento de 340 unidades (acima do limiar de 335) deve sofrer rollback", PostSpeedhackLocation, LastValid);
 	});
 
 	It("Should block damage traces that intersect physical obstacles (anti wall-clipping)", [this]()
