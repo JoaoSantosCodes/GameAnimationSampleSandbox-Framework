@@ -180,6 +180,52 @@ void FSBAntiCheatTestsSpec::Define()
 		TestEqual("Teleporte autorizado pelo servidor deve ser aceito sem rollback", PostTeleportLocation, ValidLocation + FVector(5000.f, 0.f, 0.f));
 	});
 
+	It("Should correctly combine sprint behavior and status effect speed buffs", [this]()
+	{
+		// 1. Configura velocidade máxima no CMC
+		Attacker->GetCharacterMovement()->MaxWalkSpeed = 600.f;
+
+		// 2. Registra o atributo de velocidade no Attacker com um buff de +100.f (total 700.f)
+		UGameplayTagsManager& TagsManager = UGameplayTagsManager::Get();
+		FGameplayTag SpeedTag = TagsManager.AddNativeGameplayTag(TEXT("Attribute.Speed"));
+		FSBAttribute SpeedAttr;
+		SpeedAttr.BaseValue = 600.f;
+		SpeedAttr.CurrentValue = 700.f; // +100.f de buff
+		SpeedAttr.MaxValue = 1000.f;
+		SpeedAttr.MinValue = 0.f;
+		AttackerAttributes->RegisterAttribute(SpeedTag, SpeedAttr);
+
+		// 3. Aplica o modificador de Sprint (multiplier de 1.5x) no Aggregator
+		TArray<FSBModifierEntry> SprintModifiers;
+		FSBModifierEntry SprintMod;
+		SprintMod.TargetStatTag = TagsManager.AddNativeGameplayTag(TEXT("Stat.Movement.Speed"));
+		SprintMod.Operation = ESBModifierOperation::Multiply;
+		SprintMod.Value = 1.5f;
+		SprintModifiers.Add(SprintMod);
+		AttackerMovement->ApplyMovementModifiers(TagsManager.AddNativeGameplayTag(TEXT("State.Character.Sprinting")), SprintModifiers);
+
+		// Velocidade combinada esperada = 700.f * 1.5 = 1050.f
+
+		// 4. Executa um tick inicial
+		AttackerMovement->TickComponent(0.1f, LEVELTICK_All, nullptr);
+		FVector ValidLocation = Attacker->GetActorLocation();
+
+		// 5. Simula movimento lícito dentro da velocidade combinada (ex: se move a 900.f units/s)
+		Attacker->SetActorLocation(ValidLocation + FVector(90.f, 0.f, 0.f));
+		AttackerMovement->TickComponent(0.1f, LEVELTICK_All, nullptr);
+
+		FVector PostMoveLocation = Attacker->GetActorLocation();
+		TestEqual("Movimento combinado de sprint + buff deve ser aceito sem rollback", PostMoveLocation, ValidLocation + FVector(90.f, 0.f, 0.f));
+
+		// 6. Simula movimento ilícito excedendo a velocidade combinada
+		FVector LastValid = Attacker->GetActorLocation();
+		Attacker->SetActorLocation(LastValid + FVector(300.f, 0.f, 0.f));
+		AttackerMovement->TickComponent(0.01f, LEVELTICK_All, nullptr);
+
+		FVector PostSpeedhackLocation = Attacker->GetActorLocation();
+		TestEqual("Movimento acima do limite combinado deve sofrer rollback", PostSpeedhackLocation, LastValid);
+	});
+
 	It("Should block damage traces that intersect physical obstacles (anti wall-clipping)", [this]()
 	{
 		// 1. Configura Definições de Combate do Rifle

@@ -56,14 +56,14 @@ void USBMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 	// Validação 2D e Total
 	float Distance2D = FVector::Dist2D(CurrentLocation, LastValidatedLocation);
 	
-	// Cálculo dinâmico da velocidade teórica máxima baseado no CharacterMovement e modificadores do Aggregator
-	float MaxSpeed = CharOwner->GetCharacterMovement()->GetMaxSpeed();
+	// Cálculo dinâmico da velocidade teórica máxima baseada na velocidade máxima configurada pelo CMC e modificadores do Aggregator
+	float MaxSpeed = CharOwner->GetCharacterMovement()->MaxWalkSpeed;
 	if (SpeedModifierAggregator)
 	{
 		MaxSpeed = SpeedModifierAggregator->CalculateFinalValue(MaxSpeed);
 	}
 
-	// Se houver componente de atributos, verifica se existe modificador de velocidade de status effects (Attribute.Speed)
+	// Se houver componente de atributos, aplica o modificador de status effects (Attribute.Speed) proporcionalmente para combinar ambos
 	USBAttributeComponent* AttrComp = Owner->FindComponentByClass<USBAttributeComponent>();
 	if (AttrComp)
 	{
@@ -71,14 +71,11 @@ void USBMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 		FSBAttribute SpeedAttribute;
 		if (SpeedTag.IsValid() && AttrComp->GetAttribute(SpeedTag, SpeedAttribute))
 		{
-			float AttrSpeed = SpeedAttribute.CurrentValue;
-			if (SpeedModifierAggregator)
+			float BaseAttrVal = SpeedAttribute.BaseValue;
+			if (BaseAttrVal > 0.0f)
 			{
-				MaxSpeed = SpeedModifierAggregator->CalculateFinalValue(AttrSpeed);
-			}
-			else
-			{
-				MaxSpeed = AttrSpeed;
+				float Ratio = SpeedAttribute.CurrentValue / BaseAttrVal;
+				MaxSpeed *= Ratio;
 			}
 		}
 	}
