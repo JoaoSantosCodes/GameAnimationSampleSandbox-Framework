@@ -20,6 +20,7 @@ public:
 	FGameplayTag State_Character_Dead;
 	FGameplayTag State_Character_Stunned;
 	FGameplayTag State_Character_Crouching;
+	FGameplayTag State_Character_Exhausted;
 	FGameplayTag State_Weapon_Firing;
 
 	// Inputs
@@ -35,6 +36,7 @@ public:
 	FGameplayTag Event_Character_Damaged;
 	FGameplayTag Event_Character_Dead;
 	FGameplayTag Event_Weapon_Fire;
+	FGameplayTag Combat_Action_Reload;
 
 	// Attributes
 	FGameplayTag Attribute_Health;

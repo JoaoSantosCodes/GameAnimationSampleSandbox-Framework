@@ -25,4 +25,7 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, OptionalWidget = true), Category = "Sandbox|UI")
 	TObjectPtr<UProgressBar> PB_Mana;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, OptionalWidget = true), Category = "Sandbox|UI")
+	TObjectPtr<UProgressBar> PB_Stamina;
 };

@@ -19,6 +19,23 @@ TStatId USBLagCompensationSubsystem::GetStatId() const
 	RETURN_QUICK_DECLARE_CYCLE_STAT(USBLagCompensationSubsystem, STATGROUP_Tickables);
 }
 
+void USBLagCompensationSubsystem::RegisterCharacter(ACharacter* Character)
+{
+	if (Character && IsValid(Character))
+	{
+		RegisteredCharacters.AddUnique(Character);
+	}
+}
+
+void USBLagCompensationSubsystem::UnregisterCharacter(ACharacter* Character)
+{
+	if (Character)
+	{
+		RegisteredCharacters.Remove(Character);
+		HistoryMap.Remove(Character);
+	}
+}
+
 void USBLagCompensationSubsystem::RecordPositions()
 {
 	UWorld* World = GetWorld();
@@ -43,12 +60,13 @@ void USBLagCompensationSubsystem::RecordPositions()
 		HistoryMap.Remove(Key);
 	}
 
-	// 2. Grava as posições atuais de todos os personagens válidos no mundo
-	for (TActorIterator<ACharacter> It(World); It; ++It)
+	// 2. Grava as posições atuais de todos os personagens cadastrados
+	for (int32 i = RegisteredCharacters.Num() - 1; i >= 0; --i)
 	{
-		ACharacter* Char = *It;
+		ACharacter* Char = RegisteredCharacters[i].Get();
 		if (!Char || !IsValid(Char))
 		{
+			RegisteredCharacters.RemoveAt(i);
 			continue;
 		}
 
@@ -69,7 +87,7 @@ void USBLagCompensationSubsystem::RecordPositions()
 	}
 }
 
-void USBLagCompensationSubsystem::RewindPositions(float TargetTime, TMap<TWeakObjectPtr<ACharacter>, FTransform>& OutOriginalTransforms)
+void USBLagCompensationSubsystem::RewindPositions(float TargetTime, const FVector& ShooterLocation, float MaxRange, TMap<TWeakObjectPtr<ACharacter>, FTransform>& OutOriginalTransforms)
 {
 	UWorld* World = GetWorld();
 	if (!World)
@@ -78,12 +96,20 @@ void USBLagCompensationSubsystem::RewindPositions(float TargetTime, TMap<TWeakOb
 	}
 
 	OutOriginalTransforms.Empty();
+	float MaxRangeSq = FMath::Square(MaxRange);
 
-	// Iteramos por todos os personagens registrados no histórico
+	// Iteramos pelos personagens registrados no histórico
 	for (auto& Pair : HistoryMap)
 	{
 		ACharacter* Char = Pair.Key.Get();
 		if (!Char || !IsValid(Char))
+		{
+			continue;
+		}
+
+		// Filtra por proximidade tridimensional em relação ao atirador
+		float DistSq = FVector::DistSquared(Char->GetActorLocation(), ShooterLocation);
+		if (DistSq > MaxRangeSq)
 		{
 			continue;
 		}

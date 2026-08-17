@@ -54,6 +54,9 @@ struct SANDBOXCOMMON_API FSBAttribute
 	// Auxiliar to track last time modified (for delay/regen)
 	UPROPERTY(BlueprintReadOnly, SaveGame, Category = "Attribute")
 	float LastModifiedTime = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Attribute")
+	bool bIsPrivate = false;
 };
 
 USTRUCT(BlueprintType)

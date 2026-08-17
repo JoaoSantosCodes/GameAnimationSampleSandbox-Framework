@@ -64,7 +64,7 @@ public:
 	virtual void OnPreInitialize_Implementation() override {}
 	virtual void OnInitialize_Implementation() override;
 	virtual void OnPostInitialize_Implementation() override {}
-	virtual void OnReady_Implementation() override {}
+	virtual void OnReady_Implementation() override;
 	virtual void OnShutdown_Implementation() override;
 
 
@@ -87,6 +87,19 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Sandbox|Combat")
 	AActor* GetSpawnedWeaponActor(FGameplayTag WeaponTag) const;
 
+	// Agro System API (Authority Only)
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Sandbox|Combat")
+	void AddAgro(APawn* TargetPawn, float Amount);
+
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Sandbox|Combat")
+	void ClearAgro(APawn* TargetPawn);
+
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Sandbox|Combat")
+	void ClearAllAgro();
+
+	UFUNCTION(BlueprintPure, BlueprintAuthorityOnly, Category = "Sandbox|Combat")
+	APawn* GetHighestAgroTarget() const;
+
 	// RPCs de Disparo e Validação de Rede
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRequestFire(FGameplayTag BehaviorTag, int32 PredictionId);
@@ -106,6 +119,9 @@ public:
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sandbox|Combat")
 	TObjectPtr<USBCombatConfigDataAsset> DefaultCombatConfig = nullptr;
+
+	UPROPERTY(Transient)
+	TMap<TObjectPtr<APawn>, float> AgroTable;
 
 	UPROPERTY(Transient)
 	TMap<FGameplayTag, float> LastExecutionTimes;

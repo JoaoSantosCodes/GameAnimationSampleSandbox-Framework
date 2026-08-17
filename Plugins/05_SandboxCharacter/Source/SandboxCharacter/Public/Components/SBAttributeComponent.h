@@ -102,6 +102,8 @@ public:
 	const TArray<FSBAttributeReplicationEntry>& GetPublicAttributes() const { return PublicAttributes; }
 	const TArray<FSBAttributeReplicationEntry>& GetPrivateAttributes() const { return PrivateAttributes; }
 
+	friend class FSBConditionalReplicationTestsSpec;
+
 	UFUNCTION()
 	void OnRep_ReplicatedAttributes();
 

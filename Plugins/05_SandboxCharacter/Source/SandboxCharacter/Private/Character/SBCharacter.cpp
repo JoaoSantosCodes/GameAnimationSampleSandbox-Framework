@@ -9,8 +9,10 @@
 #include "Components/SBAttributeComponent.h"
 #include "Components/SBStateComponent.h"
 #include "Components/SBAbilityComponent.h"
+#include "Components/SBMovementComponent.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Subsystems/SBLagCompensationSubsystem.h"
 
 ASBCharacter::ASBCharacter()
 {
@@ -101,6 +103,18 @@ void ASBCharacter::Test_Possess(AController* NewController)
 	}
 }
 
+void ASBCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	if (GetWorld() && HasAuthority())
+	{
+		if (USBLagCompensationSubsystem* LagSubsystem = GetWorld()->GetSubsystem<USBLagCompensationSubsystem>())
+		{
+			LagSubsystem->RegisterCharacter(this);
+		}
+	}
+}
+
 void ASBCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -113,6 +127,14 @@ void ASBCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 
 void ASBCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	if (GetWorld() && HasAuthority())
+	{
+		if (USBLagCompensationSubsystem* LagSubsystem = GetWorld()->GetSubsystem<USBLagCompensationSubsystem>())
+		{
+			LagSubsystem->UnregisterCharacter(this);
+		}
+	}
+
 	TArray<UActorComponent*> Components;
 	GetComponents(Components);
 	for (UActorComponent* Comp : Components)
@@ -124,4 +146,18 @@ void ASBCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	}
 
 	Super::EndPlay(EndPlayReason);
+}
+
+void ASBCharacter::Jump()
+{
+	USBMovementComponent* MoveComp = FindComponentByClass<USBMovementComponent>();
+	if (MoveComp)
+	{
+		if (!MoveComp->ConsumeJumpStamina())
+		{
+			return;
+		}
+	}
+
+	Super::Jump();
 }

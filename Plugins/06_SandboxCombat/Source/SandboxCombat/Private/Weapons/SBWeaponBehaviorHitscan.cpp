@@ -8,6 +8,7 @@
 #include "CollisionQueryParams.h"
 #include "Subsystems/SBLagCompensationSubsystem.h"
 #include "Utilities/SBLogCategories.h"
+#include "Components/CapsuleComponent.h"
 
 USBWeaponBehaviorHitscan::USBWeaponBehaviorHitscan()
 {
@@ -63,10 +64,11 @@ void USBWeaponBehaviorHitscan::PerformHitscanTrace(const FSBBehaviorContext& Con
 	// 2. Rebobina temporariamente a localização e rotação de todos os personagens no servidor
 	USBLagCompensationSubsystem* LagCompSubsystem = World->GetSubsystem<USBLagCompensationSubsystem>();
 	TMap<TWeakObjectPtr<ACharacter>, FTransform> OriginalTransforms;
+	float Range = 5000.f; // 50 metros alcance padrão
 
 	if (LagCompSubsystem && PingSeconds > 0.0f)
 	{
-		LagCompSubsystem->RewindPositions(TargetTime, OriginalTransforms);
+		LagCompSubsystem->RewindPositions(TargetTime, Character->GetActorLocation(), Range, OriginalTransforms);
 	}
 
 	// 3. Determina a direção e alcance do disparo (Trace simplificado do local do olho do personagem)
@@ -75,7 +77,6 @@ void USBWeaponBehaviorHitscan::PerformHitscanTrace(const FSBBehaviorContext& Con
 	Character->GetActorEyesViewPoint(EyeLocation, EyeRotation);
 
 	FVector TraceStart = EyeLocation;
-	float Range = 5000.f; // 50 metros alcance padrão
 	FVector TraceEnd = TraceStart + (EyeRotation.Vector() * Range);
 
 	FHitResult HitResult;
@@ -98,7 +99,8 @@ void USBWeaponBehaviorHitscan::PerformHitscanTrace(const FSBBehaviorContext& Con
 		bool bLoSBlocked = false;
 		if (World)
 		{
-			FVector BodyCenter = Character->GetActorLocation() + FVector(0,0,50); // Altura aproximada do tórax
+			float CapsuleHalfHeight = Character->GetCapsuleComponent() ? Character->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() : 88.0f;
+			FVector BodyCenter = Character->GetActorLocation() + FVector(0, 0, CapsuleHalfHeight * 0.5f); // Altura dinâmica proporcional do tórax
 			FVector ImpactPoint = HitResult.ImpactPoint;
 			
 			FHitResult ObstacleHit;

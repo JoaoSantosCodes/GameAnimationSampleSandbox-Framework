@@ -50,61 +50,117 @@ void FSBConditionalReplicationTestsSpec::Define()
 		}
 	});
 
-	It("Should correctly classify public and private attributes", [this]()
+	It("Should correctly classify public and private attributes based on FSBAttribute metadata", [this]()
 	{
+		FSBAttribute PublicAttr;
+		PublicAttr.bIsPrivate = false;
+		AttributeComponent->RegisterAttribute(HealthTag, PublicAttr);
+
+		FSBAttribute PrivateAttr;
+		PrivateAttr.bIsPrivate = true;
+		AttributeComponent->RegisterAttribute(ManaTag, PrivateAttr);
+
 		TestFalse("Health attribute should be public", AttributeComponent->IsAttributePrivate(HealthTag));
 		TestTrue("Mana attribute should be private", AttributeComponent->IsAttributePrivate(ManaTag));
-		TestTrue("Stamina attribute should be private", AttributeComponent->IsAttributePrivate(StaminaTag));
-		TestTrue("Weapon Ammo attribute should be private", AttributeComponent->IsAttributePrivate(AmmoTag));
 	});
 
-	It("Should direct updates to the correct replication array based on private/public status", [this]()
+	It("Should direct updates to the correct replication array and clean opposite channel if it changes", [this]()
 	{
+		// 1. Registra Health como público inicialmente
 		FSBAttribute InitialHealth;
 		InitialHealth.BaseValue = 100.f;
 		InitialHealth.CurrentValue = 100.f;
-
-		FSBAttribute InitialMana;
-		InitialMana.BaseValue = 50.f;
-		InitialMana.CurrentValue = 50.f;
-
-		// Registra atributos
+		InitialHealth.bIsPrivate = false;
 		AttributeComponent->RegisterAttribute(HealthTag, InitialHealth);
-		AttributeComponent->RegisterAttribute(ManaTag, InitialMana);
 
-		// Verifica se o array PublicAttributes contém o Health
-		bool bFoundHealthInPublic = false;
+		// Verifica presença no array público
+		bool bFoundInPublic = false;
 		for (const FSBAttributeReplicationEntry& Entry : AttributeComponent->GetPublicAttributes())
 		{
-			if (Entry.Tag == HealthTag)
-			{
-				bFoundHealthInPublic = true;
-				TestEqual("Health base value matches in PublicAttributes", Entry.Attribute.BaseValue, 100.f);
-			}
+			if (Entry.Tag == HealthTag) bFoundInPublic = true;
 		}
-		TestTrue("Health must be present in PublicAttributes", bFoundHealthInPublic);
+		TestTrue("Health deve estar inicialmente no array publico", bFoundInPublic);
 
-		// Verifica se o array PublicAttributes NÃO contém o Mana
-		bool bFoundManaInPublic = false;
-		for (const FSBAttributeReplicationEntry& Entry : AttributeComponent->GetPublicAttributes())
+		// 2. Modifica a flag bIsPrivate diretamente no mapa de atributos do servidor
+		FSBAttribute* AttrPtr = AttributeComponent->AttributesMap.Find(HealthTag);
+		if (AttrPtr)
 		{
-			if (Entry.Tag == ManaTag)
-			{
-				bFoundManaInPublic = true;
-			}
+			AttrPtr->bIsPrivate = true;
 		}
-		TestFalse("Mana must NOT be present in PublicAttributes", bFoundManaInPublic);
+		// Força atualização da replicação
+		AttributeComponent->SetAttributeBaseValue(HealthTag, 100.f);
 
-		// Verifica se o array PrivateAttributes contém o Mana
-		bool bFoundManaInPrivate = false;
+		// Verifica migração para o array privado
+		bool bFoundInPrivateAfter = false;
 		for (const FSBAttributeReplicationEntry& Entry : AttributeComponent->GetPrivateAttributes())
 		{
-			if (Entry.Tag == ManaTag)
-			{
-				bFoundManaInPrivate = true;
-				TestEqual("Mana base value matches in PrivateAttributes", Entry.Attribute.BaseValue, 50.f);
-			}
+			if (Entry.Tag == HealthTag) bFoundInPrivateAfter = true;
 		}
-		TestTrue("Mana must be present in PrivateAttributes", bFoundManaInPrivate);
+		TestTrue("Health deve migrar para o array privado", bFoundInPrivateAfter);
+
+		// Verifica que foi removido do array público
+		bool bFoundInPublicAfter = false;
+		for (const FSBAttributeReplicationEntry& Entry : AttributeComponent->GetPublicAttributes())
+		{
+			if (Entry.Tag == HealthTag) bFoundInPublicAfter = true;
+		}
+		TestFalse("Health deve ser removido do array publico ao mudar de canal", bFoundInPublicAfter);
+	});
+
+	It("Should simulate network replication segregation between Owner Client and Simulated Proxy Client", [this]()
+	{
+		// 1. Registra atributos no servidor
+		FSBAttribute HealthAttr;
+		HealthAttr.BaseValue = 100.f;
+		HealthAttr.CurrentValue = 100.f;
+		HealthAttr.bIsPrivate = false;
+		AttributeComponent->RegisterAttribute(HealthTag, HealthAttr);
+
+		FSBAttribute ManaAttr;
+		ManaAttr.BaseValue = 50.f;
+		ManaAttr.CurrentValue = 50.f;
+		ManaAttr.bIsPrivate = true;
+		AttributeComponent->RegisterAttribute(ManaTag, ManaAttr);
+
+		// 2. Instancia o cliente simulado
+		ASBCharacter* ClientProxy = TestWorld->SpawnActor<ASBCharacter>(ASBCharacter::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator);
+		USBAttributeComponent* ClientAttributes = NewObject<USBAttributeComponent>(ClientProxy);
+		ClientAttributes->RegisterComponent();
+		ISBComponentInterface::Execute_OnInitialize(ClientAttributes);
+		ISBComponentInterface::Execute_OnReady(ClientAttributes);
+
+		// 3. Simula replicação para o Dono (Owner Client - recebe ambos)
+		for (const FSBAttributeReplicationEntry& Entry : AttributeComponent->GetPublicAttributes())
+		{
+			ClientAttributes->PublicAttributes.Add(Entry);
+		}
+		for (const FSBAttributeReplicationEntry& Entry : AttributeComponent->GetPrivateAttributes())
+		{
+			ClientAttributes->PrivateAttributes.Add(Entry);
+		}
+		ClientAttributes->OnRep_ReplicatedAttributes();
+
+		TestEqual("Dono do cliente deve receber atributo publico (Health)", ClientAttributes->GetAttributeValue(HealthTag), 100.f);
+		TestEqual("Dono do cliente deve receber atributo privado (Mana)", ClientAttributes->GetAttributeValue(ManaTag), 50.f);
+
+		// 4. Simula replicação para Proxy Simulado (Simulated Proxy - recebe APENAS publicos devido ao COND_OwnerOnly)
+		ClientAttributes->PublicAttributes.Empty();
+		ClientAttributes->PrivateAttributes.Empty();
+		ClientAttributes->AttributesMap.Empty(); // Limpa poluição de estado do passo anterior
+
+		for (const FSBAttributeReplicationEntry& Entry : AttributeComponent->GetPublicAttributes())
+		{
+			ClientAttributes->PublicAttributes.Add(Entry);
+		}
+		// PrivateAttributes NÃO são transmitidos pelo net driver para conexões não-dono!
+		ClientAttributes->OnRep_ReplicatedAttributes();
+
+		TestEqual("Proxy simulado deve receber atributo publico (Health)", ClientAttributes->GetAttributeValue(HealthTag), 100.f);
+		TestEqual("Proxy simulado NÃO deve receber atributo privado (Mana)", ClientAttributes->GetAttributeValue(ManaTag), 0.f);
+
+		if (ClientProxy)
+		{
+			ClientProxy->Destroy();
+		}
 	});
 }

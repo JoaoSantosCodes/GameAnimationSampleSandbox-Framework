@@ -32,6 +32,8 @@ void FSBAbilityTestsSpec::Define()
 		FActorSpawnParameters SpawnParams;
 		TestCharacter = TestWorld->SpawnActor<ASBCharacter>(ASBCharacter::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 
+		TestCharacter->SetRole(ROLE_Authority);
+
 		StateComponent = NewObject<USBStateComponent>(TestCharacter);
 		StateComponent->RegisterComponent();
 
@@ -41,6 +43,7 @@ void FSBAbilityTestsSpec::Define()
 		AttributeComponent = NewObject<USBAttributeComponent>(TestCharacter);
 		AttributeComponent->RegisterComponent();
 
+		// Inicialização
 		ISBComponentInterface::Execute_OnInitialize(StateComponent);
 		ISBComponentInterface::Execute_OnInitialize(AbilityComponent);
 		ISBComponentInterface::Execute_OnInitialize(AttributeComponent);
@@ -54,6 +57,7 @@ void FSBAbilityTestsSpec::Define()
 		ManaTag = TagsManager.AddNativeGameplayTag(FName(TEXT("Attribute.Mana")));
 		BlockTag = TagsManager.AddNativeGameplayTag(FName(TEXT("State.Blocked")));
 		TagsManager.AddNativeGameplayTag(FName(TEXT("Input.Action.Ability1")));
+		TagsManager.AddNativeGameplayTag(FName(TEXT("State.Cooldown.Ability.Fire")));
 
 		FSBAttribute InitialMana;
 		InitialMana.BaseValue = 100.0f;
@@ -148,5 +152,107 @@ void FSBAbilityTestsSpec::Define()
 
 		AbilityComponent->Input_AbilityInputReleased(InputTag);
 		TestFalse("Habilidade deve desativar pelo trigger de release", AbilityComponent->HasBehavior(AbilityTag));
+	});
+
+	It("Should apply dynamic CooldownTag on activation and remove on expiry", [this]()
+	{
+		FGameplayTag CooldownTag = FGameplayTag::RequestGameplayTag(TEXT("State.Cooldown.Ability.Fire"));
+
+		USBAbility* TestAbility = NewObject<USBAbility>(TestCharacter, USBAbility::StaticClass());
+		TestAbility->AbilityTag = AbilityTag;
+		TestAbility->CooldownDuration = 2.0f;
+		TestAbility->CooldownTag = CooldownTag;
+
+		USBGameplayBehaviorDefinition* Def = NewObject<USBGameplayBehaviorDefinition>(TestCharacter);
+		Def->BehaviorTag = AbilityTag;
+		TestAbility->Initialize(AbilityComponent, Def);
+		AbilityComponent->AddAvailableBehavior(TestAbility);
+
+		// Inicialmente tempo é 0
+		TestWorld->TimeSeconds = 0.0f;
+
+		// Ativação deve aplicar a tag de cooldown
+		bool bActivated = AbilityComponent->ActivateAbilityByTag(AbilityTag);
+		TestTrue("Ativacao deve passar", bActivated);
+		TestTrue("Deve possuir a tag de cooldown", StateComponent->HasTag(CooldownTag));
+
+		// Tick passados 1.0s (menor que CooldownDuration) -> deve continuar em cooldown
+		TestWorld->TimeSeconds = 1.0f;
+		AbilityComponent->TickComponent(1.0f, LEVELTICK_All, nullptr);
+		TestTrue("Deve continuar com a tag de cooldown", StateComponent->HasTag(CooldownTag));
+
+		// Tick passados mais 1.0s (total 2.0s) -> deve expirar o cooldown
+		TestWorld->TimeSeconds = 2.0f;
+		AbilityComponent->TickComponent(1.0f, LEVELTICK_All, nullptr);
+		TestFalse("Deve ter removido a tag de cooldown", StateComponent->HasTag(CooldownTag));
+	});
+
+	It("Should support passive Mana regeneration and regen delay", [this]()
+	{
+		// Registra 100 de mana
+		AttributeComponent->SetAttributeBaseValue(ManaTag, 100.0f);
+
+		// Configura custo na habilidade
+		USBAbility* TestAbility = NewObject<USBAbility>(TestCharacter, USBAbility::StaticClass());
+		TestAbility->AbilityTag = AbilityTag;
+		TestAbility->ResourceTag = ManaTag;
+		TestAbility->ResourceCost = 40.0f;
+
+		USBGameplayBehaviorDefinition* Def = NewObject<USBGameplayBehaviorDefinition>(TestCharacter);
+		Def->BehaviorTag = AbilityTag;
+		TestAbility->Initialize(AbilityComponent, Def);
+		AbilityComponent->AddAvailableBehavior(TestAbility);
+
+		TestWorld->TimeSeconds = 0.0f;
+
+		// Ativa para consumir mana
+		bool bActivated = AbilityComponent->ActivateAbilityByTag(AbilityTag);
+		TestTrue("Ativacao deve consumir mana", bActivated);
+		TestEqual("Mana deve cair para 60", AttributeComponent->GetAttributeValue(ManaTag), 60.0f);
+
+		// Tick 1.9s -> Dentro do delay de 2.0s, então não deve regenerar mana
+		TestWorld->TimeSeconds = 1.9f;
+		AbilityComponent->TickComponent(1.9f, LEVELTICK_All, nullptr);
+		TestEqual("Mana nao deve regenerar durante delay", AttributeComponent->GetAttributeValue(ManaTag), 60.0f);
+
+		// Tick mais 1.0s -> Total 2.9s (passou do delay de 2.0s). Deve regenerar 1.0s de mana.
+		// Taxa = 5.f/s. 1.0s * 5 = 5.0f de mana regenerada. Total = 65.0f.
+		TestWorld->TimeSeconds = 2.9f;
+		AbilityComponent->TickComponent(1.0f, LEVELTICK_All, nullptr);
+		TestEqual("Mana deve comecar a regenerar apos o delay", AttributeComponent->GetAttributeValue(ManaTag), 65.0f);
+	});
+
+	It("Should clean up CooldownTag and cooldown list entry on ClientRollbackAbility", [this]()
+	{
+		FGameplayTag CooldownTag = FGameplayTag::RequestGameplayTag(TEXT("State.Cooldown.Ability.Fire"));
+
+		USBAbility* TestAbility = NewObject<USBAbility>(TestCharacter, USBAbility::StaticClass());
+		TestAbility->AbilityTag = AbilityTag;
+		TestAbility->CooldownDuration = 5.0f;
+		TestAbility->CooldownTag = CooldownTag;
+		TestAbility->ResourceTag = ManaTag;
+		TestAbility->ResourceCost = 30.0f;
+
+		USBGameplayBehaviorDefinition* Def = NewObject<USBGameplayBehaviorDefinition>(TestCharacter);
+		Def->BehaviorTag = AbilityTag;
+		TestAbility->Initialize(AbilityComponent, Def);
+		AbilityComponent->AddAvailableBehavior(TestAbility);
+
+		// Configura o papel como AutonomousProxy para forçar simulação de predição cliente
+		TestCharacter->SetRole(ROLE_AutonomousProxy);
+
+		// Ativa localmente (simula cliente predizendo consumo e cooldown)
+		bool bActivated = AbilityComponent->ActivateAbilityByTag(AbilityTag);
+		TestTrue("Cliente ativou habilidade", bActivated);
+		TestEqual("Mana consumida", AttributeComponent->GetAttributeValue(ManaTag), 70.0f);
+		TestTrue("Tag de cooldown aplicada", StateComponent->HasTag(CooldownTag));
+
+		// Servidor rejeita a ativação e executa rollback (PredictionId = 1)
+		AbilityComponent->ClientRollbackAbility(AbilityTag, 1);
+
+		// Todos os efeitos do cooldown e consumo devem ser cancelados e a mana restaurada
+		TestFalse("Tag de cooldown deve ser removida no rollback", StateComponent->HasTag(CooldownTag));
+		TestFalse("Habilidade nao deve constar em cooldown", AbilityComponent->IsAbilityOnCooldown(AbilityTag));
+		TestEqual("Mana restaurada para o estado original", AttributeComponent->GetAttributeValue(ManaTag), 100.0f);
 	});
 }

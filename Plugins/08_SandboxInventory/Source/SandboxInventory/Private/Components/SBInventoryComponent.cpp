@@ -10,6 +10,7 @@
 #include "Engine/ActorChannel.h"
 #include "Subsystems/SBSaveSubsystemConcrete.h"
 #include "Serialization/ObjectAndNameAsStringProxyArchive.h"
+#include "TimerManager.h"
 
 void FSBInventoryList::PostReplicatedAdd(const TArrayView<int32>& AddedIndices, int32 FinalSize)
 {
@@ -241,6 +242,12 @@ void USBInventoryComponent::ServerEquipItem(USBItemInstance* ItemInstance)
 	const USBItemFragment* RawFragment = ItemInstance->FindFragmentByClass(FragmentClass);
 	if (RawFragment)
 	{
+		FGameplayTag EquippedTag = FGameplayTag::RequestGameplayTag(TEXT("State.Item.Equipped"), false);
+		if (EquippedTag.IsValid())
+		{
+			ItemInstance->DynamicTags.AddTag(EquippedTag);
+		}
+
 		if (USBEventSubsystem* EventSubsystem = GetEventSubsystem())
 		{
 			USBItemEquipPayload* Payload = NewObject<USBItemEquipPayload>(this);
@@ -270,6 +277,12 @@ void USBInventoryComponent::ServerUnequipItem(USBItemInstance* ItemInstance)
 	const USBItemFragment* RawFragment = ItemInstance->FindFragmentByClass(FragmentClass);
 	if (RawFragment)
 	{
+		FGameplayTag EquippedTag = FGameplayTag::RequestGameplayTag(TEXT("State.Item.Equipped"), false);
+		if (EquippedTag.IsValid())
+		{
+			ItemInstance->DynamicTags.RemoveTag(EquippedTag);
+		}
+
 		if (USBEventSubsystem* EventSubsystem = GetEventSubsystem())
 		{
 			USBItemEquipPayload* Payload = NewObject<USBItemEquipPayload>(this);
@@ -414,10 +427,39 @@ bool USBInventoryComponent::LoadComponentData_Implementation(UObject* SavePayloa
 					}
 				}
 			}
+
+			if (GetWorld())
+			{
+				GetWorld()->GetTimerManager().SetTimerForNextTick(this, &USBInventoryComponent::RestoreEquippedItems);
+			}
+
 			return true;
 		}
 	}
 	return false;
+}
+
+void USBInventoryComponent::RestoreEquippedItems()
+{
+	FGameplayTag EquippedTag = FGameplayTag::RequestGameplayTag(TEXT("State.Item.Equipped"), false);
+	if (!EquippedTag.IsValid())
+	{
+		return;
+	}
+
+	TArray<USBItemInstance*> ItemsToEquip;
+	for (const FSBInventoryEntry& Entry : InventoryList.Entries)
+	{
+		if (Entry.Instance && Entry.Instance->DynamicTags.HasTag(EquippedTag))
+		{
+			ItemsToEquip.Add(Entry.Instance);
+		}
+	}
+
+	for (USBItemInstance* Item : ItemsToEquip)
+	{
+		ServerEquipItem(Item);
+	}
 }
 
 void USBInventoryComponent::GetDebugDescription_Implementation(TArray<FSBDebugLine>& OutDebugLines) const

@@ -22,6 +22,7 @@ public:
 	virtual UActorComponent* GetAbilityComponent_Implementation() const override;
 
 	virtual bool IsLocallyControlled() const override;
+	virtual void Jump() override;
 
 private:
 	friend class FSBNetworkTestsSpec;
@@ -29,6 +30,7 @@ private:
 	void Test_Possess(AController* NewController);
 
 protected:
+	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;

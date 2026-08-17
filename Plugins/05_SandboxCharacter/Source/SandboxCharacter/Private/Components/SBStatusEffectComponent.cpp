@@ -211,7 +211,7 @@ void USBStatusEffectComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 		// 1. Processa ticks periódicos (DOT/HOT)
 		if (Entry.Period > 0.0f && Entry.Definition)
 		{
-			if (CurrentTime - Entry.LastPeriodTriggerTime >= Entry.Period)
+			while (CurrentTime - Entry.LastPeriodTriggerTime >= Entry.Period)
 			{
 				if (CachedAttributeComponent && Entry.Definition->PeriodAttributeTag.IsValid())
 				{
@@ -220,7 +220,7 @@ void USBStatusEffectComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 					CachedAttributeComponent->SetAttributeBaseValue(Entry.Definition->PeriodAttributeTag, NewVal);
 				}
 
-				Entry.LastPeriodTriggerTime = CurrentTime;
+				Entry.LastPeriodTriggerTime += Entry.Period;
 				ActiveEffects.MarkItemDirty(Entry);
 			}
 		}

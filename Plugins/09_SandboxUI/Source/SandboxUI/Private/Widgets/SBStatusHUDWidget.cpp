@@ -25,7 +25,7 @@ void USBStatusHUDWidget::OnAttributeChanged(FGameplayTag EventTag, UObject* Payl
 
 	if (AttrPayload->TargetPawn != GetOwningPlayerPawn()) return;
 
-	if (AttrPayload->AttributeTag == FGameplayTag::RequestGameplayTag(TEXT("Attribute.Character.Health")))
+	if (AttrPayload->AttributeTag == FGameplayTag::RequestGameplayTag(TEXT("Attribute.Health")))
 	{
 		if (PB_Health)
 		{
@@ -39,6 +39,14 @@ void USBStatusHUDWidget::OnAttributeChanged(FGameplayTag EventTag, UObject* Payl
 		{
 			float Pct = (AttrPayload->MaxValue > 0.0f) ? (AttrPayload->CurrentValue / AttrPayload->MaxValue) : 0.0f;
 			PB_Mana->SetPercent(FMath::Clamp(Pct, 0.0f, 1.0f));
+		}
+	}
+	else if (AttrPayload->AttributeTag == FGameplayTag::RequestGameplayTag(TEXT("Attribute.Stamina")))
+	{
+		if (PB_Stamina)
+		{
+			float Pct = (AttrPayload->MaxValue > 0.0f) ? (AttrPayload->CurrentValue / AttrPayload->MaxValue) : 0.0f;
+			PB_Stamina->SetPercent(FMath::Clamp(Pct, 0.0f, 1.0f));
 		}
 	}
 }

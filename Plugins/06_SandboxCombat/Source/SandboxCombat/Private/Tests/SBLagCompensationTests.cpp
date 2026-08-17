@@ -20,6 +20,10 @@ void FSBLagCompensationTestsSpec::Define()
 		TargetCharacter = TestWorld->SpawnActor<ASBCharacter>(ASBCharacter::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 		
 		LagCompSubsystem = TestWorld->GetSubsystem<USBLagCompensationSubsystem>();
+		if (LagCompSubsystem)
+		{
+			LagCompSubsystem->RegisterCharacter(TargetCharacter);
+		}
 	});
 
 	AfterEach([this]()
@@ -64,7 +68,8 @@ void FSBLagCompensationTestsSpec::Define()
 		// 3. Rebobina para o tempo T = 1.5s (metade do caminho entre 0.f e 100.f)
 		TMap<TWeakObjectPtr<ACharacter>, FTransform> OriginalTransforms;
 		float TargetTime = 1.5f;
-		LagCompSubsystem->RewindPositions(TargetTime, OriginalTransforms);
+		LagCompSubsystem->RegisterCharacter(TargetCharacter); // Garante registro no ambiente de teste
+		LagCompSubsystem->RewindPositions(TargetTime, FVector::ZeroVector, 10000.f, OriginalTransforms);
 
 		// A posição rebobinada interpolada deve ser FVector(50.f, 0.f, 0.f)
 		FVector ExpectedRewoundLoc(50.f, 0.f, 0.f);

@@ -9,6 +9,7 @@
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/SBAttributeComponent.h"
+#include "Components/SBStateComponent.h"
 #include "Utilities/SBLogCategories.h"
 
 USBMovementComponent::USBMovementComponent()
@@ -19,12 +20,187 @@ USBMovementComponent::USBMovementComponent()
 	PrimaryComponentTick.TickGroup = TG_PrePhysics; // Garante processamento antes da física
 }
 
+void USBMovementComponent::OnReady_Implementation()
+{
+	Super::OnReady_Implementation();
+
+	AActor* Owner = GetOwner();
+	ACharacter* CharOwner = Cast<ACharacter>(Owner);
+	if (CharOwner && CharOwner->GetCharacterMovement() && Owner->HasAuthority())
+	{
+		USBAttributeComponent* AttrComp = Owner->FindComponentByClass<USBAttributeComponent>();
+		if (AttrComp)
+		{
+			FGameplayTag SpeedTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Speed"), false);
+			FSBAttribute SpeedAttribute;
+			if (SpeedTag.IsValid() && AttrComp->GetAttribute(SpeedTag, SpeedAttribute))
+			{
+				float CmcMaxWalkSpeed = CharOwner->GetCharacterMovement()->MaxWalkSpeed;
+				if (!FMath::IsNearlyEqual(SpeedAttribute.BaseValue, CmcMaxWalkSpeed))
+				{
+					ensureMsgf(false, TEXT("Anti-Cheat Desync detected on startup for %s! Attribute.Speed BaseValue (%f) diverges from CMC MaxWalkSpeed (%f). Auto-synchronizing base value."), 
+						*Owner->GetName(), SpeedAttribute.BaseValue, CmcMaxWalkSpeed);
+
+					AttrComp->SetAttributeBaseValue(SpeedTag, CmcMaxWalkSpeed);
+				}
+			}
+
+			FGameplayTag StaminaTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Stamina"), false);
+			FSBAttribute DummyStamina;
+			if (StaminaTag.IsValid() && !AttrComp->GetAttribute(StaminaTag, DummyStamina))
+			{
+				FSBAttribute StaminaAttr;
+				StaminaAttr.BaseValue = 100.f;
+				StaminaAttr.CurrentValue = 100.f;
+				StaminaAttr.MaxValue = 100.f;
+				StaminaAttr.MinValue = 0.f;
+				StaminaAttr.bIsPrivate = true; // Replicada como COND_OwnerOnly
+				AttrComp->RegisterAttribute(StaminaTag, StaminaAttr);
+			}
+		}
+	}
+}
+
+float USBMovementComponent::GetCalculatedMaxSpeed() const
+{
+	AActor* Owner = GetOwner();
+	if (!Owner) return 0.0f;
+
+	ACharacter* CharOwner = Cast<ACharacter>(Owner);
+	if (!CharOwner || !CharOwner->GetCharacterMovement()) return 0.0f;
+
+	// Bloqueia velocidade de locomoção se estiver Atordoado (Stunned) ou Congelado (Frozen)
+	USBStateComponent* StateComp = Owner->FindComponentByClass<USBStateComponent>();
+	if (StateComp)
+	{
+		FGameplayTag StunnedTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Stunned"), false);
+		FGameplayTag FrozenTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Frozen"), false);
+		if ((StunnedTag.IsValid() && StateComp->HasTag(StunnedTag)) || (FrozenTag.IsValid() && StateComp->HasTag(FrozenTag)))
+		{
+			return 0.0f;
+		}
+	}
+
+	float CmcMaxWalkSpeed = CharOwner->GetCharacterMovement()->MaxWalkSpeed;
+	float BaseSpeed = CmcMaxWalkSpeed;
+
+	if (CharOwner->GetCharacterMovement()->IsCrouching())
+	{
+		// Se o comportamento de Crouch NÃO estiver ativo na pilha (agachamento nativo fora da pilha),
+		// usamos MaxWalkSpeedCrouched como base direta. Caso contrário, usamos a base padrão (MaxWalkSpeed)
+		// e deixamos que o Aggregator aplique o modificador correspondente de forma predição síncrona.
+		FGameplayTag CrouchTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Crouching"), false);
+		bool bIsCrouchBehaviorActive = CrouchTag.IsValid() && HasBehavior(CrouchTag);
+		if (!bIsCrouchBehaviorActive)
+		{
+			BaseSpeed = CharOwner->GetCharacterMovement()->MaxWalkSpeedCrouched;
+		}
+	}
+
+	float MaxSpeed = BaseSpeed;
+	if (SpeedModifierAggregator)
+	{
+		MaxSpeed = SpeedModifierAggregator->CalculateFinalValue(BaseSpeed);
+	}
+
+	USBAttributeComponent* AttrComp = Owner->FindComponentByClass<USBAttributeComponent>();
+	if (AttrComp)
+	{
+		FGameplayTag SpeedTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Speed"), false);
+		FSBAttribute SpeedAttribute;
+		if (SpeedTag.IsValid() && AttrComp->GetAttribute(SpeedTag, SpeedAttribute))
+		{
+			// Validação leve de desvios pós-inicialização para alertar em ambiente de desenvolvimento
+			if (GEngine && !FMath::IsNearlyEqual(SpeedAttribute.BaseValue, CmcMaxWalkSpeed))
+			{
+				double CurrentTime = FPlatformTime::Seconds();
+				if (CurrentTime - LastLogDesyncTime > 5.0)
+				{
+					UE_LOG(LogSandboxCharacter, Warning, TEXT("Anti-Cheat Warning: Attribute.Speed BaseValue (%f) diverges from CMC MaxWalkSpeed (%f)! Ensure you modify both consistently in runtime."), 
+						SpeedAttribute.BaseValue, CmcMaxWalkSpeed);
+					LastLogDesyncTime = CurrentTime;
+				}
+			}
+
+			float BaseAttrVal = SpeedAttribute.BaseValue;
+			if (BaseAttrVal > 0.0f)
+			{
+				float Ratio = SpeedAttribute.CurrentValue / BaseAttrVal;
+				MaxSpeed *= Ratio;
+			}
+		}
+	}
+
+	return MaxSpeed;
+}
+
 void USBMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	AActor* Owner = GetOwner();
-	if (!Owner || !Owner->HasAuthority() || DeltaTime <= 0.0f)
+	if (!Owner || DeltaTime <= 0.0f)
+	{
+		return;
+	}
+
+	// 1. Processamento de Estamina (Consumo e Regeneração) - Roda em Cliente e Servidor para predição local
+	USBAttributeComponent* AttrComp = Owner->FindComponentByClass<USBAttributeComponent>();
+	USBStateComponent* StateComp = Owner->FindComponentByClass<USBStateComponent>();
+	if (AttrComp && StateComp)
+	{
+		float CurrentTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.f;
+		FGameplayTag SprintStateTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Sprinting"), false);
+		FGameplayTag ExhaustedTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Exhausted"), false);
+		FGameplayTag StaminaTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Stamina"), false);
+
+		bool bIsSprinting = SprintStateTag.IsValid() && StateComp->HasTag(SprintStateTag);
+
+		if (bIsSprinting)
+		{
+			float CurrentStamina = AttrComp->GetAttributeValue(StaminaTag);
+			float NewStamina = FMath::Max(0.f, CurrentStamina - (SprintStaminaCost * DeltaTime));
+			AttrComp->SetAttributeBaseValue(StaminaTag, NewStamina);
+			LastStaminaConsumptionTime = CurrentTime;
+		}
+		else
+		{
+			if (CurrentTime - LastStaminaConsumptionTime >= StaminaRegenDelay)
+			{
+				FSBAttribute StaminaAttr;
+				if (StaminaTag.IsValid() && AttrComp->GetAttribute(StaminaTag, StaminaAttr))
+				{
+					if (StaminaAttr.BaseValue < StaminaAttr.MaxValue)
+					{
+						float NewStamina = FMath::Min(StaminaAttr.MaxValue, StaminaAttr.BaseValue + (StaminaRegenRate * DeltaTime));
+						AttrComp->SetAttributeBaseValue(StaminaTag, NewStamina);
+					}
+				}
+			}
+		}
+
+		// Validação unificada do estado de exaustão baseado no valor final
+		if (StaminaTag.IsValid() && ExhaustedTag.IsValid())
+		{
+			float CurrentStamina = AttrComp->GetAttributeValue(StaminaTag);
+			if (CurrentStamina <= 0.f && !StateComp->HasTag(ExhaustedTag))
+			{
+				StateComp->AddTag(ExhaustedTag);
+				FGameplayTag SprintBehaviorTag = FGameplayTag::RequestGameplayTag(TEXT("Movement.Action.Sprint"), false);
+				if (SprintBehaviorTag.IsValid())
+				{
+					StopBehavior(SprintBehaviorTag);
+				}
+			}
+			else if (CurrentStamina >= 30.f && StateComp->HasTag(ExhaustedTag))
+			{
+				StateComp->RemoveTag(ExhaustedTag);
+			}
+		}
+	}
+
+	// 2. Validações de Segurança (Anti-Cheat) - Apenas Servidor Autoritativo
+	if (!Owner->HasAuthority())
 	{
 		return;
 	}
@@ -55,67 +231,9 @@ void USBMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 
 	// Validação 2D e Total
 	float Distance2D = FVector::Dist2D(CurrentLocation, LastValidatedLocation);
-
-	float CmcMaxWalkSpeed = CharOwner->GetCharacterMovement()->MaxWalkSpeed;
-
-	// Sincroniza e valida o atributo de velocidade contra desvios manuais de configuração
-	USBAttributeComponent* AttrComp = Owner->FindComponentByClass<USBAttributeComponent>();
-	if (AttrComp)
-	{
-		FGameplayTag SpeedTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Speed"), false);
-		FSBAttribute SpeedAttribute;
-		if (SpeedTag.IsValid() && AttrComp->GetAttribute(SpeedTag, SpeedAttribute))
-		{
-			if (!FMath::IsNearlyEqual(SpeedAttribute.BaseValue, CmcMaxWalkSpeed))
-			{
-				ensureMsgf(false, TEXT("Anti-Cheat Desync detected on %s! Attribute.Speed BaseValue (%f) diverges from CMC MaxWalkSpeed (%f). Auto-synchronizing in memory."), 
-					*Owner->GetName(), SpeedAttribute.BaseValue, CmcMaxWalkSpeed);
-
-				float BuffDelta = SpeedAttribute.CurrentValue - SpeedAttribute.BaseValue;
-				SpeedAttribute.BaseValue = CmcMaxWalkSpeed;
-				SpeedAttribute.CurrentValue = CmcMaxWalkSpeed + BuffDelta;
-				AttrComp->RegisterAttribute(SpeedTag, SpeedAttribute);
-			}
-		}
-	}
-
-	// Determina a velocidade base do CMC considerando o agachamento físico (Crouch)
-	float BaseSpeed = CmcMaxWalkSpeed;
-	if (CharOwner->GetCharacterMovement()->IsCrouching())
-	{
-		// Se o comportamento de Crouch NÃO estiver ativo na pilha (agachamento nativo fora da pilha),
-		// usamos MaxWalkSpeedCrouched como base direta. Caso contrário, usamos a base padrão (MaxWalkSpeed)
-		// e deixamos que o Aggregator aplique o modificador correspondente de forma predição síncrona.
-		FGameplayTag CrouchTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Crouching"), false);
-		bool bIsCrouchBehaviorActive = CrouchTag.IsValid() && HasBehavior(CrouchTag);
-		if (!bIsCrouchBehaviorActive)
-		{
-			BaseSpeed = CharOwner->GetCharacterMovement()->MaxWalkSpeedCrouched;
-		}
-	}
 	
-	// Cálculo dinâmico da velocidade teórica máxima baseada na velocidade máxima configurada pelo CMC e modificadores do Aggregator
-	float MaxSpeed = BaseSpeed;
-	if (SpeedModifierAggregator)
-	{
-		MaxSpeed = SpeedModifierAggregator->CalculateFinalValue(BaseSpeed);
-	}
-
-	// Se houver componente de atributos, aplica o modificador de status effects (Attribute.Speed) proporcionalmente para combinar ambos
-	if (AttrComp)
-	{
-		FGameplayTag SpeedTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Speed"), false);
-		FSBAttribute SpeedAttribute;
-		if (SpeedTag.IsValid() && AttrComp->GetAttribute(SpeedTag, SpeedAttribute))
-		{
-			float BaseAttrVal = SpeedAttribute.BaseValue;
-			if (BaseAttrVal > 0.0f)
-			{
-				float Ratio = SpeedAttribute.CurrentValue / BaseAttrVal;
-				MaxSpeed *= Ratio;
-			}
-		}
-	}
+	// Consulta a velocidade teórica máxima calculada de forma centralizada
+	float MaxSpeed = GetCalculatedMaxSpeed();
 
 	// Margem de segurança para acomodar latência, frames lentos e desvios aceitáveis
 	float ExtraTolerance = 300.0f;
@@ -335,4 +453,39 @@ void USBTestMovementComponent::ClientStopBehavior_Implementation(FGameplayTag Be
 {
 	LastClientStopBehaviorTag = BehaviorTag;
 	Super::ClientStopBehavior_Implementation(BehaviorTag);
+}
+
+bool USBMovementComponent::ConsumeJumpStamina()
+{
+	USBAttributeComponent* AttrComp = GetOwner()->FindComponentByClass<USBAttributeComponent>();
+	USBStateComponent* StateComp = GetOwner()->FindComponentByClass<USBStateComponent>();
+	if (AttrComp && StateComp)
+	{
+		FGameplayTag ExhaustedTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Exhausted"), false);
+		if (ExhaustedTag.IsValid() && StateComp->HasTag(ExhaustedTag))
+		{
+			return false; // Bloqueado
+		}
+
+		FGameplayTag StaminaTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Stamina"), false);
+		float CurrentStamina = AttrComp->GetAttributeValue(StaminaTag);
+		if (CurrentStamina >= JumpStaminaCost)
+		{
+			float NewStamina = FMath::Max(0.f, CurrentStamina - JumpStaminaCost);
+			AttrComp->SetAttributeBaseValue(StaminaTag, NewStamina);
+			LastStaminaConsumptionTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.f;
+
+			if (NewStamina <= 0.f && ExhaustedTag.IsValid())
+			{
+				StateComp->AddTag(ExhaustedTag);
+				FGameplayTag SprintBehaviorTag = FGameplayTag::RequestGameplayTag(TEXT("Movement.Action.Sprint"), false);
+				if (SprintBehaviorTag.IsValid())
+				{
+					StopBehavior(SprintBehaviorTag);
+				}
+			}
+			return true;
+		}
+	}
+	return false;
 }

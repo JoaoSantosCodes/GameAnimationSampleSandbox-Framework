@@ -50,16 +50,30 @@ public:
 	virtual TStatId GetStatId() const override;
 
 	/**
+	 * Registra um personagem no subsistema para gravação de histórico.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sandbox|LagCompensation")
+	void RegisterCharacter(ACharacter* Character);
+
+	/**
+	 * Desregistra um personagem do subsistema.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sandbox|LagCompensation")
+	void UnregisterCharacter(ACharacter* Character);
+
+	/**
 	 * Grava as posições atuais de todos os personagens no histórico.
 	 */
 	void RecordPositions();
 
 	/**
-	 * Move temporariamente todos os personagens (exceto o atirador) para a posição em que estavam no tempo alvo.
+	 * Move temporariamente todos os personagens (exceto o atirador) que estejam no alcance da arma para a posição passada.
 	 * @param TargetTime - Marca de tempo no passado para interpolar as posições.
+	 * @param ShooterLocation - Localização do atirador para filtrar por proximidade.
+	 * @param MaxRange - Alcance máximo para filtragem espacial.
 	 * @param OutOriginalTransforms - Mapa onde serão armazenadas as transformações originais para posterior restauração.
 	 */
-	void RewindPositions(float TargetTime, TMap<TWeakObjectPtr<ACharacter>, FTransform>& OutOriginalTransforms);
+	void RewindPositions(float TargetTime, const FVector& ShooterLocation, float MaxRange, TMap<TWeakObjectPtr<ACharacter>, FTransform>& OutOriginalTransforms);
 
 	/**
 	 * Restaura as posições de todos os personagens para suas transformações originais do frame atual.
@@ -78,6 +92,9 @@ protected:
 private:
 	UPROPERTY(Transient)
 	TMap<TWeakObjectPtr<ACharacter>, FSBCharacterHistory> HistoryMap;
+
+	UPROPERTY(Transient)
+	TArray<TWeakObjectPtr<ACharacter>> RegisteredCharacters;
 
 	// Limite de 1.0 segundo de histórico para evitar consumo excessivo de memória e exploits de rewind infinito.
 	const float MaxHistoryDuration = 1.0f;

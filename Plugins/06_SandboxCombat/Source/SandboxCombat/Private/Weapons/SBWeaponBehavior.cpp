@@ -28,6 +28,12 @@ bool USBWeaponBehavior::CanEnter_Implementation(const FSBBehaviorContext& Contex
 
 	if (CombatStateComponent)
 	{
+		FGameplayTag ReloadingTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Reloading"), false);
+		if (ReloadingTag.IsValid() && CombatStateComponent->HasTag(ReloadingTag))
+		{
+			return false;
+		}
+
 		if (!CombatStateComponent->HasAll(WeaponDefinition->RequiredTags))
 		{
 			return false;

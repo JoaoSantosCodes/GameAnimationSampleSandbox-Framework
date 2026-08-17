@@ -28,7 +28,7 @@ public:
 	virtual void OnPreInitialize_Implementation() override {}
 	virtual void OnInitialize_Implementation() override;
 	virtual void OnPostInitialize_Implementation() override {}
-	virtual void OnReady_Implementation() override {}
+	virtual void OnReady_Implementation() override;
 
 
 	// API Pública
@@ -68,6 +68,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sandbox|Movement|AntiCheat")
 	void AuthorizeServerRelocation();
 
+	UFUNCTION(BlueprintPure, Category = "Sandbox|Movement|AntiCheat")
+	float GetCalculatedMaxSpeed() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Sandbox|Stamina")
+	bool ConsumeJumpStamina();
+
 protected:
 	// Data Asset contendo as configurações de comportamentos
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sandbox|Movement")
@@ -80,6 +86,21 @@ protected:
 	// Agregador de modificadores de velocidade de caminhada/corrida/agachamento
 	UPROPERTY(Transient)
 	TObjectPtr<USBMovementModifierAggregator> SpeedModifierAggregator = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sandbox|Stamina")
+	float SprintStaminaCost = 15.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sandbox|Stamina")
+	float JumpStaminaCost = 20.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sandbox|Stamina")
+	float StaminaRegenRate = 10.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sandbox|Stamina")
+	float StaminaRegenDelay = 1.5f;
+
+	UPROPERTY(Transient)
+	float LastStaminaConsumptionTime = 0.f;
 
 	// Gancho Virtual para notificação de rede por domínio
 	virtual void OnBehaviorEjected(FGameplayTag BehaviorTag, bool bSkipServerNotify, bool bSkipClientNotify) override;
@@ -98,6 +119,8 @@ protected:
 
 	UPROPERTY(Transient)
 	bool bServerAuthorizedRelocation = false;
+
+	mutable double LastLogDesyncTime = 0.0;
 
 public:
 	// Helper para encontrar instâncias tipadas

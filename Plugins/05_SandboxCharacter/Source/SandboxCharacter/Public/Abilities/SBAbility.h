@@ -28,6 +28,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
 	float CooldownDuration = 0.0f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
+	FGameplayTag CooldownTag;
+
 	virtual void Enter_Implementation(const FSBBehaviorContext& Context) override;
 	virtual void Exit_Implementation(const FSBBehaviorContext& Context) override;
 };

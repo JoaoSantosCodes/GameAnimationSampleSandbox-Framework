@@ -463,8 +463,11 @@ void USBAttributeComponent::OnRep_PrivateAttributes()
 
 bool USBAttributeComponent::IsAttributePrivate(FGameplayTag Tag) const
 {
-	FString TagName = Tag.ToString();
-	return TagName.Contains(TEXT("Mana")) || TagName.Contains(TEXT("Stamina")) || TagName.Contains(TEXT("Ammo")) || TagName.Contains(TEXT("XP"));
+	if (const FSBAttribute* Attr = AttributesMap.Find(Tag))
+	{
+		return Attr->bIsPrivate;
+	}
+	return false;
 }
 
 void USBAttributeComponent::OnRep_ReplicatedAttributes()
@@ -477,8 +480,19 @@ void USBAttributeComponent::UpdateReplicatedAttribute(FGameplayTag Tag, const FS
 {
 	if (GetOwner() && !GetOwner()->HasAuthority() && !GIsAutomationTesting) return;
 
-	const bool bIsPrivate = IsAttributePrivate(Tag);
+	const bool bIsPrivate = Attr.bIsPrivate;
 	TArray<FSBAttributeReplicationEntry>& TargetArray = bIsPrivate ? PrivateAttributes : PublicAttributes;
+	TArray<FSBAttributeReplicationEntry>& OppositeArray = bIsPrivate ? PublicAttributes : PrivateAttributes;
+
+	// Remove do array oposto se existir para prevenir duplicações ao alternar de canal
+	for (int32 i = 0; i < OppositeArray.Num(); ++i)
+	{
+		if (OppositeArray[i].Tag == Tag)
+		{
+			OppositeArray.RemoveAt(i);
+			break;
+		}
+	}
 
 	// Upsert no array de replicação de atributos correto
 	bool bFound = false;

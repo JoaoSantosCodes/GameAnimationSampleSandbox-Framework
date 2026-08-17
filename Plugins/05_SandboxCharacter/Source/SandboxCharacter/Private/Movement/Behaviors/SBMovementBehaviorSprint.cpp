@@ -19,6 +19,12 @@ bool USBMovementBehaviorSprint::CanEnter_Implementation(const FSBBehaviorContext
 		return false;
 	}
 
+	// Bloqueia se estiver exausto
+	if (MovementStateComponent && MovementStateComponent->HasTag(FGameplayTag::RequestGameplayTag(TEXT("State.Character.Exhausted"), false)))
+	{
+		return false;
+	}
+
 	// Verifica se temos stamina suficiente para iniciar a corrida
 	if (MovementAttributeComponent)
 	{

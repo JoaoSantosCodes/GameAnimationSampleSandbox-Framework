@@ -12,22 +12,17 @@
 #include "Interfaces/SBDebugInterface.h"
 #include "Items/SBItemInstance.h"
 #include "Items/SBItemFragment.h"
+#include "Subsystems/SBEventPayloads.h"
 #include "SBInventoryComponent.generated.h"
 
 class USBItemDefinition;
 class USBInventoryComponent;
 
 UCLASS(BlueprintType)
-class SANDBOXINVENTORY_API USBInventorySlotUpdatedEventPayload : public UObject
+class SANDBOXINVENTORY_API USBInventorySlotUpdatedEventPayload : public USBInventoryEventPayload
 {
 	GENERATED_BODY()
 public:
-	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
-	TObjectPtr<APawn> TargetPawn = nullptr;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
-	TObjectPtr<USBItemInstance> ItemInstance = nullptr;
-
 	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
 	int32 StackCount = 0;
 };
@@ -187,4 +182,7 @@ private:
 
 	class USBEventSubsystem* GetEventSubsystem() const;
 	void PublishSlotUpdate(USBItemInstance* Instance, int32 StackCount);
+
+	UFUNCTION()
+	void RestoreEquippedItems();
 };

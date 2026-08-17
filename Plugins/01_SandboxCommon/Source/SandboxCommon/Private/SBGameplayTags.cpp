@@ -15,6 +15,7 @@ void FSBGameplayTags::InitializeNativeTags()
 	Instance.AddTag(Instance.State_Character_Dead, "State.Character.Dead", "Character is dead");
 	Instance.AddTag(Instance.State_Character_Stunned, "State.Character.Stunned", "Character is stunned");
 	Instance.AddTag(Instance.State_Character_Crouching, "State.Character.Crouching", "Character is crouching");
+	Instance.AddTag(Instance.State_Character_Exhausted, "State.Character.Exhausted", "Character is exhausted");
 	Instance.AddTag(Instance.State_Weapon_Firing, "State.Weapon.Firing", "Weapon is firing");
 
 	Instance.AddTag(Instance.Input_Action_Move, "Input.Action.Move", "Movement input action");
@@ -28,6 +29,7 @@ void FSBGameplayTags::InitializeNativeTags()
 	Instance.AddTag(Instance.Event_Character_Damaged, "Event.Character.Damaged", "Fired when character takes damage");
 	Instance.AddTag(Instance.Event_Character_Dead, "Event.Character.Dead", "Fired when character dies");
 	Instance.AddTag(Instance.Event_Weapon_Fire, "Event.Weapon.Fire", "Fired when weapon is shot");
+	Instance.AddTag(Instance.Combat_Action_Reload, "Combat.Action.Reload", "Reload weapon action");
 
 	Instance.AddTag(Instance.Attribute_Health, "Attribute.Health", "Health attribute tag");
 	Instance.AddTag(Instance.Attribute_Stamina, "Attribute.Stamina", "Stamina attribute tag");

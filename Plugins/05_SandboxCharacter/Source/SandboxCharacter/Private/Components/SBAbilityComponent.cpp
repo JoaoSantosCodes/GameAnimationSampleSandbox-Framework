@@ -1,6 +1,7 @@
 #include "Components/SBAbilityComponent.h"
 #include "Abilities/SBAbility.h"
 #include "Components/SBAttributeComponent.h"
+#include "Components/SBStateComponent.h"
 #include "Interfaces/SBCharacterInterface.h"
 #include "DataAssets/SBPawnDataAsset.h"
 #include "DataAssets/SBAbilitySetDataAsset.h"
@@ -185,6 +186,13 @@ bool USBAbilityComponent::RequestBehavior(FGameplayTag BehaviorTag)
 				UE_LOG(LogSandboxCharacter, Warning, TEXT("Resource consumption failed for ability %s"), *BehaviorTag.ToString());
 				return false;
 			}
+			else if (Ability->ResourceTag.MatchesTag(FGameplayTag::RequestGameplayTag(TEXT("Attribute.Mana"))))
+			{
+				if (UWorld* World = GetWorld())
+				{
+					LastManaConsumptionTime = World->GetTimeSeconds();
+				}
+			}
 		}
 	}
 
@@ -209,6 +217,14 @@ bool USBAbilityComponent::RequestBehavior(FGameplayTag BehaviorTag)
 				NewEntry.ExpiryTime = ExpiryTime;
 				CooldownsList.Entries.Add(NewEntry);
 				CooldownsList.MarkArrayDirty();
+			}
+
+			if (Ability->CooldownTag.IsValid())
+			{
+				if (USBStateComponent* StateComp = GetOwner() ? GetOwner()->FindComponentByClass<USBStateComponent>() : nullptr)
+				{
+					StateComp->AddTag(Ability->CooldownTag);
+				}
 			}
 
 			if (UWorld* World = GetWorld())
@@ -336,6 +352,26 @@ void USBAbilityComponent::ClientRollbackAbility_Implementation(FGameplayTag Beha
 				AttribComp->ClientRollbackPrediction(Ability->ResourceTag, PredictionId);
 			}
 		}
+
+		if (Ability->CooldownDuration > 0.0f)
+		{
+			int32 Index = CooldownsList.Entries.IndexOfByPredicate([&BehaviorTag](const FSBCooldownEntry& E) {
+				return E.AbilityTag == BehaviorTag;
+			});
+			if (Index != INDEX_NONE)
+			{
+				CooldownsList.Entries.RemoveAt(Index);
+				CooldownsList.MarkArrayDirty();
+			}
+
+			if (Ability->CooldownTag.IsValid())
+			{
+				if (USBStateComponent* StateComp = GetOwner() ? GetOwner()->FindComponentByClass<USBStateComponent>() : nullptr)
+				{
+					StateComp->RemoveTag(Ability->CooldownTag);
+				}
+			}
+		}
 	}
 }
 
@@ -428,6 +464,19 @@ void USBAbilityComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 			if (CurrentTime >= CooldownsList.Entries[i].ExpiryTime)
 			{
 				FGameplayTag ExpiredTag = CooldownsList.Entries[i].AbilityTag;
+
+				USBGameplayBehavior* Behavior = FindAvailableBehaviorByTag(ExpiredTag);
+				if (USBAbility* Ability = Cast<USBAbility>(Behavior))
+				{
+					if (Ability->CooldownTag.IsValid())
+					{
+						if (USBStateComponent* StateComp = GetOwner() ? GetOwner()->FindComponentByClass<USBStateComponent>() : nullptr)
+						{
+							StateComp->RemoveTag(Ability->CooldownTag);
+						}
+					}
+				}
+
 				CooldownsList.Entries.RemoveAt(i);
 				CooldownsList.MarkArrayDirty();
 
@@ -442,6 +491,28 @@ void USBAbilityComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 						CooldownPayload->Duration = 0.0f;
 
 						EventSubsystem->PublishEvent(FGameplayTag::RequestGameplayTag(TEXT("Event.Ability.CooldownEnded")), CooldownPayload);
+					}
+				}
+			}
+		}
+
+		// Passive Mana Regeneration (Authority-only)
+		if (GetOwner() && GetOwner()->HasAuthority())
+		{
+			if (CurrentTime - LastManaConsumptionTime >= ManaRegenDelay)
+			{
+				ISBCharacterInterface* CharInterface = Cast<ISBCharacterInterface>(GetOwner());
+				if (USBAttributeComponent* AttribComp = CharInterface ? Cast<USBAttributeComponent>(CharInterface->GetAttributeComponent_Implementation()) : nullptr)
+				{
+					FGameplayTag ManaTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Mana"), false);
+					FSBAttribute ManaAttr;
+					if (ManaTag.IsValid() && AttribComp->GetAttribute(ManaTag, ManaAttr))
+					{
+						if (ManaAttr.BaseValue < ManaAttr.MaxValue)
+						{
+							float NewMana = FMath::Min(ManaAttr.MaxValue, ManaAttr.BaseValue + (ManaRegenRate * DeltaTime));
+							AttribComp->SetAttributeBaseValue(ManaTag, NewMana);
+						}
 					}
 				}
 			}

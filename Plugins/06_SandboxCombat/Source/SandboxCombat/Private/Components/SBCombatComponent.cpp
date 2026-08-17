@@ -112,6 +112,32 @@ void USBCombatComponent::OnInitialize_Implementation()
 	}
 }
 
+void USBCombatComponent::OnReady_Implementation()
+{
+	Super::OnReady_Implementation();
+
+	AActor* Owner = GetOwner();
+	if (Owner && Owner->HasAuthority())
+	{
+		USBAttributeComponent* AttrComp = Owner->FindComponentByClass<USBAttributeComponent>();
+		if (AttrComp)
+		{
+			FGameplayTag AmmoTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Weapon.Ammo"), false);
+			FSBAttribute DummyAmmo;
+			if (AmmoTag.IsValid() && !AttrComp->GetAttribute(AmmoTag, DummyAmmo))
+			{
+				FSBAttribute AmmoAttr;
+				AmmoAttr.BaseValue = 30.f;
+				AmmoAttr.CurrentValue = 30.f;
+				AmmoAttr.MaxValue = 30.f;
+				AmmoAttr.MinValue = 0.f;
+				AmmoAttr.bIsPrivate = true; // Replicada via COND_OwnerOnly
+				AttrComp->RegisterAttribute(AmmoTag, AmmoAttr);
+			}
+		}
+	}
+}
+
 void USBCombatComponent::OnShutdown_Implementation()
 {
 	AActor* Owner = GetOwner();
@@ -474,6 +500,7 @@ void USBCombatComponent::OnItemEquipped(FGameplayTag EventTag, UObject* Payload)
 						AActor* NewWeaponActor = GetWorld()->SpawnActor<AActor>(DefAsset->WeaponActorClass, Owner->GetActorLocation(), Owner->GetActorRotation(), SpawnParams);
 						if (NewWeaponActor)
 						{
+							NewWeaponActor->SetReplicates(true);
 							if (NewWeaponActor->GetRootComponent())
 							{
 								NewWeaponActor->GetRootComponent()->SetMobility(EComponentMobility::Movable);
@@ -575,4 +602,83 @@ void USBCombatComponent::GetDebugDescription_Implementation(TArray<FSBDebugLine>
 			OutDebugLines.Add(Line);
 		}
 	}
+}
+
+void USBCombatComponent::AddAgro(APawn* TargetPawn, float Amount)
+{
+	if (!TargetPawn || Amount <= 0.0f)
+	{
+		return;
+	}
+
+	AActor* Owner = GetOwner();
+	if (Owner && Owner->HasAuthority())
+	{
+		float& CurrentAgro = AgroTable.FindOrAdd(TargetPawn);
+		CurrentAgro += Amount;
+	}
+}
+
+void USBCombatComponent::ClearAgro(APawn* TargetPawn)
+{
+	if (!TargetPawn)
+	{
+		return;
+	}
+
+	AActor* Owner = GetOwner();
+	if (Owner && Owner->HasAuthority())
+	{
+		AgroTable.Remove(TargetPawn);
+	}
+}
+
+void USBCombatComponent::ClearAllAgro()
+{
+	AActor* Owner = GetOwner();
+	if (Owner && Owner->HasAuthority())
+	{
+		AgroTable.Empty();
+	}
+}
+
+APawn* USBCombatComponent::GetHighestAgroTarget() const
+{
+	AActor* Owner = GetOwner();
+	if (!Owner || !Owner->HasAuthority())
+	{
+		return nullptr;
+	}
+
+	APawn* BestTarget = nullptr;
+	float HighestAgro = -1.0f;
+
+	TArray<TObjectPtr<APawn>> InvalidKeys;
+
+	for (auto It = AgroTable.CreateConstIterator(); It; ++It)
+	{
+		APawn* PawnKey = It.Key().Get();
+		if (!IsValid(PawnKey))
+		{
+			InvalidKeys.Add(It.Key());
+			continue;
+		}
+
+		if (It.Value() > HighestAgro)
+		{
+			HighestAgro = It.Value();
+			BestTarget = PawnKey;
+		}
+	}
+
+	if (InvalidKeys.Num() > 0)
+	{
+		USBCombatComponent* MutableThis = const_cast<USBCombatComponent*>(this);
+		for (const auto& Key : InvalidKeys)
+		{
+			MutableThis->AgroTable.Remove(Key);
+		}
+	}
+
+	return BestTarget;
 }

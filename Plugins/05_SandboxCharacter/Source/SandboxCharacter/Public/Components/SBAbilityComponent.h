@@ -111,6 +111,15 @@ protected:
 	UPROPERTY(Transient)
 	FSBRPCRateLimiter AbilityRPCLimiter;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sandbox|Abilities")
+	float ManaRegenRate = 5.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sandbox|Abilities")
+	float ManaRegenDelay = 2.0f;
+
+	UPROPERTY(Transient)
+	float LastManaConsumptionTime = 0.0f;
+
 	void Input_AbilityInputPressed(FGameplayTag InputTag);
 	void Input_AbilityInputReleased(FGameplayTag InputTag);
 };
