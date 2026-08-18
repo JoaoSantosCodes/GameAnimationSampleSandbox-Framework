@@ -87,18 +87,6 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<USBMovementModifierAggregator> SpeedModifierAggregator = nullptr;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sandbox|Stamina")
-	float SprintStaminaCost = 15.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sandbox|Stamina")
-	float JumpStaminaCost = 20.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sandbox|Stamina")
-	float StaminaRegenRate = 10.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sandbox|Stamina")
-	float StaminaRegenDelay = 1.5f;
-
 	UPROPERTY(Transient)
 	float LastStaminaConsumptionTime = 0.f;
 

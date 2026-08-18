@@ -1,0 +1,5 @@
+{
+  "summary": "Simplified usage manual updated to v1.10.0, outlining setup steps for private attributes (bIsPrivate), lag compensation, status effects, visual weapon sockets, and movement anti-cheat (GetCalculatedMaxSpeed + wall-shot protections).",
+  "updatedAt": "2026-08-15T21:58:57.494654400Z",
+  "userFacing": true
+}

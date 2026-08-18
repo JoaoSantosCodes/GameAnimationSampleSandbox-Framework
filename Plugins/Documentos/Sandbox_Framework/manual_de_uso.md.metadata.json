@@ -1,0 +1,5 @@
+{
+  "summary": "Updated usage manual reflecting v1.10.0 version, documenting lag compensation, RPC rate-limiting, status effects, visual weapon attachments, advanced movement anti-cheat (GetCalculatedMaxSpeed), and conditional owner-only replication.",
+  "updatedAt": "2026-08-15T21:58:43.032705400Z",
+  "userFacing": true
+}

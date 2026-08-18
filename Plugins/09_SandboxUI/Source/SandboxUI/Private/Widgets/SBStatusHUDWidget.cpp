@@ -1,6 +1,7 @@
 #include "Widgets/SBStatusHUDWidget.h"
 #include "Components/ProgressBar.h"
 #include "Subsystems/SBEventPayloads.h"
+#include "SBGameplayTags.h"
 
 USBStatusHUDWidget::USBStatusHUDWidget(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -25,7 +26,9 @@ void USBStatusHUDWidget::OnAttributeChanged(FGameplayTag EventTag, UObject* Payl
 
 	if (AttrPayload->TargetPawn != GetOwningPlayerPawn()) return;
 
-	if (AttrPayload->AttributeTag == FGameplayTag::RequestGameplayTag(TEXT("Attribute.Health")))
+	const FSBGameplayTags& Tags = FSBGameplayTags::Get();
+
+	if (AttrPayload->AttributeTag == Tags.Attribute_Health)
 	{
 		if (PB_Health)
 		{
@@ -33,7 +36,7 @@ void USBStatusHUDWidget::OnAttributeChanged(FGameplayTag EventTag, UObject* Payl
 			PB_Health->SetPercent(FMath::Clamp(Pct, 0.0f, 1.0f));
 		}
 	}
-	else if (AttrPayload->AttributeTag == FGameplayTag::RequestGameplayTag(TEXT("Attribute.Mana")))
+	else if (AttrPayload->AttributeTag == Tags.Attribute_Mana)
 	{
 		if (PB_Mana)
 		{
@@ -41,7 +44,7 @@ void USBStatusHUDWidget::OnAttributeChanged(FGameplayTag EventTag, UObject* Payl
 			PB_Mana->SetPercent(FMath::Clamp(Pct, 0.0f, 1.0f));
 		}
 	}
-	else if (AttrPayload->AttributeTag == FGameplayTag::RequestGameplayTag(TEXT("Attribute.Stamina")))
+	else if (AttrPayload->AttributeTag == Tags.Attribute_Stamina)
 	{
 		if (PB_Stamina)
 		{

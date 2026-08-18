@@ -3,12 +3,165 @@
 #include "Components/SBStateComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine/World.h"
+#include "Serialization/ObjectAndNameAsStringProxyArchive.h"
+#include "Subsystems/SBSaveSubsystemConcrete.h"
 
 USBStatusEffectComponent::USBStatusEffectComponent()
+	: Super(FObjectInitializer::Get())
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.bStartWithTickEnabled = true;
 	SetIsReplicatedByDefault(true);
+}
+
+void USBStatusEffectComponent::GetDebugDescription_Implementation(TArray<FSBDebugLine>& OutDebugLines) const
+{
+	FSBDebugLine HeaderLine;
+	HeaderLine.Label = TEXT("Status Effects");
+	HeaderLine.Value = FString::Printf(TEXT("%d active"), ActiveEffects.Entries.Num());
+	HeaderLine.bIsHeader = true;
+	OutDebugLines.Add(HeaderLine);
+
+	for (const FSBStatusEffectEntry& Entry : ActiveEffects.Entries)
+	{
+		float Remaining = GetEffectRemainingTime(Entry.EffectTag);
+		FString TimeStr = Remaining < 0.0f ? TEXT("Permanent") : FString::Printf(TEXT("%.1fs"), Remaining);
+
+		FSBDebugLine EffectLine;
+		EffectLine.Label = Entry.EffectTag.ToString();
+		EffectLine.Value = TimeStr;
+		EffectLine.bIsHeader = false;
+		OutDebugLines.Add(EffectLine);
+	}
+}
+
+bool USBStatusEffectComponent::SaveComponentData_Implementation(UObject* SavePayload)
+{
+	AActor* Owner = GetOwner();
+	if (!Owner || !Owner->HasAuthority())
+	{
+		return false;
+	}
+
+	USBSavePayload* Payload = Cast<USBSavePayload>(SavePayload);
+	if (!Payload)
+	{
+		return false;
+	}
+
+	FSBSavedStatusEffectList SaveData;
+	SaveData.Effects.Reserve(ActiveEffects.Entries.Num());
+
+	float CurrentTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
+
+	for (const FSBStatusEffectEntry& Entry : ActiveEffects.Entries)
+	{
+		FSBSavedStatusEffect SavedEffect;
+		SavedEffect.EffectTag = Entry.EffectTag;
+		SavedEffect.RemainingDuration = Entry.Duration > 0.0f ? FMath::Max(0.0f, Entry.ExpiryTime - CurrentTime) : -1.0f;
+		SavedEffect.DefinitionPath = Entry.Definition ? Entry.Definition->GetPathName() : FString();
+		SaveData.Effects.Add(SavedEffect);
+	}
+
+	TArray<uint8> BinaryData;
+	FMemoryWriter Writer(BinaryData);
+	FObjectAndNameAsStringProxyArchive Archive(Writer, true);
+	Archive.ArIsSaveGame = true;
+
+	FSBSavedStatusEffectList::StaticStruct()->SerializeItem(Archive, &SaveData, nullptr);
+
+	Payload->WriteBinaryData(GetPathName(), BinaryData);
+	return true;
+}
+
+bool USBStatusEffectComponent::LoadComponentData_Implementation(UObject* SavePayload)
+{
+	AActor* Owner = GetOwner();
+	if (!Owner || !Owner->HasAuthority())
+	{
+		return false;
+	}
+
+	USBSavePayload* Payload = Cast<USBSavePayload>(SavePayload);
+	if (!Payload)
+	{
+		return false;
+	}
+
+	TArray<uint8> BinaryData;
+	if (!Payload->ReadBinaryData(GetPathName(), BinaryData) || BinaryData.Num() <= 0)
+	{
+		return false;
+	}
+
+	FSBSavedStatusEffectList SaveData;
+	FMemoryReader Reader(BinaryData);
+	FObjectAndNameAsStringProxyArchive Archive(Reader, true);
+	Archive.ArIsSaveGame = true;
+
+	FSBSavedStatusEffectList::StaticStruct()->SerializeItem(Archive, &SaveData, nullptr);
+
+	TArray<FGameplayTag> ExistingEffects;
+	ExistingEffects.Reserve(ActiveEffects.Entries.Num());
+	for (const FSBStatusEffectEntry& Entry : ActiveEffects.Entries)
+	{
+		ExistingEffects.Add(Entry.EffectTag);
+	}
+
+	for (const FGameplayTag& EffectTag : ExistingEffects)
+	{
+		RemoveStatusEffect(EffectTag);
+	}
+
+	float CurrentTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
+	for (const FSBSavedStatusEffect& SavedEffect : SaveData.Effects)
+	{
+		const USBStatusEffectDefinition* Definition = Cast<USBStatusEffectDefinition>(StaticLoadObject(USBStatusEffectDefinition::StaticClass(), nullptr, *SavedEffect.DefinitionPath));
+		if (!Definition || !SavedEffect.EffectTag.IsValid() || SavedEffect.RemainingDuration == 0.0f)
+		{
+			continue;
+		}
+
+		FSBStatusEffectEntry NewEntry;
+		NewEntry.EffectTag = SavedEffect.EffectTag;
+		NewEntry.Definition = Definition;
+		NewEntry.Duration = SavedEffect.RemainingDuration > 0.0f ? SavedEffect.RemainingDuration : 0.0f;
+		NewEntry.ExpiryTime = SavedEffect.RemainingDuration > 0.0f ? CurrentTime + SavedEffect.RemainingDuration : 0.0f;
+		NewEntry.Period = Definition->DefaultPeriod;
+		NewEntry.LastPeriodTriggerTime = CurrentTime;
+
+		FSBStatusEffectEntry& AddedEntry = ActiveEffects.Entries.Add_GetRef(NewEntry);
+		ActiveEffects.MarkItemDirty(AddedEntry);
+
+		if (!CachedStateComponent)
+		{
+			CachedStateComponent = GetOwner()->FindComponentByClass<USBStateComponent>();
+		}
+		if (!CachedAttributeComponent)
+		{
+			CachedAttributeComponent = GetOwner()->FindComponentByClass<USBAttributeComponent>();
+		}
+
+		if (CachedStateComponent)
+		{
+			for (auto It = Definition->GrantedTags.CreateConstIterator(); It; ++It)
+			{
+				CachedStateComponent->AddTag(*It);
+			}
+		}
+
+		if (CachedAttributeComponent)
+		{
+			for (const FSBStatusEffectModifier& ModEntry : Definition->AttributeModifiers)
+			{
+				FSBAttributeModifier AppliedMod = ModEntry.Modifier;
+				AppliedMod.SourceTag = Definition->EffectTag;
+				CachedAttributeComponent->ApplyModifier(ModEntry.AttributeTag, AppliedMod);
+			}
+		}
+	}
+
+	return true;
 }
 
 void USBStatusEffectComponent::BeginPlay()

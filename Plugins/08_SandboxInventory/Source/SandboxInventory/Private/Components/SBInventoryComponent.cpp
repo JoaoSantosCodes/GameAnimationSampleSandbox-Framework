@@ -233,7 +233,7 @@ void USBInventoryComponent::ServerEquipItem(USBItemInstance* ItemInstance)
 		return;
 	}
 
-	UClass* FragmentClass = FindObject<UClass>(nullptr, TEXT("/Script/SandboxInventory.SBItemFragment_Equippable"));
+	TSubclassOf<USBItemFragment> FragmentClass = EquippableFragmentClass;
 	if (!FragmentClass)
 	{
 		FragmentClass = USBItemFragment_Equippable::StaticClass();
@@ -268,7 +268,7 @@ void USBInventoryComponent::ServerUnequipItem(USBItemInstance* ItemInstance)
 		return;
 	}
 
-	UClass* FragmentClass = FindObject<UClass>(nullptr, TEXT("/Script/SandboxInventory.SBItemFragment_Equippable"));
+	TSubclassOf<USBItemFragment> FragmentClass = EquippableFragmentClass;
 	if (!FragmentClass)
 	{
 		FragmentClass = USBItemFragment_Equippable::StaticClass();

@@ -1,0 +1,5 @@
+{
+  "summary": "Sandbox Framework Plugin Specification (SFPS v1.0.0) atualizado com a unificação de contextos via FSBBehaviorContext, consolidação completa das interfaces de fundação (ISBInitializable, ISBTickable, ISBComponentInterface, etc.) e regras de cache do Message Router.",
+  "updatedAt": "2026-08-03T05:10:11.715122300Z",
+  "userFacing": true
+}

@@ -1,9 +1,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "Components/GameFrameworkComponent.h"
 #include "GameplayTagContainer.h"
 #include "Net/Serialization/FastArraySerializer.h"
+#include "Interfaces/SBComponentInterface.h"
+#include "Interfaces/SBSaveInterface.h"
+#include "Interfaces/SBDebugInterface.h"
 #include "DataAssets/SBStatusEffectDefinition.h"
 #include "SBStatusEffectComponent.generated.h"
 
@@ -59,16 +62,56 @@ struct TStructOpsTypeTraits<FSBStatusEffectList> : public TStructOpsTypeTraitsBa
 	enum { WithNetDeltaSerializer = true };
 };
 
+USTRUCT()
+struct FSBSavedStatusEffect
+{
+	GENERATED_BODY()
+
+	UPROPERTY(SaveGame)
+	FGameplayTag EffectTag;
+
+	UPROPERTY(SaveGame)
+	float RemainingDuration = 0.0f;
+
+	UPROPERTY(SaveGame)
+	FString DefinitionPath;
+};
+
+USTRUCT()
+struct FSBSavedStatusEffectList
+{
+	GENERATED_BODY()
+
+	UPROPERTY(SaveGame)
+	TArray<FSBSavedStatusEffect> Effects;
+};
+
 /**
  * Componente autoritativo responsável por gerenciar a aplicação e expiração de Status Effects temporários e periódicos.
  */
 UCLASS(BlueprintType, meta = (BlueprintSpawnableComponent))
-class SANDBOXCHARACTER_API USBStatusEffectComponent : public UActorComponent
+class SANDBOXCHARACTER_API USBStatusEffectComponent : public UGameFrameworkComponent, public ISBComponentInterface, public ISBSaveInterface, public ISBDebugInterface
 {
 	GENERATED_BODY()
 
 public:
 	USBStatusEffectComponent();
+
+	// ISBDebugInterface
+	virtual void GetDebugDescription_Implementation(TArray<FSBDebugLine>& OutDebugLines) const override;
+
+	// ISBComponentInterface
+	virtual void OnComponentCreated_Implementation() override {}
+	virtual void OnPreInitialize_Implementation() override {}
+	virtual void OnInitialize_Implementation() override {}
+	virtual void OnPostInitialize_Implementation() override {}
+	virtual void OnReady_Implementation() override {}
+	virtual void OnShutdown_Implementation() override {}
+
+	// ISBSaveInterface
+	virtual bool SaveComponentData_Implementation(UObject* SavePayload) override;
+	virtual bool LoadComponentData_Implementation(UObject* SavePayload) override;
+	virtual int32 GetSavePriority_Implementation() const override { return 60; }
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Sandbox|StatusEffects")
 	void ApplyStatusEffect(const USBStatusEffectDefinition* Definition);

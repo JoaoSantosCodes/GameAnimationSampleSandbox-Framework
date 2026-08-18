@@ -1,0 +1,5 @@
+{
+  "summary": "Detailed usage manual updated to v1.10.0, containing step-by-step instructions on setting up conditional attributes (bIsPrivate), lag compensation subsystem, dynamic weapon sockets, status effects, and advanced anti-cheat (GetCalculatedMaxSpeed + dynamic wall-shot protection checks).",
+  "updatedAt": "2026-08-15T21:58:51.740072600Z",
+  "userFacing": true
+}

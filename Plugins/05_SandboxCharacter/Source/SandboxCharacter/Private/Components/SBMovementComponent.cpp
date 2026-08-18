@@ -149,6 +149,12 @@ void USBMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 	USBStateComponent* StateComp = Owner->FindComponentByClass<USBStateComponent>();
 	if (AttrComp && StateComp)
 	{
+		float SprintCost = DefaultMovementConfig ? DefaultMovementConfig->StaminaConfig.SprintCost : 15.0f;
+		float JumpCost = DefaultMovementConfig ? DefaultMovementConfig->StaminaConfig.JumpCost : 20.0f;
+		float RegenRate = DefaultMovementConfig ? DefaultMovementConfig->StaminaConfig.RegenRate : 10.0f;
+		float RegenDelay = DefaultMovementConfig ? DefaultMovementConfig->StaminaConfig.RegenDelay : 1.5f;
+		float ExhaustionThreshold = DefaultMovementConfig ? DefaultMovementConfig->StaminaConfig.ExhaustionRecoveryThreshold : 30.0f;
+
 		float CurrentTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.f;
 		FGameplayTag SprintStateTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Sprinting"), false);
 		FGameplayTag ExhaustedTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Exhausted"), false);
@@ -159,20 +165,20 @@ void USBMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 		if (bIsSprinting)
 		{
 			float CurrentStamina = AttrComp->GetAttributeValue(StaminaTag);
-			float NewStamina = FMath::Max(0.f, CurrentStamina - (SprintStaminaCost * DeltaTime));
+			float NewStamina = FMath::Max(0.f, CurrentStamina - (SprintCost * DeltaTime));
 			AttrComp->SetAttributeBaseValue(StaminaTag, NewStamina);
 			LastStaminaConsumptionTime = CurrentTime;
 		}
 		else
 		{
-			if (CurrentTime - LastStaminaConsumptionTime >= StaminaRegenDelay)
+			if (CurrentTime - LastStaminaConsumptionTime >= RegenDelay)
 			{
 				FSBAttribute StaminaAttr;
 				if (StaminaTag.IsValid() && AttrComp->GetAttribute(StaminaTag, StaminaAttr))
 				{
 					if (StaminaAttr.BaseValue < StaminaAttr.MaxValue)
 					{
-						float NewStamina = FMath::Min(StaminaAttr.MaxValue, StaminaAttr.BaseValue + (StaminaRegenRate * DeltaTime));
+						float NewStamina = FMath::Min(StaminaAttr.MaxValue, StaminaAttr.BaseValue + (RegenRate * DeltaTime));
 						AttrComp->SetAttributeBaseValue(StaminaTag, NewStamina);
 					}
 				}
@@ -192,7 +198,7 @@ void USBMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 					StopBehavior(SprintBehaviorTag);
 				}
 			}
-			else if (CurrentStamina >= 30.f && StateComp->HasTag(ExhaustedTag))
+			else if (CurrentStamina >= ExhaustionThreshold && StateComp->HasTag(ExhaustedTag))
 			{
 				StateComp->RemoveTag(ExhaustedTag);
 			}
@@ -236,8 +242,11 @@ void USBMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 	float MaxSpeed = GetCalculatedMaxSpeed();
 
 	// Margem de segurança para acomodar latência, frames lentos e desvios aceitáveis
-	float ExtraTolerance = 300.0f;
-	float MaxAllowedDistance = (MaxSpeed + ExtraTolerance) * DeltaTime + 200.0f;
+	float SpeedTolerance = DefaultMovementConfig ? DefaultMovementConfig->AntiCheatConfig.SpeedTolerance : 300.0f;
+	float BaseDistanceMargin = DefaultMovementConfig ? DefaultMovementConfig->AntiCheatConfig.BaseDistanceMargin : 200.0f;
+	float WarpThreshold = DefaultMovementConfig ? DefaultMovementConfig->AntiCheatConfig.WarpThreshold : 3000.0f;
+
+	float MaxAllowedDistance = (MaxSpeed + SpeedTolerance) * DeltaTime + BaseDistanceMargin;
 
 	bool bIsCheatDetected = false;
 
@@ -247,8 +256,8 @@ void USBMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 		bIsCheatDetected = true;
 	}
 
-	// 2. Detecção de Teleporte instantâneo (Warp Hack - limite de 3000 unidades)
-	if (FVector::Dist(CurrentLocation, LastValidatedLocation) > 3000.0f)
+	// 2. Detecção de Teleporte instantâneo (Warp Hack)
+	if (FVector::Dist(CurrentLocation, LastValidatedLocation) > WarpThreshold)
 	{
 		bIsCheatDetected = true;
 	}
@@ -322,7 +331,7 @@ void USBMovementComponent::LoadMovementConfig(USBMovementConfigDataAsset* NewCon
 			if (BehaviorInstance)
 			{
 				BehaviorInstance->Initialize(this, ConfigEntry.DefinitionAsset);
-				AvailableBehaviors.Add(BehaviorInstance);
+				AvailableBehaviors.AddUnique(BehaviorInstance);
 			}
 		}
 	}
@@ -461,6 +470,9 @@ bool USBMovementComponent::ConsumeJumpStamina()
 	USBStateComponent* StateComp = GetOwner()->FindComponentByClass<USBStateComponent>();
 	if (AttrComp && StateComp)
 	{
+		float JumpCost = DefaultMovementConfig ? DefaultMovementConfig->StaminaConfig.JumpCost : 20.0f;
+		float ExhaustionThreshold = DefaultMovementConfig ? DefaultMovementConfig->StaminaConfig.ExhaustionRecoveryThreshold : 30.0f;
+
 		FGameplayTag ExhaustedTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Exhausted"), false);
 		if (ExhaustedTag.IsValid() && StateComp->HasTag(ExhaustedTag))
 		{
@@ -469,9 +481,9 @@ bool USBMovementComponent::ConsumeJumpStamina()
 
 		FGameplayTag StaminaTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Stamina"), false);
 		float CurrentStamina = AttrComp->GetAttributeValue(StaminaTag);
-		if (CurrentStamina >= JumpStaminaCost)
+		if (CurrentStamina >= JumpCost)
 		{
-			float NewStamina = FMath::Max(0.f, CurrentStamina - JumpStaminaCost);
+			float NewStamina = FMath::Max(0.f, CurrentStamina - JumpCost);
 			AttrComp->SetAttributeBaseValue(StaminaTag, NewStamina);
 			LastStaminaConsumptionTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.f;
 

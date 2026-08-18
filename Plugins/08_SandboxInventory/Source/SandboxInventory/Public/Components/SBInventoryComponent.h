@@ -12,6 +12,7 @@
 #include "Interfaces/SBDebugInterface.h"
 #include "Items/SBItemInstance.h"
 #include "Items/SBItemFragment.h"
+#include "Items/SBItemFragment_Equippable.h"
 #include "Subsystems/SBEventPayloads.h"
 #include "SBInventoryComponent.generated.h"
 
@@ -175,6 +176,10 @@ public:
 protected:
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Inventory")
 	FSBInventoryList InventoryList;
+
+	// Configurável via Data Asset - classe do fragmento equipável
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory|Fragments")
+	TSubclassOf<USBItemFragment_Equippable> EquippableFragmentClass;
 
 private:
 	UPROPERTY(Transient)

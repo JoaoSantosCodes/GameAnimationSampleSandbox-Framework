@@ -39,3 +39,12 @@ Plugins/*/Content/
 !Plugins/09_SandboxUI/Content/
 !Plugins/10_SandboxDebug/Content/
 !Plugins/11_SandboxEditor/Content/
+
+# Claude Code local settings may contain machine-specific secrets
+.claude/settings.local.json
+
+# External tools & dependencies
+unreal-mcp/
+__pycache__/
+*.py[cod]
+.venv/
