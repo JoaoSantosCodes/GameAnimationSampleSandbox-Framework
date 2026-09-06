@@ -7,6 +7,7 @@
 #include "Components/TextBlock.h"
 #include "WidgetBlueprint.h"
 #include "Blueprint/WidgetBlueprintGeneratedClass.h"
+#include "K2Node_ComponentBoundEvent.h"
 // We'll create widgets using regular Factory classes
 #include "Factories/Factory.h"
 // Remove problematic includes that don't exist in UE 5.5
@@ -222,6 +223,9 @@ TSharedPtr<FJsonObject> FUnrealMCPUMGCommands::HandleAddTextBlockToWidget(const 
 	// nomeado da arvore: WidgetBlueprintCompiler.cpp:760 dispara ensure quando encontra um widget
 	// ausente do mapa, e o compilador so preenche sozinho quando o mapa esta inteiramente vazio.
 	// Sem esta chamada, adicionar um widget por codigo estoura ensure na primeira compilacao.
+	// Sem bIsVariable a classe compilada nao ganha FObjectProperty para este widget, e sem essa
+	// propriedade nao ha como criar evento vinculado (bind_widget_event).
+	TextBlock->bIsVariable = true;
 	if (!WidgetBlueprint->WidgetVariableNameToGuidMap.Contains(TextBlock->GetFName()))
 	{
 		WidgetBlueprint->OnVariableAdded(TextBlock->GetFName());
@@ -334,6 +338,9 @@ TSharedPtr<FJsonObject> FUnrealMCPUMGCommands::HandleAddButtonToWidget(const TSh
 		return FUnrealMCPCommonUtils::CreateErrorResponse(TEXT("Failed to create Button widget"));
 	}
 
+	// Sem bIsVariable a classe compilada nao ganha FObjectProperty para este widget, e sem essa
+	// propriedade nao ha como criar evento vinculado (bind_widget_event).
+	Button->bIsVariable = true;
 	if (!WidgetBlueprint->WidgetVariableNameToGuidMap.Contains(Button->GetFName()))
 	{
 		WidgetBlueprint->OnVariableAdded(Button->GetFName());
@@ -459,38 +466,42 @@ TSharedPtr<FJsonObject> FUnrealMCPUMGCommands::HandleBindWidgetEvent(const TShar
 		
 		const FVector2D NodePos(200, MaxHeight + 200);
 
-		// Call CreateNewBoundEventForClass, which returns void, so we can't capture the return value directly
-		// We'll need to find the node after creating it
-		FKismetEditorUtilities::CreateNewBoundEventForClass(
-			Widget->GetClass(),
+		// Evento vinculado exige a FObjectProperty do widget na classe compilada. Antes era
+		// passado nullptr, e sem a propriedade nao ha o que vincular — o no nunca era criado.
+		FObjectProperty* WidgetProperty = FindFProperty<FObjectProperty>(
+			WidgetBlueprint->SkeletonGeneratedClass ? WidgetBlueprint->SkeletonGeneratedClass : WidgetBlueprint->GeneratedClass,
+			*WidgetName);
+
+		if (!WidgetProperty)
+		{
+			return FUnrealMCPCommonUtils::CreateErrorResponse(FString::Printf(
+				TEXT("O widget '%s' nao e uma variavel da classe compilada. Recompile o Widget Blueprint apos adiciona-lo."),
+				*WidgetName));
+		}
+
+		FKismetEditorUtilities::CreateNewBoundEventForComponent(
+			Widget,
 			FName(*EventName),
 			WidgetBlueprint,
-			nullptr  // We don't need a specific property binding
+			WidgetProperty,
+			/*bShouldJumpToNode=*/false
 		);
 
-		// Now find the newly created node
-		TArray<UK2Node_Event*> UpdatedEventNodes;
-		FBlueprintEditorUtils::GetAllNodesOfClass<UK2Node_Event>(WidgetBlueprint, UpdatedEventNodes);
-		
-		for (UK2Node_Event* Node : UpdatedEventNodes)
+		// Evento vinculado nao usa CustomFunctionName igual ao nome do evento: o nome gerado tem
+		// a forma BndEvt__<widget>_<...>. Procurar pela API propria da engine.
+		if (const UK2Node_ComponentBoundEvent* Bound =
+				FKismetEditorUtilities::FindBoundEventForComponent(WidgetBlueprint, FName(*EventName), FName(*WidgetName)))
 		{
-			if (Node->CustomFunctionName == FName(*EventName) && Node->EventReference.GetMemberParentClass() == Widget->GetClass())
-			{
-				EventNode = Node;
-				
-				// Set position of the node
-				EventNode->NodePosX = NodePos.X;
-				EventNode->NodePosY = NodePos.Y;
-				
-				break;
-			}
+			EventNode = const_cast<UK2Node_ComponentBoundEvent*>(Bound);
+			EventNode->NodePosX = NodePos.X;
+			EventNode->NodePosY = NodePos.Y;
 		}
 	}
 
 	if (!EventNode)
 	{
-		Response->SetStringField(TEXT("error"), TEXT("Failed to create event node"));
-		return Response;
+		return FUnrealMCPCommonUtils::CreateErrorResponse(FString::Printf(
+			TEXT("Nao foi possivel criar o evento '%s' para o widget '%s'."), *EventName, *WidgetName));
 	}
 
 	// Save the Widget Blueprint
