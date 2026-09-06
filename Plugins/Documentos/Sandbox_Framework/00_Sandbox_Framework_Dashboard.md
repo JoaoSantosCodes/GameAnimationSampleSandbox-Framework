@@ -32,6 +32,7 @@ Use os links abaixo para navegar pelas notas e especificações de design do fra
 *   📘 **MANUAL DE USO DO PRODUTO**: [[manual_de_uso|Manual de Utilização do Framework]]
 *   🧪 **BATERIA DE TESTES**: [[bateria_de_testes|Guia da Bateria de Testes Automatizados]]
 *   ⏳ **LINHA DO TEMPO & ROADMAP**: [[linha_do_tempo_e_roadmap|Roadmap e Linha do Tempo Expandida]]
+*   🏪 **PUBLICAÇÃO NA FAB**: [[roadmap_publicacao_fab|Roadmap de Publicação dos Plugins na Loja]]
 
 ---
 
