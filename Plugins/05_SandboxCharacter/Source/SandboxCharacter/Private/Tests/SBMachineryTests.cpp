@@ -115,7 +115,7 @@ void FSBMachineryTestsSpec::Define()
 		TestTrue("Operator has Lifting tag", OperatorStateComp->HasTag(Tags.State_Movement_Machinery_Lifting));
 
 		MachineryComp->DetachPayload();
-		TestEqual("State is Idling after detach", MachineryComp->GetMachineryState() != ESBMachineryState::Lifting, true);
+		TestEqual("State is Idling after detach", (int32)MachineryComp->GetMachineryState(), (int32)ESBMachineryState::Idling);
 		TestFalse("Operator Lifting tag removed", OperatorStateComp->HasTag(Tags.State_Movement_Machinery_Lifting));
 	});
 
