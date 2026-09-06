@@ -154,6 +154,10 @@ TSharedPtr<FJsonObject> FUnrealMCPUMGCommands::HandleCreateUMGWidgetBlueprint(co
 	{
 		UCanvasPanel* RootCanvas = WidgetBlueprint->WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass());
 		WidgetBlueprint->WidgetTree->RootWidget = RootCanvas;
+		if (RootCanvas && !WidgetBlueprint->WidgetVariableNameToGuidMap.Contains(RootCanvas->GetFName()))
+		{
+			WidgetBlueprint->OnVariableAdded(RootCanvas->GetFName());
+		}
 	}
 
 	// Mark the package dirty and notify asset registry
@@ -212,6 +216,15 @@ TSharedPtr<FJsonObject> FUnrealMCPUMGCommands::HandleAddTextBlockToWidget(const 
 	if (!TextBlock)
 	{
 		return FUnrealMCPCommonUtils::CreateErrorResponse(TEXT("Failed to create Text Block widget"));
+	}
+
+	// Registrar a variavel no mapa de GUIDs do Widget Blueprint. A UE 5 exige isso de todo widget
+	// nomeado da arvore: WidgetBlueprintCompiler.cpp:760 dispara ensure quando encontra um widget
+	// ausente do mapa, e o compilador so preenche sozinho quando o mapa esta inteiramente vazio.
+	// Sem esta chamada, adicionar um widget por codigo estoura ensure na primeira compilacao.
+	if (!WidgetBlueprint->WidgetVariableNameToGuidMap.Contains(TextBlock->GetFName()))
+	{
+		WidgetBlueprint->OnVariableAdded(TextBlock->GetFName());
 	}
 
 	// Set initial text
@@ -312,28 +325,37 @@ TSharedPtr<FJsonObject> FUnrealMCPUMGCommands::HandleAddButtonToWidget(const TSh
 		return Response;
 	}
 
-	// Create Button widget
-	UButton* Button = NewObject<UButton>(WidgetBlueprint->GeneratedClass->GetDefaultObject(), UButton::StaticClass(), *WidgetName);
+	// Construir pela WidgetTree, nao com NewObject sobre o CDO da classe gerada. Widget criado
+	// fora da arvore nao pertence ao Blueprint: nao aparece no Designer, nao vira variavel e some
+	// na recompilacao.
+	UButton* Button = WidgetBlueprint->WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), *WidgetName);
 	if (!Button)
 	{
-		Response->SetStringField(TEXT("error"), TEXT("Failed to create Button widget"));
-		return Response;
+		return FUnrealMCPCommonUtils::CreateErrorResponse(TEXT("Failed to create Button widget"));
+	}
+
+	if (!WidgetBlueprint->WidgetVariableNameToGuidMap.Contains(Button->GetFName()))
+	{
+		WidgetBlueprint->OnVariableAdded(Button->GetFName());
 	}
 
 	// Set button text
-	UTextBlock* ButtonTextBlock = NewObject<UTextBlock>(Button, UTextBlock::StaticClass(), *(WidgetName + TEXT("_Text")));
+	UTextBlock* ButtonTextBlock = WidgetBlueprint->WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), *(WidgetName + TEXT("_Text")));
 	if (ButtonTextBlock)
 	{
 		ButtonTextBlock->SetText(FText::FromString(ButtonText));
 		Button->AddChild(ButtonTextBlock);
+		if (!WidgetBlueprint->WidgetVariableNameToGuidMap.Contains(ButtonTextBlock->GetFName()))
+		{
+			WidgetBlueprint->OnVariableAdded(ButtonTextBlock->GetFName());
+		}
 	}
 
 	// Get canvas panel and add button
 	UCanvasPanel* RootCanvas = Cast<UCanvasPanel>(WidgetBlueprint->WidgetTree->RootWidget);
 	if (!RootCanvas)
 	{
-		Response->SetStringField(TEXT("error"), TEXT("Root widget is not a Canvas Panel"));
-		return Response;
+		return FUnrealMCPCommonUtils::CreateErrorResponse(TEXT("Root widget is not a Canvas Panel"));
 	}
 
 	// Add to canvas and set position
