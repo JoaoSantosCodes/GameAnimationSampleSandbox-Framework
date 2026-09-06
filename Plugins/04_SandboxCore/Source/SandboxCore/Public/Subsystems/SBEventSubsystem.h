@@ -58,6 +58,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sandbox|Events")
 	void UnsubscribeFromEvent(FGameplayTag EventTag, FSBBlueprintEventDelegate Delegate);
 
+	/**
+	 * Informa se alguem esta inscrito nesta tag, contando apenas delegates ainda vinculados.
+	 *
+	 * Existe para que o publicador possa evitar montar um payload que ninguem vai receber.
+	 * O barramento e sincrono e o payload e um UObject alocado por publicacao, entao no
+	 * caminho quente (mudanca de atributo, que ocorre todo frame durante consumo ou
+	 * regeneracao de estamina) a alocacao acontecia mesmo sem ouvinte algum.
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Sandbox|Events")
+	bool HasListeners(FGameplayTag EventTag) const;
+
 private:
 	TMap<FGameplayTag, TArray<FSBNativeListener>> NativeListeners;
 

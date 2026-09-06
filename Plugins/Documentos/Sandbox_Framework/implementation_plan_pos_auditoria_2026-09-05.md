@@ -191,7 +191,19 @@ zero". ✅ Aplicada — a asserção da linha 131 passou a validar.
 
 ---
 
-### ⚖️ `HitTrace` — 2 falhas remanescentes exigem DECISÃO DE DESIGN
+### ⚖️ `HitTrace` — 2 falhas remanescentes exigiam DECISÃO DE DESIGN · ✅ RESOLVIDO
+
+> [!SUCCESS] Resolvido no cenário do teste, sem alterar a regra de combate
+> Verificado em 06/09/2026 lendo `SBHitTraceTests.cpp`, com os dois testes verdes:
+> - **(a) geometria ambígua** — o Alvo B saiu de x=200 para **x=250**, de modo que as caixas
+>   deixam de se encostar em x=150. Corresponde à opção (i) abaixo.
+> - **(b) varredura para no primeiro bloqueio** — os dois alvos passaram a responder
+>   `ECR_Overlap` ao canal `ECC_Pawn` via `SetCollisionResponseToChannel`. Corresponde à
+>   **opção 1** abaixo, a que muda só o teste.
+>
+> `USBHitTraceComponent` continua usando `SweepMultiByChannel`. **A regra de combate não foi
+> alterada** — golpes seguem parando no primeiro alvo bloqueante em jogo. O texto abaixo fica
+> como registro do raciocínio.
 
 Não corrigidas deliberadamente: fazer os testes passarem exigiria alterar semântica de
 combate sem que a intenção de projeto esteja clara. Forçar o verde aqui mascararia a questão.
@@ -410,6 +422,33 @@ A conclusão que importa: o Bloco 6 deixou de ser "otimização especulativa sob
 virou **um sítio com custo comprovado por frame**. O escopo caiu de "redesenhar o barramento"
 para "resolver um evento".
 
+### ✅ Correção aplicada em 06/09/2026 — a saída sem consequência visível
+
+Nenhuma das duas saídas listadas acima foi adotada, porque ambas têm efeito observável e
+existe uma terceira que não tem: **não montar o payload quando ninguém está inscrito**.
+
+`USBEventSubsystem::HasListeners(FGameplayTag)` foi acrescentado ao contrato do barramento, e
+`USBAttributeComponent::HandleAttributeChangedInternal` passa a consultá-lo antes de alocar.
+
+| Critério | Resultado |
+| :--- | :--- |
+| Assinatura do barramento | Inalterada — `PublishEvent(FGameplayTag, UObject*)` |
+| Semântica de entrega | Inalterada — quem está inscrito recebe exatamente o que recebia |
+| Taxa de atualização do HUD | Inalterada |
+| Risco de payload retido por Blueprint | Nenhum — não há reuso de instância |
+| Ganho | Alocação por frame **eliminada quando não há ouvinte**; mantida quando há |
+
+É uma correção honesta sobre o seu alcance: **com um HUD inscrito em `Event.Attribute.Changed`,
+a alocação continua acontecendo**. O que ela remove é o custo pago em toda situação em que
+ninguém escuta — servidor dedicado, personagens de IA, e qualquer momento em que a HUD de
+estamina não esteja ativa —, que é onde 60·N objetos por segundo eram alocados para serem
+descartados sem destino.
+
+As duas saídas de maior alcance seguem disponíveis e continuam exigindo decisão, agora com o
+custo já medido para justificá-las. A mais promissora, se algum dia for necessária, é o payload
+por struct **restrito a este evento**; reutilizar a instância continua barrado enquanto não se
+auditar se algum Blueprint guarda o payload.
+
 ---
 
 ## 🧭 Sequência Recomendada
@@ -430,12 +469,12 @@ número de specs verdes é revertido antes de prosseguir.
 
 ---
 
-## ❓ Decisões Pendentes do Usuário
+## ✅ Decisões — todas resolvidas em 06/09/2026
 
-1. **Lacuna das Fases 67–123 no `task.md`** — reconstruir a partir do `walkthrough.md` ou
-   registrar a lacuna?
-2. **Designação de "projeto primário"** — corrigir Dashboard e `status_atual_do_projeto`
-   para refletir que o trabalho ocorre no GameAnimationSample?
-3. **Bloco 6** — perseguir a otimização de payloads, ou manter como registro?
-4. **Ponto de partida** — a recomendação é o Bloco 0, por ser barato e por definir o tamanho
-   real de todo o resto.
+| # | Decisão | Resolução |
+| :-: | :--- | :--- |
+| 1 | Lacuna das Fases 67–123 no `task.md` | **Registrada, não reconstruída.** Reconstruir geraria 57 blocos de `- [x]` afirmando conclusão e homologação de fases nunca medidas — o defeito que a auditoria expôs. O `walkthrough.md` cobre 67–123 e passou a ser apontado como a fonte do intervalo. |
+| 2 | Designação de "projeto primário" | **Resolvida por fato:** o usuário excluiu o `V1`. O `GameAnimationSample` é workspace único e a documentação de estado atual foi limpa. |
+| 3 | Bloco 6 — payloads | **Perseguida, na forma barata.** A medição isolou um único sítio quente; a correção aplicada evita a alocação quando não há ouvinte, sem mexer na assinatura do barramento nem na taxa de atualização do HUD. Ver abaixo. |
+| 4 | Ponto de partida | Bloco 0, como recomendado. Executado primeiro e refutou a hipótese do ambiente. |
+| 5 | `HitTrace` — 2 testes | **Resolvida no cenário do teste**, sem alterar a semântica de combate. Ver Bloco 1. |

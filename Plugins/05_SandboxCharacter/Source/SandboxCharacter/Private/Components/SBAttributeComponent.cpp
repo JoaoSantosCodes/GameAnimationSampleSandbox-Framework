@@ -619,6 +619,16 @@ void USBAttributeComponent::HandleAttributeChangedInternal(FGameplayTag Attribut
 		{
 			if (USBEventSubsystem* EventSubsystem = GI->GetSubsystem<USBEventSubsystem>())
 			{
+				// Este e o unico sitio de publicacao do barramento em caminho por frame: o tick
+				// de USBMovementComponent escreve a estamina a cada frame durante corrida e
+				// durante regeneracao, e cada escrita chega aqui. Sem ouvinte inscrito, montar
+				// o payload seria alocar um UObject por personagem por frame para descartar.
+				const FGameplayTag EventTag = FSBGameplayTags::Get().Event_Attribute_Changed;
+				if (!EventSubsystem->HasListeners(EventTag))
+				{
+					return;
+				}
+
 				USBAttributeChangedPayload* Payload = NewObject<USBAttributeChangedPayload>(this);
 				Payload->TargetPawn = Cast<APawn>(GetOwner());
 				Payload->AttributeTag = AttributeTag;
@@ -633,7 +643,7 @@ void USBAttributeComponent::HandleAttributeChangedInternal(FGameplayTag Attribut
 				Payload->CurrentValue = NewValue;
 				Payload->MaxValue = MaxVal;
 
-				EventSubsystem->PublishEvent(FSBGameplayTags::Get().Event_Attribute_Changed, Payload);
+				EventSubsystem->PublishEvent(EventTag, Payload);
 			}
 		}
 	}

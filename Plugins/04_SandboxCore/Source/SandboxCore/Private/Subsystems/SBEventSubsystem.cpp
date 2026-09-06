@@ -5,6 +5,33 @@ USBEventSubsystem::USBEventSubsystem()
 {
 }
 
+bool USBEventSubsystem::HasListeners(FGameplayTag EventTag) const
+{
+	if (const TArray<FSBNativeListener>* NativeList = NativeListeners.Find(EventTag))
+	{
+		for (const FSBNativeListener& Listener : *NativeList)
+		{
+			if (Listener.Delegate.IsBound())
+			{
+				return true;
+			}
+		}
+	}
+
+	if (const FSBBlueprintListenerArray* BPListWrapper = BlueprintListeners.Find(EventTag))
+	{
+		for (const FSBBlueprintListener& Listener : BPListWrapper->Listeners)
+		{
+			if (Listener.Delegate.IsBound())
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 void USBEventSubsystem::PublishEvent(FGameplayTag EventTag, UObject* Payload)
 {
 	static const ESBEventPriority PriorityTiers[] = {
