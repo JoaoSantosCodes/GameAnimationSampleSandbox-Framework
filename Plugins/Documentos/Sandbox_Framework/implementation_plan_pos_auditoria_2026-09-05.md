@@ -473,7 +473,7 @@ número de specs verdes é revertido antes de prosseguir.
 
 | # | Decisão | Resolução |
 | :-: | :--- | :--- |
-| 1 | Lacuna das Fases 67–123 no `task.md` | **Registrada, não reconstruída.** Reconstruir geraria 57 blocos de `- [x]` afirmando conclusão e homologação de fases nunca medidas — o defeito que a auditoria expôs. O `walkthrough.md` cobre 67–123 e passou a ser apontado como a fonte do intervalo. |
+| 1 | Lacuna das Fases 67–123 no `task.md` | **Reconstruída em 06/09/2026, a pedido do usuário.** As 57 fases foram importadas do `walkthrough.md` — 560 itens e 119 sub-itens, transcritos literalmente. O risco que motivava a recomendação contrária foi tratado por rotulagem, não ignorado: cada fase é marcada como importada, as contagens de spec da época ficam explicitamente identificadas como declarações nunca medidas, e um aviso no topo registra que marcação neste arquivo nunca foi evidência — as Fases 121–134 estavam todas marcadas com o código fora da árvore de compilação. |
 | 2 | Designação de "projeto primário" | **Resolvida por fato:** o usuário excluiu o `V1`. O `GameAnimationSample` é workspace único e a documentação de estado atual foi limpa. |
 | 3 | Bloco 6 — payloads | **Perseguida, na forma barata.** A medição isolou um único sítio quente; a correção aplicada evita a alocação quando não há ouvinte, sem mexer na assinatura do barramento nem na taxa de atualização do HUD. Ver abaixo. |
 | 4 | Ponto de partida | Bloco 0, como recomendado. Executado primeiro e refutou a hipótese do ambiente. |
