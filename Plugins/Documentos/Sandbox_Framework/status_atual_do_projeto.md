@@ -10,7 +10,7 @@ O Sandbox Framework atingiu maturidade de fundação arquitetural AAA de nível 
 
 *   **Status Geral**: `Fase 102 Concluída` (**Power Grid, Generators, Batteries, Circuit Wiring & Electric Consumers Framework - v1.87.0**).
 *   **Plugins Criados**: **11 Plugins** (`01_SandboxCommon` a `11_SandboxEditor`).
-*   **Qualidade & Estabilidade**: **100% Verde** nas suítes de testes em ambos os workspaces (**322 de 322 testes passando** com **EXIT CODE: 0**).
+*   **Qualidade & Estabilidade**: **444 de 444 specs verdes** com **EXIT CODE: 0**, medido em `D:\Unreal\GameAnimationSample` em 06/09/2026. O workspace `D:\Unreal\V1` **não foi medido** e não pode ser declarado verde — ver [[implementation_plan_pos_auditoria_2026-09-05|Bloco 5 do plano pós-auditoria]].
 *   **Sincronização**: GitHub e Obsidian Vault totalmente síncronos e versionados.
 
 ---
@@ -20,7 +20,7 @@ O Sandbox Framework atingiu maturidade de fundação arquitetural AAA de nível 
 | Métrica | Status / Valor | Detalhes |
 | :--- | :---: | :--- |
 | **Total de Plugins** | **11** | Todos no diretório `/Plugins/` de ambos os projetos (`01_SandboxCommon` a `11_SandboxEditor`). |
-| **Suíte de Testes Automatizados** | **322 de 322 Passando** | Automação via `Automation RunTest Sandbox` (Zero falhas, Zero memory leaks, Zero crashes). |
+| **Suíte de Testes Automatizados** | **444 de 444 Passando** | Medido em 06/09/2026 via `Automation RunTest Sandbox` no `GameAnimationSample`. Único número desta tabela obtido por execução real. |
 | **Fases Concluídas** | **102 de 120 Fases** | **85% do Roadmap Total Concluído**. |
 | **Targets de Compilação** | **2 Projetos 100% Compatíveis** | `V1` (Standalone) e `GameAnimationSample` (Híbrido). |
 | **Segurança em Split-Screen** | Homologada em C++ | Filtros de escopo local (anti-spill) aplicados nos eventos. |

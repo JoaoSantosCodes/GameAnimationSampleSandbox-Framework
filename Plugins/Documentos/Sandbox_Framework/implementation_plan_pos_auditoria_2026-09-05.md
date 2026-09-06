@@ -3,6 +3,25 @@
 **Origem**: [[audit_report_conformidade_2026-09-05|Relatório de Auditoria de 05/09/2026]]
 **Workspace**: `D:\Unreal\GameAnimationSample` (ver [[audit_report_conformidade_2026-09-05|§ Workspace de trabalho]])
 **Baseline medido**: build verde · **221 specs — 207 verdes, 14 vermelhas**
+**Estado em 06/09/2026**: build verde · **444 specs — 444 verdes, EXIT CODE: 0**
+
+> [!NOTE] Situação dos blocos em 06/09/2026
+> | Bloco | Estado | Commit |
+> | :--- | :--- | :--- |
+> | 0 · Diagnóstico (P1) | ✅ Concluído — hipótese do `-NullRHI` refutada | — |
+> | 1 · Correção de defeitos (P2 + os 13 do Bloco 0) | ✅ Concluído — suíte fechou em 444/444 | `b06d287` |
+> | 3.1 · `ISBAttributeComponentInterface` (P5) | ✅ Concluído | `b06d287` |
+> | 3.2 · Cache em tick (P3) | ✅ Concluído — 11 lookups viraram 3 | `16bcf75` |
+> | 3.3 · Desacoplar 06 ↔ 08 (P4) | ✅ Concluído — produção sem `FindObject<UClass>` | `9a129dd` |
+> | 4 · Documentação (P7) | 🟡 Números reconciliados; 3 decisões do usuário em aberto | — |
+> | 5 · Sincronizar → V1 (P6) | ⏸ Desbloqueado, não iniciado | — |
+> | 6 · Payloads por struct (P8) | ⏸ Opcional — medir GC antes | — |
+>
+> **Correções ao próprio plano, apuradas na execução:**
+> 1. **`ISBResettable` não existe** neste workspace, nem pooling de atores. O plano tratava a invalidação de cache em `ResetState()` como a principal mitigação de risco do Bloco 3.2; o gancho não existe. `TWeakObjectPtr` com revalidação cobre o caso real (componente destruído em runtime).
+> 2. **`ISBCombatantInterface` é contrato morto** — declarada em `02_SandboxInterfaces`, implementada por ninguém, e de nível de *ator*. O plano mandava "avaliar reuso"; não havia o que reusar. Criado `ISBCombatComponentInterface` seguindo a convenção de contratos de componente da própria auditoria.
+> 3. **O `SBResourceNode` era pior que o inventariado** — não eram dois níveis de reflexão, eram três, incluindo leitura de `FProperty` por nome.
+> 4. **Os 5 `FindObject<UClass>` de `SBInventoryTests.cpp` permanecem, deliberadamente.** O teste cobre a integração real entre os dois plugins pelo message router; um dublê apagaria a cobertura, e `NewObject` exige a classe concreta que um contrato não fornece. Não é violação do Princípio 4.
 
 ---
 

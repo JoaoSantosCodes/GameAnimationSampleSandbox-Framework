@@ -10,8 +10,11 @@ Bem-vindo ao painel central do **Sandbox Framework** no seu Obsidian. Este espa�
 - **Integração Híbrida**: `D:\Unreal\GameAnimationSample` (Game Animation Sample com Sandbox C++)
 - **Repositório GitHub**: [GameAnimationSampleSandbox-Framework](https://github.com/JoaoSantosCodes/GameAnimationSampleSandbox-Framework)
 - **Fase Atual**: `Fase 102 Concluída` — **Power Grid, Generators, Batteries, Circuit Wiring & Electric Consumers Framework (v1.87.0)**
-- **Suíte de Testes**: **100% Verde (322/322 Specs Passando em ambos os projetos - Zero Warnings/Errors - EXIT CODE: 0)**
+- **Suíte de Testes**: **444 de 444 specs verdes — EXIT CODE: 0** (medido em `D:\Unreal\GameAnimationSample` em 06/09/2026 via `Automation RunTest Sandbox`)
 - **Versão de Lançamento**: `v1.87.0` (Redes elétricas, balanço de geração vs consumo, baterias acumuladoras, proteção contra sobrecarga/blackout, integridade estrutural e colapso físico, maquinário pesado hidráulico, mechas bípedes, espaçonaves 6-DOF orbitais, aeronaves atmosféricas, embarcações náuticas, veículos terrestres, parkour e combate avançado)
+
+> [!WARNING] O número 322 declarado aqui até 06/09/2026 nunca foi medido, e o V1 continua sem medição
+> A auditoria de 05/09/2026 encontrou quatro números divergentes na documentação (322, 322, 394 e 450), nenhum deles obtido rodando a suíte. O valor acima é o único medido. Ele vale **apenas** para o `GameAnimationSample`; a suíte do `D:\Unreal\V1` não foi executada desde a auditoria, então o estado dele é desconhecido — ver [[implementation_plan_pos_auditoria_2026-09-05|Bloco 5 do plano pós-auditoria]].
 
 ---
 

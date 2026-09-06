@@ -6,7 +6,7 @@
 
 ## 🎯 Visão Geral & Objetivos Estratégicos
 
-Após a conclusão pioneira e histórica das **120 Fases Funcionais** (com **394 testes unitários automatizados 100% verdes** em Unreal Engine 5.8), o **Sandbox Framework** conta com um ecossistema completo de sobrevivência, combate, locomoção, automação industrial, ecologia planetária e biomedicina.
+Após a conclusão pioneira e histórica das **120 Fases Funcionais** (com a suíte automatizada 100% verde em Unreal Engine 5.8 — o número real, medido em 06/09/2026, é **444 specs**; os 394 declarados nesta linha nunca foram medidos), o **Sandbox Framework** conta com um ecossistema completo de sobrevivência, combate, locomoção, automação industrial, ecologia planetária e biomedicina.
 
 O presente **Roadmap de Refinamento e Validação Arquitetural** tem como objetivo elevar a base de código ao mais alto padrão industrial de desenvolvimento em C++ para jogos Triple-A e simulações complexas, focando em:
 1. **Performance Extrema & Escalabilidade Massiva (ECS, Data-Oriented Design, Cache-Locality, Subsystem Throttling)**.
@@ -20,7 +20,7 @@ O presente **Roadmap de Refinamento e Validação Arquitetural** tem como objeti
 
 ```mermaid
 graph TD
-    A["Sandbox Framework (120 Fases / 394 Specs)"] --> B["Pilar 1: Performance & Mass Scaling (Fases 121-125)"]
+    A["Sandbox Framework (120 Fases / 444 Specs medidos)"] --> B["Pilar 1: Performance & Mass Scaling (Fases 121-125)"]
     A --> C["Pilar 2: Arquitetura & Desacoplamento (Fases 126-130)"]
     A --> D["Pilar 3: Ferramentas & Profilers Visuais (Fases 131-135)"]
     A --> E["Pilar 4: Homologação & Gold Master (Fases 136-140)"]

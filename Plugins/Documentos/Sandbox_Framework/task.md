@@ -622,7 +622,7 @@
 - [x] Criar suíte de testes unitários automatizados em SBStressTestTests.cpp (validação de enxame, ticks de estresse, métricas e componente)
 - [x] Sincronizar arquivos para o projeto secundário GameAnimationSample
 - [x] Compilar ambos os projetos (V1Editor e GameAnimationSampleEditor)
-- [x] Validar toda a suíte de testes (450 specs 100% verdes, EXIT CODE: 0)
+- [x] Validar toda a suíte de testes (**444 specs 100% verdes, EXIT CODE: 0** — medido em 06/09/2026; os 450 registrados aqui originalmente nunca foram medidos, e o código desta fase sequer compilava até a auditoria de 05/09/2026)
 
 
 
