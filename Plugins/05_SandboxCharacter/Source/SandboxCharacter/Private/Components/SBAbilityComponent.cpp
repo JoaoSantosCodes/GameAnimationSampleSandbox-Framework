@@ -232,7 +232,7 @@ bool USBAbilityComponent::RequestBehavior(FGameplayTag BehaviorTag)
 
 			if (Ability->CooldownTag.IsValid())
 			{
-				if (USBStateComponent* StateComp = GetOwner() ? GetOwner()->FindComponentByClass<USBStateComponent>() : nullptr)
+				if (USBStateComponent* StateComp = GetStateComponent())
 				{
 					StateComp->AddTag(Ability->CooldownTag);
 				}
@@ -377,7 +377,7 @@ void USBAbilityComponent::ClientRollbackAbility_Implementation(FGameplayTag Beha
 
 			if (Ability->CooldownTag.IsValid())
 			{
-				if (USBStateComponent* StateComp = GetOwner() ? GetOwner()->FindComponentByClass<USBStateComponent>() : nullptr)
+				if (USBStateComponent* StateComp = GetStateComponent())
 				{
 					StateComp->RemoveTag(Ability->CooldownTag);
 				}
@@ -463,6 +463,19 @@ void USBAbilityComponent::GetDebugDescription_Implementation(TArray<FSBDebugLine
 	}
 }
 
+USBStateComponent* USBAbilityComponent::GetStateComponent()
+{
+	if (CachedStateComponent.IsValid())
+	{
+		return CachedStateComponent.Get();
+	}
+
+	AActor* Owner = GetOwner();
+	USBStateComponent* StateComp = Owner ? Owner->FindComponentByClass<USBStateComponent>() : nullptr;
+	CachedStateComponent = StateComp;
+	return StateComp;
+}
+
 void USBAbilityComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
@@ -481,7 +494,7 @@ void USBAbilityComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 				{
 					if (Ability->CooldownTag.IsValid())
 					{
-						if (USBStateComponent* StateComp = GetOwner() ? GetOwner()->FindComponentByClass<USBStateComponent>() : nullptr)
+						if (USBStateComponent* StateComp = GetStateComponent())
 						{
 							StateComp->RemoveTag(Ability->CooldownTag);
 						}

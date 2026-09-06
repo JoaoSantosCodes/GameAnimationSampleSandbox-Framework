@@ -9,6 +9,7 @@
 
 class USBAbility;
 class UInputComponent;
+class USBStateComponent;
 
 USTRUCT(BlueprintType)
 struct FSBCooldownEntry : public FFastArraySerializerItem
@@ -125,4 +126,14 @@ protected:
 
 	void Input_AbilityInputPressed(FGameplayTag InputTag);
 	void Input_AbilityInputReleased(FGameplayTag InputTag);
+
+	/**
+	 * Resolve o componente de estado do dono, memorizando o resultado.
+	 * A revalidacao e obrigatoria a cada acesso: o componente pode ser destruido em runtime e
+	 * TWeakObjectPtr se anula sozinho nesse caso, forcando nova busca em vez de devolver um
+	 * ponteiro pendente.
+	 */
+	USBStateComponent* GetStateComponent();
+
+	TWeakObjectPtr<USBStateComponent> CachedStateComponent;
 };

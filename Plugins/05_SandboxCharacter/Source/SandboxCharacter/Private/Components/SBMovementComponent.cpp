@@ -29,7 +29,7 @@ void USBMovementComponent::OnReady_Implementation()
 	ACharacter* CharOwner = Cast<ACharacter>(Owner);
 	if (CharOwner && CharOwner->GetCharacterMovement() && Owner->HasAuthority())
 	{
-		USBAttributeComponent* AttrComp = Owner->FindComponentByClass<USBAttributeComponent>();
+		USBAttributeComponent* AttrComp = GetAttributeComponent();
 		if (AttrComp)
 		{
 			FGameplayTag SpeedTag = FSBGameplayTags::Get().Attribute_Speed;
@@ -66,6 +66,32 @@ void USBMovementComponent::OnReady_Implementation()
 	}
 }
 
+USBAttributeComponent* USBMovementComponent::GetAttributeComponent() const
+{
+	if (CachedAttributeComponent.IsValid())
+	{
+		return CachedAttributeComponent.Get();
+	}
+
+	const AActor* Owner = GetOwner();
+	USBAttributeComponent* AttrComp = Owner ? Owner->FindComponentByClass<USBAttributeComponent>() : nullptr;
+	CachedAttributeComponent = AttrComp;
+	return AttrComp;
+}
+
+USBStateComponent* USBMovementComponent::GetStateComponent() const
+{
+	if (CachedStateComponent.IsValid())
+	{
+		return CachedStateComponent.Get();
+	}
+
+	const AActor* Owner = GetOwner();
+	USBStateComponent* StateComp = Owner ? Owner->FindComponentByClass<USBStateComponent>() : nullptr;
+	CachedStateComponent = StateComp;
+	return StateComp;
+}
+
 float USBMovementComponent::GetCalculatedMaxSpeed() const
 {
 	AActor* Owner = GetOwner();
@@ -75,7 +101,7 @@ float USBMovementComponent::GetCalculatedMaxSpeed() const
 	if (!CharOwner || !CharOwner->GetCharacterMovement()) return 0.0f;
 
 	// Bloqueia velocidade de locomoção se estiver Atordoado (Stunned) ou Congelado (Frozen)
-	USBStateComponent* StateComp = Owner->FindComponentByClass<USBStateComponent>();
+	USBStateComponent* StateComp = GetStateComponent();
 	if (StateComp)
 	{
 		FGameplayTag StunnedTag = FSBGameplayTags::Get().State_Character_Stunned;
@@ -108,7 +134,7 @@ float USBMovementComponent::GetCalculatedMaxSpeed() const
 		MaxSpeed = SpeedModifierAggregator->CalculateFinalValue(BaseSpeed);
 	}
 
-	USBAttributeComponent* AttrComp = Owner->FindComponentByClass<USBAttributeComponent>();
+	USBAttributeComponent* AttrComp = GetAttributeComponent();
 	if (AttrComp)
 	{
 		FGameplayTag SpeedTag = FSBGameplayTags::Get().Attribute_Speed;
@@ -160,7 +186,7 @@ void USBMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 	if (CharOwner && CharOwner->GetCharacterMovement() && Owner->HasAuthority())
 	{
 		UCharacterMovementComponent* CMC = CharOwner->GetCharacterMovement();
-		USBAttributeComponent* AttrComp = Owner->FindComponentByClass<USBAttributeComponent>();
+		USBAttributeComponent* AttrComp = GetAttributeComponent();
 		if (AttrComp)
 		{
 			FGameplayTag SpeedTag = FSBGameplayTags::Get().Attribute_Speed;
@@ -196,8 +222,8 @@ void USBMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 	}
 
 	// 1. Processamento de Estamina (Consumo e Regeneração) - Roda em Cliente e Servidor para predição local
-	USBAttributeComponent* AttrComp = Owner->FindComponentByClass<USBAttributeComponent>();
-	USBStateComponent* StateComp = Owner->FindComponentByClass<USBStateComponent>();
+	USBAttributeComponent* AttrComp = GetAttributeComponent();
+	USBStateComponent* StateComp = GetStateComponent();
 	if (AttrComp && StateComp)
 	{
 		float SprintCost = DefaultMovementConfig ? DefaultMovementConfig->StaminaConfig.SprintCost : 15.0f;
@@ -517,8 +543,8 @@ void USBTestMovementComponent::ClientStopBehavior_Implementation(FGameplayTag Be
 
 bool USBMovementComponent::ConsumeJumpStamina()
 {
-	USBAttributeComponent* AttrComp = GetOwner()->FindComponentByClass<USBAttributeComponent>();
-	USBStateComponent* StateComp = GetOwner()->FindComponentByClass<USBStateComponent>();
+	USBAttributeComponent* AttrComp = GetAttributeComponent();
+	USBStateComponent* StateComp = GetStateComponent();
 	if (AttrComp && StateComp)
 	{
 		float JumpCost = DefaultMovementConfig ? DefaultMovementConfig->StaminaConfig.JumpCost : 20.0f;

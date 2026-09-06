@@ -12,6 +12,8 @@ class USBMovementBehaviorDefinition;
 class USBMovementConfigDataAsset;
 class USBBehaviorRegistry;
 class USBMovementModifierAggregator;
+class USBAttributeComponent;
+class USBStateComponent;
 
 UCLASS(BlueprintType, meta = (BlueprintSpawnableComponent))
 class SANDBOXCHARACTER_API USBMovementComponent : public USBBehaviorStackComponent
@@ -118,6 +120,20 @@ protected:
 
 	UPROPERTY(Transient)
 	bool bHasInitializedCachedSpeeds = false;
+
+	/**
+	 * Resolvem os componentes irmaos do dono memorizando o resultado, para que o caminho de
+	 * tick nao repita FindComponentByClass a cada frame.
+	 *
+	 * Sao const e usam membros mutable porque GetCalculatedMaxSpeed() e const e esta no
+	 * caminho critico. TWeakObjectPtr se anula sozinho quando o componente e destruido, entao
+	 * a revalidacao a cada acesso forca nova busca em vez de devolver ponteiro pendente.
+	 */
+	USBAttributeComponent* GetAttributeComponent() const;
+	USBStateComponent* GetStateComponent() const;
+
+	mutable TWeakObjectPtr<USBAttributeComponent> CachedAttributeComponent;
+	mutable TWeakObjectPtr<USBStateComponent> CachedStateComponent;
 
 public:
 	// Helper para encontrar instâncias tipadas
