@@ -6,13 +6,13 @@ no projeto `D:\Unreal\GameAnimationSample`.
 lendo o código-fonte do plugin em `Plugins/UnrealMCP/Source/`. Nenhuma linha deste documento é
 suposição: cada veredito tem chamada real por trás.
 
-> [!DANGER] Este plugin MCP é muito mais limitado do que os schemas sugerem
-> A primeira versão deste playbook foi escrita a partir dos schemas das ferramentas. A execução
-> real derrubou **quatro** das cinco missões planejadas. Os schemas descrevem parâmetros que o
-> C++ não lê, caminhos que ele ignora e nomes de classe que ele rejeita.
+> [!IMPORTANT] Este plugin foi consertado em 06/09/2026 — 11 defeitos
+> A primeira versão deste playbook descrevia um plugin em que a família UMG era inacessível e
+> nada fora de `/Game/Blueprints/` podia ser spawnado. Isso foi corrigido no C++ e revalidado
+> por execução. §2 traz a matriz atual; §10, o histórico dos defeitos e o que ele ensina.
 >
-> **Leia §2 inteira antes de prometer qualquer coisa ao usuário.** Ela separa o que funciona do
-> que está quebrado, com evidência de execução para cada item.
+> **Verifique sempre pelo estado, nunca pela resposta.** Foi assim que os 11 apareceram, e é a
+> única disciplina que sobrevive a qualquer versão deste plugin.
 
 ---
 
@@ -26,140 +26,105 @@ suposição: cada veredito tem chamada real por trás.
 
 ---
 
-## 2. O que funciona e o que não funciona
+## 2. O que funciona
 
-Cada linha foi **executada** em 06/09/2026 contra o editor aberto.
+> [!SUCCESS] 11 defeitos do plugin foram corrigidos em 06/09/2026
+> A primeira versao deste playbook documentava um plugin em que a familia UMG era inacessivel,
+> nenhum Blueprint fora de `/Game/Blueprints/` podia ser spawnado, e erros do servidor chegavam
+> como "Timeout". **Tudo isso foi corrigido no C++ do plugin e revalidado por execucao.**
+> O historico dos defeitos esta em §10.
 
-### 2.1 ✅ Funciona — 15 de 21, todas executadas
+Cada linha abaixo foi **executada** contra o editor aberto em 06/09/2026.
 
-| Ferramenta | Observação da execução |
+### 2.1 Atores e nivel — tudo funciona
+
+| Ferramenta | Observacao |
 | :--- | :--- |
-| `get_actors_in_level` | Devolveu os 17 atores do nível |
-| `find_actors_by_name` | Sem resultado devolve **saída vazia**, não erro |
-| `get_actor_properties` | ⚠️ Devolve **só** `name`, `class`, `location`, `rotation`, `scale`. **Não lista componentes** — ver §5 |
-| `spawn_actor` | `type` é classe nativa: `PointLight`, `StaticMeshActor` |
+| `get_actors_in_level` | Devolveu os 17 atores do nivel |
+| `find_actors_by_name` | Sem resultado devolve **saida vazia**, nao erro |
+| `get_actor_properties` | Devolve transform, classe **e a lista de componentes** com `class_path` e `component_count` |
+| `spawn_actor` | `type` e classe nativa: `PointLight`, `StaticMeshActor` |
+| `spawn_blueprint_actor` | Aceita **nome curto ou caminho completo**, e encontra asset em qualquer pasta |
 | `set_actor_transform` | Aceita `location`/`rotation`/`scale` parciais |
 | `set_actor_property` | `bHidden=true` aplicado e confirmado |
-| `delete_actor` | Confirmado |
-| `create_blueprint` | Cria **sempre** em `/Game/Blueprints/`, **em memória** |
-| `add_component_to_blueprint` | ⚠️ `component_type` exige **caminho completo** — §2.3 |
-| `set_component_property` | `bVisible` aplicado no componente |
+| `delete_actor` | Confirmado. **Sem desfazer** |
+
+### 2.2 Blueprints — tudo funciona
+
+| Ferramenta | Observacao |
+| :--- | :--- |
+| `create_blueprint` | Cria em `/Game/Blueprints/` e **grava em disco** (`saved_to_disk`) |
+| `add_component_to_blueprint` | Aceita **nome curto** (`StaticMeshComponent`) e caminho (`/Script/Engine.StaticMeshComponent`) |
+| `set_component_property` | Confirmado |
+| `set_blueprint_property` | Exige `compile_blueprint` antes, se a variavel foi criada agora — §2.6 |
+| `add_blueprint_variable` | Confirmado |
+| `compile_blueprint` | Devolveu `compiled: true` |
 | `set_static_mesh_properties` | `/Engine/BasicShapes/Cube.Cube` funciona |
 | `set_physics_properties` | Confirmado |
-| `set_blueprint_property` | ⚠️ Só encontra a variável **após `compile_blueprint`** — §2.6 |
-| `add_blueprint_variable` | `TestHealth`/`Float` criada |
-| `compile_blueprint` | Devolveu `compiled: true` |
 
-### 2.1b ✅ Grafo de Blueprint — funciona
+**Fluxo completo validado, sem intervencao humana:**
+```
+create_blueprint -> add_component_to_blueprint -> compile_blueprint -> spawn_blueprint_actor -> get_actor_properties
+```
+Antes isso era impossivel: o spawn nao achava o asset recem-criado porque nada gravava em disco.
 
-| Ferramenta | Observação da execução |
+### 2.3 Grafo de Blueprint — funciona
+
+`add_blueprint_event_node` (`ReceiveBeginPlay`) · `add_blueprint_function_node` ·
+`add_blueprint_input_action_node` · `add_blueprint_self_reference` ·
+`add_blueprint_get_self_component_reference` · `connect_blueprint_nodes` (`then` -> `execute`) ·
+`create_input_mapping`
+
+> `add_blueprint_function_node` so aceita funcoes que o `target` **realmente possui**:
+> `PrintString` em `self` falha porque e estatica de `UKismetSystemLibrary`;
+> `SetActorHiddenInGame` funciona.
+
+### 2.4 UMG — funciona
+
+| Ferramenta | Observacao |
 | :--- | :--- |
-| `add_blueprint_event_node` | `ReceiveBeginPlay` → devolveu `node_id` |
-| `add_blueprint_function_node` | Só funções que o `target` **realmente possui**: `PrintString` em `self` falha (é estática de `UKismetSystemLibrary`); `SetActorHiddenInGame` funciona |
-| `add_blueprint_input_action_node` | Funcionou após `create_input_mapping` |
-| `add_blueprint_self_reference` | Devolveu `node_id` |
-| `add_blueprint_get_self_component_reference` | Devolveu `node_id` |
-| `connect_blueprint_nodes` | Pinos `then` → `execute` conectados |
-| `create_input_mapping` | `MCPTest_Jump`/`SpaceBar` criado |
+| `create_umg_widget_blueprint` | Cria, **honra o parametro `path`** e grava em disco |
+| `add_text_block_to_widget` | Confirmado no `.uasset`: canvas, nome e texto |
+| `add_button_to_widget` | Construido pela WidgetTree, com label |
+| `bind_widget_event` | Cria `K2Node_ComponentBoundEvent` — confirmado no asset |
+| `add_widget_to_viewport` | ⚠️ **O nome engana**: nao adiciona nada ao viewport. Resolve a classe do widget e diz isso na propria resposta. Para exibir em jogo, use `CreateWidget` + `AddToViewport` no Blueprint |
 
-### 2.2 ❌ Quebrado ou inalcançável
+**Aceita as duas convencoes de nome**: `widget_name` + `text_block_name` (esquema Python) ou
+`blueprint_name` + `widget_name` (esquema C++).
 
-| Ferramenta | Problema | Evidência |
-| :--- | :--- | :--- |
-| **Toda a família UMG** (6 ferramentas) | Os nomes de parâmetro do schema Python **não batem** com os que o C++ lê. Nada traduz entre as camadas | `create_umg_widget_blueprint(widget_name=…)` → `{"error": "Missing 'name' parameter"}` |
-| `spawn_blueprint_actor` | Só encontra Blueprints **salvos em disco** sob `/Game/Blueprints/` | `BP_SBCharacter_Hero` (em `/Game/SandboxFramework/Blueprints/`) → *"not found – it must reside under /Game/Blueprints"* |
-| `spawn_blueprint_actor` de BP recém-criado | `FPackageName::DoesPackageExist` checa o **disco**; `create_blueprint` não salva | `BP_MCPProbe_Cube` criado com sucesso e depois *"not found"* no spawn |
-| `find_blueprint_nodes` | O schema expõe `event_type`; o C++ exige **`event_name`**, que não é exposto | `node_type="Event"` com e sem `event_type` → *"Missing 'event_name' parameter for Event node search"* |
+### 2.5 O que continua nao existindo
 
-> [!CAUTION] Quatro ferramentas devolvem `"status": "success"` embrulhando um erro
-> `add_button_to_widget`, `bind_widget_event` e `set_text_block_binding` respondem
-> `{"status": "success", "result": {"error": "Missing blueprint_name parameter"}}`.
->
-> Um chamador que olhe só o `status` conclui que funcionou. **Sempre inspecione o `result`**, não
-> apenas o campo `status`.
+- **Progress Bar.** O UMG do plugin cria apenas Text Block e Button.
+- **Criar ou editar Data Asset.** O dispatch aceita 36 comandos e nenhum cria asset que nao seja
+  Blueprint ou Widget. `PawnData`, `ComponentSet` e configs sao trabalho manual no editor.
+- **Importar asset, criar material, malha, animacao ou nivel.**
+- **Desfazer.**
+- **Rodar a suite de testes** — e linha de comando, §8.
+- **Apagar asset.** So ator. Asset e pelo Content Browser.
 
-#### A família UMG, em detalhe
+> Seis comandos existem no C++ mas **nao estao expostos** como ferramenta: `ping`,
+> `focus_viewport`, `take_screenshot`, `create_actor`, `set_pawn_properties` e
+> `add_blueprint_get_component_node`. `take_screenshot` seria o mais util — daria verificacao
+> visual, que hoje nao existe.
 
-O C++ (`UnrealMCPUMGCommands.cpp`) lê nomes diferentes dos que o schema expõe:
+### 2.6 Ordem obrigatoria: variavel antes de propriedade
 
-| Comando | Schema Python expõe | C++ realmente lê |
-| :--- | :--- | :--- |
-| `create_umg_widget_blueprint` | `widget_name`, `parent_class`, `path` | **`name`** — `path` e `parent_class` são **ignorados** (grava sempre em `/Game/Widgets/`) |
-| `add_text_block_to_widget` | `widget_name`, `text_block_name` | **`blueprint_name`** + `widget_name` (= nome do text block) |
-| `add_button_to_widget` | `widget_name`, `button_name` | **`blueprint_name`** + `widget_name` |
-| `bind_widget_event` | `widget_name`, `widget_component_name` | **`blueprint_name`** + `widget_name` |
-| `set_text_block_binding` | `widget_name`, `text_block_name`, `binding_property` | **`blueprint_name`** + `widget_name` + **`binding_name`** |
-
-**Consequência**: não é possível criar nem editar widget por MCP. Como
-`create_umg_widget_blueprint` é a porta de entrada e ela falha sempre, o resto da família fica
-inacessível mesmo que os parâmetros dos outros comandos batessem.
-
-### 2.6 Ordem obrigatória: variável antes de propriedade
-
-`add_blueprint_variable` devolve sucesso, mas a propriedade **não existe no CDO** até recompilar.
-Verificado por execução:
+`add_blueprint_variable` devolve sucesso, mas a propriedade **nao existe no CDO** ate recompilar:
 
 ```
 add_blueprint_variable(variable_name="TestHealth", variable_type="Float")  -> success
-set_blueprint_property(property_name="TestHealth", property_value="75.0")  -> "Property not found: TestHealth"
+set_blueprint_property(property_name="TestHealth", ...)                    -> "Property not found"
 compile_blueprint(...)                                                     -> compiled: true
-set_blueprint_property(property_name="TestHealth", property_value="75.0")  -> success
+set_blueprint_property(property_name="TestHealth", ...)                    -> success
 ```
 
-É a evidência concreta da regra "compile após toda mudança estrutural".
+### 2.7 `find_blueprint_nodes` continua insatisfazivel
 
-### 2.3 `component_type` exige caminho completo
-
-A docstring da ferramenta diz *"use component class name without U prefix"*. **Está errada.**
-O C++ resolve com `FindObject<UClass>(nullptr, *ComponentType)`, forma que exige caminho
-completo — `ANY_PACKAGE` foi removido na UE5.
-
-```
-add_component_to_blueprint(component_type="StaticMeshComponent")
-  -> {"error": "Unknown component type: StaticMeshComponent"}
-
-add_component_to_blueprint(component_type="/Script/Engine.StaticMeshComponent")
-  -> {"status": "success"}
-```
-
-**Formato**: `/Script/<Módulo>.<Classe>` — ver §6.2 para as classes do framework.
-
-### 2.4 Caminhos fixos no código
-
-| Família | Caminho fixo | Fonte |
-| :--- | :--- | :--- |
-| Blueprints | `/Game/Blueprints/` | `UnrealMCPBlueprintCommands.cpp:80`, `UnrealMCPCommonUtils.cpp:156`, `UnrealMCPEditorCommands.cpp:420` |
-| Widgets | `/Game/Widgets/` | `UnrealMCPUMGCommands.cpp:73` |
-
-Os assets deste projeto vivem em `/Game/SandboxFramework/…` — **fora do alcance do MCP**.
-Nenhum Blueprint do framework pode ser spawnado, e nenhum widget existente pode ser editado.
-
-### 2.5 O que não existe de forma alguma
-
-- **Progress Bar** — o UMG só teria Text Block e Button, e mesmo esses estão inacessíveis.
-- **Criar ou editar Data Asset** (`PawnData`, `ComponentSet`, configs).
-- **Importar asset, criar material, malha, animação ou nível.**
-- **Salvar.** Nem pacote, nem nível. É o gargalo central: um Blueprint criado por MCP só pode
-  ser spawnado **depois** que o usuário salvar manualmente.
-- **Desfazer.**
-- **Rodar a suíte de testes** — é linha de comando, ver §8.
-
-> [!IMPORTANT] Criar Data Asset é impossível, e isso é definitivo
-> Não é limitação do schema exposto: o dispatch do plugin aceita **36 comandos**, enumerados em
-> `Plugins/UnrealMCP/Source/UnrealMCP/Private/`, e **nenhum** cria asset que não seja Blueprint
-> ou Widget. Não há `create_data_asset`, `create_asset` nem `save_asset`.
->
-> Consequência para este projeto: `PawnData`, `ComponentSet`, `DA_MovementConfig`,
-> `DA_AbilitySet` e similares **só podem ser criados à mão no editor**. Como a composição de
-> personagem deste framework passa inteiramente por eles (§6.1), montar um personagem novo por
-> MCP é impossível de ponta a ponta.
->
-> Seis comandos existem no C++ mas **não estão expostos** como ferramenta: `ping`,
-> `focus_viewport`, `take_screenshot`, `create_actor`, `set_pawn_properties` e
-> `add_blueprint_get_component_node`. `take_screenshot` seria o mais útil — daria verificação
-> visual, que hoje não existe.
+O schema expoe `event_type`; o C++ exige `event_name`, que nao e exposto. Nao corrigido — nao
+apareceu necessidade real de uso.
 
 ---
+
 
 ## 3. Teste de conexão
 
@@ -185,13 +150,14 @@ Get-Process -Name 'UnrealEditor*' -ErrorAction SilentlyContinue
 
 ## 4. "Timeout" quase nunca é timeout
 
-> [!IMPORTANT] A descoberta mais útil desta validação
-> O cliente MCP devolve `{"status": "error", "error": "Timeout receiving Unreal response"}` em
-> casos onde o servidor **respondeu normalmente, com uma mensagem de erro precisa**. A mensagem
-> se perde no caminho.
+> [!IMPORTANT] A causa foi corrigida, mas o hábito continua valendo
+> O "Timeout receiving Unreal response" era um defeito do próprio plugin: a resposta era enviada
+> com o comprimento em `TCHAR` sobre um buffer UTF-8, então qualquer caractere fora do ASCII a
+> truncava — e faltava o terminador de linha. A mensagem de erro do plugin contém um travessão,
+> o que **garantia** corrupção justamente ao relatar erro. Corrigido em 06/09/2026.
 >
-> Tratar isso como "editor ocupado" e tentar de novo desperdiça a sessão inteira contra um erro
-> que o log explica em uma linha.
+> Ainda assim, ao ver timeout, **leia o log antes de concluir qualquer coisa**. Foi lendo o log
+> que essa causa apareceu, e nenhuma mensagem do cliente dava pista dela.
 
 **Sempre que der timeout, leia o log:**
 
@@ -370,3 +336,60 @@ As limitações de §2.2 e §2.4 são **defeitos do plugin**, não da ideia. Em 
 | 3 | Salvar o pacote após `create_blueprint` | `UnrealMCPBlueprintCommands.cpp` | Remove a ação humana do meio do fluxo |
 | 4 | Propagar a mensagem de erro do servidor em vez de "Timeout" | camada Python | Torna o log desnecessário para diagnóstico |
 | 5 | Usar `FindObject` com caminho ou `TryFindType` documentado | `UnrealMCPBlueprintCommands.cpp:197` | Faz a docstring virar verdade |
+
+---
+
+## 10. Histórico — os 11 defeitos corrigidos em 06/09/2026
+
+Registrado porque o **padrão** vale mais que a lista: os defeitos estavam em camadas, e cada
+correção só tornava a seguinte alcançável.
+
+| # | Defeito | Onde |
+| :-: | :--- | :--- |
+| 1 | Resposta enviada com comprimento em `TCHAR` sobre buffer UTF-8 — truncava | `MCPServerRunnable.cpp` |
+| 2 | Faltava terminador de linha num dos caminhos de envio | `MCPServerRunnable.cpp` |
+| 3 | Caminhos fixos `/Game/Blueprints/` e `/Game/Widgets/` | 4 arquivos |
+| 4 | `spawn_blueprint_actor` exigia asset em disco; `create_blueprint` não salvava | `EditorCommands`, `BlueprintCommands` |
+| 5 | `component_type` rejeitava nome curto, contra a própria docstring | `BlueprintCommands.cpp` |
+| 6 | `get_actor_properties` não listava componentes | `CommonUtils.cpp` |
+| 7 | Nomes de parâmetro divergentes entre Python e C++ na família UMG | `UMGCommands.cpp` |
+| 8 | `create_umg_widget_blueprint` pedia `UBlueprint` em vez de `UWidgetBlueprint` | `UMGCommands.cpp` |
+| 9 | Widgets não registrados em `WidgetVariableNameToGuidMap` — `ensure` do compilador | `UMGCommands.cpp` |
+| 10 | Botão criado com `NewObject` sobre o CDO, fora da `WidgetTree` | `UMGCommands.cpp` |
+| 11 | `bind_widget_event` passava `nullptr` como propriedade; widgets sem `bIsVariable` | `UMGCommands.cpp` |
+
+### O que isso ensina
+
+**Ler o código encontrou o defeito 7. Executar encontrou os outros dez.**
+
+A primeira análise deste plugin foi feita lendo os schemas e o C++, e concluiu "a família UMG
+está quebrada por divergência de nomes de parâmetro". Estava correto — e era a **primeira de
+cinco camadas**. Abaixo dela estavam as classes erradas no `CreateBlueprint`, o mapa de GUIDs, o
+`NewObject` sobre o CDO e o `nullptr` no bind. Nenhuma era visível enquanto a anterior barrava a
+execução no primeiro passo.
+
+**Três respostas de sucesso eram mentira.** `add_button_to_widget`, `bind_widget_event` e
+`set_text_block_binding` devolviam `{"status":"success","result":{"error":"..."}}`. Um chamador
+que lê só o `status` conclui que funcionou. Por isso a regra de verificar por estado não é
+zelo excessivo — é o que separa "funcionou" de "respondeu".
+
+**Como verificar por estado, na prática:**
+
+| O que você fez | Verificação real |
+| :--- | :--- |
+| Spawnou ator | `get_actor_properties` e conferir `components` |
+| Criou/alterou asset | Ler o `.uasset` no disco, ou reabrir no editor |
+| Qualquer coisa | Ler `Saved/Logs/GameAnimationSample.log`, filtro `MCPServerRunnable` |
+
+> Os widgets desta validação foram conferidos extraindo as strings do `.uasset` — foi assim que
+> se confirmou o nó `BndEvt__WBP_ValProbe3_BTN_Confirmar_K2Node_ComponentBoundEvent_0_...`, que
+> nenhuma resposta de ferramenta teria provado.
+
+### Limitação que nenhuma correção remove
+
+`spawn_blueprint_actor` de um `SBCharacter` devolve **só os componentes de engine** — capsule,
+movimento, malha, câmera. Nenhum componente do framework aparece.
+
+Não é defeito: `ASBCharacter::InitializeFromPawnData` roda em `BeginPlay`/`PossessedBy`, que não
+acontecem no mundo do editor. **Composição do framework só se verifica em PIE**, e concluir pela
+lista do editor que o PawnData está quebrado seria erro de leitura.
