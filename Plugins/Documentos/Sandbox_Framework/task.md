@@ -514,6 +514,27 @@
 - [x] Criar subsistema de persistência de mundo USBSandboxPersistenceSubsystem (header e source)
 - [x] Criar teste automatizado unitário para o sistema de persistência (SBPersistenceTests.cpp)
 - [x] Compilar projeto primário V1 e secundário GameAnimationSample
+## ⚠️ Fases 67 a 123 — ausentes deste checklist
+
+Este arquivo salta da **Fase 66** direto para a **124**. As 57 fases intermediárias nunca
+tiveram entradas aqui.
+
+**O registro delas existe** e é o [[walkthrough|walkthrough.md]], que documenta as Fases 67 a
+123 uma a uma. Para qualquer consulta sobre esse intervalo, ele é a fonte — não este arquivo.
+
+**Por que não foram reconstruídas aqui**: reconstruir significaria gerar 57 blocos de itens
+`- [x]` afirmando que cada fase foi concluída, compilada e homologada. A auditoria de
+05/09/2026 mostrou que afirmações desse tipo neste projeto não eram verificadas — e que, para
+as Fases 121–134, eram falsas: o código sequer compilava, apesar dos itens marcados. Converter
+um documento narrativo em checkboxes marcados reproduziria esse defeito em escala, trocando
+uma lacuna visível por 57 afirmações não medidas.
+
+A lacuna fica registrada em vez de preenchida. Se a reconstrução for desejada, o trabalho é
+mecânico a partir do `walkthrough.md`, mas as marcações precisam ser tratadas como narrativa
+importada, não como validação.
+
+---
+
 ## Fase 124: Hierarchical Spatial Partitioning, Octree & Fast Spatial Queries (v2.09.0) (Concluída)
 - [x] Criar tipos e estruturas de particionamento espacial em SBSpatialPartitionTypes.h (`FSBSpatialCellCoord`, `FSBSpatialEntityElement`, `FSBSpatialGridMetrics`)
 - [x] Registrar tags de particionamento espacial em SBGameplayTags.h/cpp (`State.Spatial.*`)

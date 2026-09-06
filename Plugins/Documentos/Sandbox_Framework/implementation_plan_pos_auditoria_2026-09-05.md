@@ -372,6 +372,44 @@ está preservado em `scratchpad/removidos_eventbus/` e pode servir de referênci
 > obtida pelo `USBProfilerSubsystem` (Fase 132), que agora compila e pode medir. **Medir antes
 > de otimizar.**
 
+### 📏 Medição realizada em 06/09/2026 — há um caso quente, e é um só
+
+A alocação foi mapeada por sítio, em vez de estimada pelo número de arquivos:
+
+| | Valor |
+| :--- | :--- |
+| Classes de payload `UObject` | 10 |
+| Sítios de alocação | 43, em 21 arquivos |
+| Sítios em caminho **por frame** | **1** |
+
+Os 42 restantes são eventos discretos — equipar item, disparar arma, concluir craft, salvar,
+descobrir área, passo de animação. Alocar um `UObject` por ocorrência desses é irrelevante.
+
+**O único caso quente é `USBAttributeComponent::HandleAttributeChangedInternal`**, que aloca um
+`USBAttributeChangedPayload` a **cada mudança de atributo**, sem exceção. E
+`USBMovementComponent::TickComponent` escreve o atributo de estamina **todo frame** enquanto o
+personagem corre (`SetAttributeBaseValue(StaminaTag, Atual - Custo * DeltaTime)`) e de novo todo
+frame enquanto ele regenera. Resultado: **um `UObject` alocado por personagem por frame** durante
+corrida ou regeneração — a 60 fps com N personagens, 60·N objetos por segundo.
+
+**O barramento é síncrono**: `USBEventSubsystem::PublishEvent` percorre os quatro níveis de
+prioridade e executa os delegates na própria chamada, sem fila e sem deferral. O payload só
+precisaria viver durante a chamada.
+
+> [!CAUTION] Reutilizar a instância não é seguro sem antes verificar os ouvintes de Blueprint
+> Um Blueprint inscrito pode guardar o payload numa variável. Com instância reutilizada, o valor
+> guardado passaria a mudar sozinho — defeito silencioso e difícil de rastrear.
+
+**Duas saídas, ambas decisão do usuário porque têm consequência visível:**
+1. **Payload por struct só neste evento** — resolve a alocação, mas mexe na assinatura do
+   barramento nesse caminho.
+2. **Não publicar mudança de estamina todo frame** — publicar por limiar ou por intervalo. É a
+   saída mais barata, mas altera a taxa de atualização do HUD de estamina.
+
+A conclusão que importa: o Bloco 6 deixou de ser "otimização especulativa sobre 29 arquivos" e
+virou **um sítio com custo comprovado por frame**. O escopo caiu de "redesenhar o barramento"
+para "resolver um evento".
+
 ---
 
 ## 🧭 Sequência Recomendada
