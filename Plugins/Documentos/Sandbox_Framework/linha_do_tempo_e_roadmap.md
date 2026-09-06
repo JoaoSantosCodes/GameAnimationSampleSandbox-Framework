@@ -6,7 +6,7 @@ Este documento apresenta o histórico detalhado do desenvolvimento do **Sandbox 
 
 ## 📅 Linha do Tempo (Histórico de Desenvolvimento)
 
-Abaixo está o registro de progresso do projeto físico em `D:\Unreal\V1` e sua integração com `D:\Unreal\GameAnimationSample`.
+Abaixo está o registro de progresso do projeto. Até 06/09/2026 ele descrevia o projeto físico em `D:\Unreal\V1` e sua integração com `D:\Unreal\GameAnimationSample`; o V1 foi excluído pelo usuário e o `GameAnimationSample` passou a ser o workspace único.
 
 ### 🏁 Fase de Fundação (Fases 1 a 9)
 *   **Foco**: Configuração básica de diretórios e injeção por dados.

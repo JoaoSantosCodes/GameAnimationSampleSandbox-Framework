@@ -1,6 +1,6 @@
 # Manual de Uso Simplificado - Sandbox Framework (v1.28.0)
 
-Guia rápido e prático de referência para inicialização e uso das mecânicas do **Sandbox Framework** nos workspaces `V1` e `GameAnimationSample`.
+Guia rápido e prático de referência para inicialização e uso das mecânicas do **Sandbox Framework** no workspace `GameAnimationSample`.
 
 ---
 

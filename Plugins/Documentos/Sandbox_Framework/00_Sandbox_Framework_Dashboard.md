@@ -1,20 +1,21 @@
 # 🎮 Sandbox Framework - Painel de Controle (Dashboard)
 
-Bem-vindo ao painel central do **Sandbox Framework** no seu Obsidian. Este espaço centraliza o planejamento, padrões de arquitetura, manuais de uso e histórico de desenvolvimento dos projetos localizados em `D:\Unreal\V1` e integrado no projeto de animações em `D:\Unreal\GameAnimationSample`.
+Bem-vindo ao painel central do **Sandbox Framework** no seu Obsidian. Este espaço centraliza o planejamento, padrões de arquitetura, manuais de uso e histórico de desenvolvimento do projeto em `D:\Unreal\GameAnimationSample`.
 
 ---
 
 ## 🚀 Status do Projeto
 
-- **Projeto Primário**: `D:\Unreal\V1` (Sandbox Framework C++ standalone)
-- **Integração Híbrida**: `D:\Unreal\GameAnimationSample` (Game Animation Sample com Sandbox C++)
+- **Projeto Único**: `D:\Unreal\GameAnimationSample` (Game Animation Sample com o Sandbox Framework em C++)
 - **Repositório GitHub**: [GameAnimationSampleSandbox-Framework](https://github.com/JoaoSantosCodes/GameAnimationSampleSandbox-Framework)
 - **Fase Atual**: `Fase 102 Concluída` — **Power Grid, Generators, Batteries, Circuit Wiring & Electric Consumers Framework (v1.87.0)**
 - **Suíte de Testes**: **444 de 444 specs verdes — EXIT CODE: 0** (medido em `D:\Unreal\GameAnimationSample` em 06/09/2026 via `Automation RunTest Sandbox`)
 - **Versão de Lançamento**: `v1.87.0` (Redes elétricas, balanço de geração vs consumo, baterias acumuladoras, proteção contra sobrecarga/blackout, integridade estrutural e colapso físico, maquinário pesado hidráulico, mechas bípedes, espaçonaves 6-DOF orbitais, aeronaves atmosféricas, embarcações náuticas, veículos terrestres, parkour e combate avançado)
 
-> [!WARNING] O número 322 declarado aqui até 06/09/2026 nunca foi medido, e o V1 continua sem medição
-> A auditoria de 05/09/2026 encontrou quatro números divergentes na documentação (322, 322, 394 e 450), nenhum deles obtido rodando a suíte. O valor acima é o único medido. Ele vale **apenas** para o `GameAnimationSample`; a suíte do `D:\Unreal\V1` não foi executada desde a auditoria, então o estado dele é desconhecido — ver [[implementation_plan_pos_auditoria_2026-09-05|Bloco 5 do plano pós-auditoria]].
+> [!WARNING] O número 322 declarado aqui até 06/09/2026 nunca foi medido
+> A auditoria de 05/09/2026 encontrou quatro números divergentes na documentação (322, 322, 394 e 450), nenhum deles obtido rodando a suíte. O valor acima é o único medido.
+>
+> **O workspace `D:\Unreal\V1` foi excluído pelo usuário e não existe mais.** Menções a ele em documentos históricos (`walkthrough.md`, `task.md`, relatório de auditoria) são registro de um estado passado e ficaram preservadas como tal; não há projeto secundário a sincronizar nem a homologar.
 
 ---
 
@@ -34,7 +35,7 @@ Use os links abaixo para navegar pelas notas e especificações de design do fra
 
 ---
 
-## 🗂️ Estrutura Física de Diretórios (`D:\Unreal\V1`)
+## 🗂️ Estrutura Física de Diretórios (`D:\Unreal\GameAnimationSample`)
 
 Os plugins físicos e suas dependências unidirecionais estão estruturados da seguinte forma:
 
@@ -78,22 +79,14 @@ graph TD
 
 ## 🛠️ Comandos de Terminal Recomendados
 
-### Projeto Standalone (V1)
-*   **Compilar Editor**:
-    ```powershell
-    dotnet "C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.dll" V1Editor Win64 Development "D:\Unreal\V1\V1.uproject" -waitmutex
-    ```
-*   **Rodar Testes**:
-    ```powershell
-    & "C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "D:\Unreal\V1\V1.uproject" -NullRHI -NoSound -NoSplash -stdout -ExecCmds="Automation RunTest Sandbox; Quit" -log
-    ```
+> [!IMPORTANT] A engine deste projeto é a de `D:\Unreal\Unreal Sistema\UE_5.8`, não a do launcher
+> As duas instalações existem na máquina. O `.uproject` referencia a engine por `EngineAssociation` em GUID, e o log confirma `Base Directory: D:/Unreal/Unreal Sistema/UE_5.8/`. Comandos apontados para `C:\Program Files\Epic Games\UE_5.8` compilam contra a engine errada.
 
-### Projeto de Integração (GameAnimationSample)
 *   **Compilar Editor**:
     ```powershell
-    dotnet "C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.dll" GameAnimationSampleEditor Win64 Development "D:\Unreal\GameAnimationSample\GameAnimationSample.uproject" -waitmutex
+    & "D:\Unreal\Unreal Sistema\UE_5.8\Engine\Build\BatchFiles\Build.bat" GameAnimationSampleEditor Win64 Development -Project="D:\Unreal\GameAnimationSample\GameAnimationSample.uproject" -WaitMutex
     ```
 *   **Rodar Testes**:
     ```powershell
-    & "C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "D:\Unreal\GameAnimationSample\GameAnimationSample.uproject" -NullRHI -NoSound -NoSplash -stdout -ExecCmds="Automation RunTest Sandbox; Quit" -log
+    & "D:\Unreal\Unreal Sistema\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "D:\Unreal\GameAnimationSample\GameAnimationSample.uproject" -NullRHI -NoSound -NoSplash -stdout -unattended -nopause -ExecCmds="Automation RunTest Sandbox; Quit" -log
     ```

@@ -1,35 +1,17 @@
 # Guia de Estrutura de Pastas - Sandbox Framework
 
-Este documento descreve detalhadamente a organização física das pastas e arquivos dos projetos **V1** e **GameAnimationSample**, servindo como guia de mapeamento para o Manual de Uso.
+Este documento descreve detalhadamente a organização física das pastas e arquivos do projeto **GameAnimationSample**, servindo como guia de mapeamento para o Manual de Uso.
+
+> [!NOTE] O projeto standalone `D:\Unreal\V1` foi excluído pelo usuário em 2026 e sua seção foi removida daqui
+> O `GameAnimationSample` é o workspace único. Menções ao V1 em documentos históricos (`walkthrough.md`, `task.md`) são registro de um estado passado.
 
 ---
 
 ## 📂 1. Raiz do Workspace e Projetos
 
-O Sandbox Framework opera em dois ambientes físicos estruturados da seguinte forma:
+O Sandbox Framework opera em um único ambiente físico, estruturado da seguinte forma:
 
-### A. Projeto Standalone (`D:\Unreal\V1`)
-Projeto C++ limpo utilizado como ambiente primário de homologação e testes automatizados.
-```
-D:\Unreal\V1/
-├── Config/                     # Configurações do motor (Engine, Input, GameplayTags)
-├── Content/                    # Assets globais e blueprints do jogo
-│   └── SandboxFramework/       # Assets do Framework criados no editor
-│       ├── Abilities/          # Blueprints lógicos de habilidades (ex: teleporte)
-│       ├── Blueprints/         # Atores de gameplay (BP_SBCharacter_Hero, BP_BauDeTeste, SandboxCharacter_Hero)
-│       ├── Data/               # Configurações de Data Assets (DA_PawnData_Hero, DA_CameraMode, DA_MovementConfig)
-│       ├── Input/              # Enhanced Input Actions (IA_SB_Sprint, IA_SB_Interact, IA_SB_Crouch) e Contextos (IMC_HeroDefault)
-│       └── UI/                 # Widget Blueprints derivados das backing classes C++ (WBP_StatusHUD, etc.)
-├── Plugins/                    # Todos os plugins lógicos e de terceiros (ver Seção 2)
-├── Source/                     # Módulo principal C++ de inicialização (V1)
-│   ├── V1/                     # Cabeçalhos, builds e código C++ do módulo
-│   ├── V1.Target.cs            # Alvo de compilação standalone do jogo
-│   └── V1Editor.Target.cs      # Alvo de compilação do editor
-├── V1.sln                      # Arquivo de solução do Visual Studio
-└── V1.uproject                 # Descritor do projeto Unreal
-```
-
-### B. Projeto de Animação Integrado (`D:\Unreal\GameAnimationSample`)
+### Projeto Único (`D:\Unreal\GameAnimationSample`)
 Projeto de demonstração de animações convertido para C++ híbrido e integrado com os plugins do Sandbox.
 ```
 D:\Unreal\GameAnimationSample/
@@ -77,7 +59,7 @@ Os plugins do framework estão localizados em `Plugins/` e dividem-se em 4 camad
 ### Camada 1: Fundação (Base Comum e Regras)
 Esta camada é a base de todo o framework. Módulos superiores herdam dela, mas ela nunca depende de módulos de gameplay.
 
-#### 1. [`01_SandboxCommon`](file:///D:/Unreal/V1/Plugins/01_SandboxCommon)
+#### 1. [`01_SandboxCommon`](file:///D:/Unreal/GameAnimationSample/Plugins/01_SandboxCommon)
 *   **Propósito**: Agregadores comuns de atributos, enums e estruturas genéricas.
 ```
 ├── Source/SandboxCommon/
@@ -91,7 +73,7 @@ Esta camada é a base de todo o framework. Módulos superiores herdam dela, mas 
 │           └── SBLogCategories.cpp
 ```
 
-#### 2. [`02_SandboxInterfaces`](file:///D:/Unreal/V1/Plugins/02_SandboxInterfaces)
+#### 2. [`02_SandboxInterfaces`](file:///D:/Unreal/GameAnimationSample/Plugins/02_SandboxInterfaces)
 *   **Propósito**: Interfaces C++ puras que viabilizam o desacoplamento de chamadas.
 ```
 ├── Source/SandboxInterfaces/
@@ -103,7 +85,7 @@ Esta camada é a base de todo o framework. Módulos superiores herdam dela, mas 
 │           └── SBDebugInterface.h     # Telemetria para o Gameplay Debugger
 ```
 
-#### 3. [`03_SandboxAssets`](file:///D:/Unreal/V1/Plugins/03_SandboxAssets)
+#### 3. [`03_SandboxAssets`](file:///D:/Unreal/GameAnimationSample/Plugins/03_SandboxAssets)
 *   **Propósito**: Mapeamento assíncrono de assets e dados do pawn.
 ```
 ├── Source/SandboxAssets/
@@ -115,7 +97,7 @@ Esta camada é a base de todo o framework. Módulos superiores herdam dela, mas 
 │       └── USBPawnData.cpp
 ```
 
-#### 4. [`04_SandboxCore`](file:///D:/Unreal/V1/Plugins/04_SandboxCore)
+#### 4. [`04_SandboxCore`](file:///D:/Unreal/GameAnimationSample/Plugins/04_SandboxCore)
 *   **Propósito**: Message Router (subsistema de eventos assíncronos) e configurações de inputs.
 ```
 ├── Source/SandboxCore/
@@ -138,7 +120,7 @@ Esta camada é a base de todo o framework. Módulos superiores herdam dela, mas 
 ### Camada 2: Gameplay Base (Locomoção)
 Esta camada lida com o controle físico do personagem sob rede.
 
-#### 5. [`05_SandboxCharacter`](file:///D:/Unreal/V1/Plugins/05_SandboxCharacter)
+#### 5. [`05_SandboxCharacter`](file:///D:/Unreal/GameAnimationSample/Plugins/05_SandboxCharacter)
 *   **Propósito**: Personagem base modular, câmera dinâmica e locomoção preditiva com rollback.
 ```
 ├── Source/SandboxCharacter/
@@ -167,7 +149,7 @@ Esta camada lida com o controle físico do personagem sob rede.
 ### Camada 3: Gameplay Extensions (Sistemas Opcionais)
 Módulos secundários que injetam recursos específicos. Dependem da Camada 2, mas são isolados entre si.
 
-#### 6. [`06_SandboxCombat`](file:///D:/Unreal/V1/Plugins/06_SandboxCombat)
+#### 6. [`06_SandboxCombat`](file:///D:/Unreal/GameAnimationSample/Plugins/06_SandboxCombat)
 *   **Propósito**: Habilidades genéricas, armas hitscan/projéteis e barra de vida lógica.
 ```
 ├── Source/SandboxCombat/
@@ -184,7 +166,7 @@ Módulos secundários que injetam recursos específicos. Dependem da Camada 2, m
 │           └── SBCombatTests.cpp     # Testes de combate e projéteis
 ```
 
-#### 7. [`07_SandboxInteraction`](file:///D:/Unreal/V1/Plugins/07_SandboxInteraction)
+#### 7. [`07_SandboxInteraction`](file:///D:/Unreal/GameAnimationSample/Plugins/07_SandboxInteraction)
 *   **Propósito**: Interações físicas com suporte a foco (Trace) e holds preditos.
 ```
 ├── Source/SandboxInteraction/
@@ -198,7 +180,7 @@ Módulos secundários que injetam recursos específicos. Dependem da Camada 2, m
 │           └── SBInteractionTests.cpp   # Testes de interrupção e foco
 ```
 
-#### 8. [`08_SandboxInventory`](file:///D:/Unreal/V1/Plugins/08_SandboxInventory)
+#### 8. [`08_SandboxInventory`](file:///D:/Unreal/GameAnimationSample/Plugins/08_SandboxInventory)
 *   **Propósito**: Mochila de itens replicada, slots de equipamentos e guards de race condition.
 ```
 ├── Source/SandboxInventory/
@@ -221,7 +203,7 @@ Módulos secundários que injetam recursos específicos. Dependem da Camada 2, m
 ### Camada 4: Apresentação e Depuração (UI & Debug)
 Camada de front-end do jogo.
 
-#### 9. [`09_SandboxUI`](file:///D:/Unreal/V1/Plugins/09_SandboxUI)
+#### 9. [`09_SandboxUI`](file:///D:/Unreal/GameAnimationSample/Plugins/09_SandboxUI)
 *   **Propósito**: Ciclo de vida e camadas de widgets reativos baseados em backing classes.
 ```
 ├── Source/SandboxUI/
@@ -247,7 +229,7 @@ Camada de front-end do jogo.
 │           └── SBUITests.cpp          # Testes de auto-unsubscribe e anti-spill
 ```
 
-#### 10. [`10_SandboxDebug`](file:///D:/Unreal/V1/Plugins/10_SandboxDebug)
+#### 10. [`10_SandboxDebug`](file:///D:/Unreal/GameAnimationSample/Plugins/10_SandboxDebug)
 *   **Propósito**: Painéis de telemetria do Gameplay Debugger nativo da Unreal.
 ```
 ├── Source/SandboxDebug/
@@ -257,7 +239,7 @@ Camada de front-end do jogo.
 │       └── GameplayDebuggerCategory_Sandbox.cpp
 ```
 
-#### 11. [`11_SandboxEditor`](file:///D:/Unreal/V1/Plugins/11_SandboxEditor)
+#### 11. [`11_SandboxEditor`](file:///D:/Unreal/GameAnimationSample/Plugins/11_SandboxEditor)
 *   **Propósito**: Validadores estáticos e customizações do editor sem vazamentos de runtime.
 ```
 ├── Source/SandboxEditor/
