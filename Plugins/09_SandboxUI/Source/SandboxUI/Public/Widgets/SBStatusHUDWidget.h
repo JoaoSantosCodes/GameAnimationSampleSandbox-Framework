@@ -15,7 +15,8 @@ public:
 	USBStatusHUDWidget(const FObjectInitializer& ObjectInitializer);
 
 protected:
-	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 
 	/**
 	 * Barras de recurso sao estado continuo, nao evento.
@@ -30,9 +31,27 @@ protected:
 	 * A resolucao passa por ISBAttributeComponentInterface porque 09_SandboxUI nao depende de
 	 * 05_SandboxCharacter, onde o componente concreto vive.
 	 */
+	UFUNCTION()
 	void RefreshResourceBars();
 
 	void SetBarPercent(UProgressBar* Bar, FGameplayTag AttributeTag) const;
+
+	/**
+	 * Atualiza por timer, e nao por NativeTick, de proposito.
+	 *
+	 * `UUserWidget::UpdateCanTick` so tica um widget de Blueprint quando
+	 * `WidgetBlueprintGeneratedClass::ClassRequiresNativeTick()` e verdadeiro — e essa flag e
+	 * calculada pelo compilador de Blueprint e **gravada no asset**. Um `.uasset` compilado
+	 * antes de esta classe passar a implementar tick continuaria com a flag falsa, e o
+	 * `NativeTick` nunca rodaria: as barras parariam de atualizar sem erro, log ou aviso, ate
+	 * alguem recompilar o Blueprint. Timer nao depende de nada disso.
+	 *
+	 * 30 Hz e imperceptivel para barra de recurso e custa metade do trabalho de um tick a 60.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "Sandbox|UI", meta = (ClampMin = "0.01", ClampMax = "1.0"))
+	float ResourceRefreshInterval = 1.0f / 30.0f;
+
+	FTimerHandle ResourceRefreshTimer;
 
 	UPROPERTY(Transient)
 	TWeakObjectPtr<UActorComponent> CachedAttributeComponent;

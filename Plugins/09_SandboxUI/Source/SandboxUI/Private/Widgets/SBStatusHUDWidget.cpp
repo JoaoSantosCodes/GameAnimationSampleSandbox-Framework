@@ -2,6 +2,8 @@
 #include "Components/ProgressBar.h"
 #include "Interfaces/SBAttributeComponentInterface.h"
 #include "GameFramework/Pawn.h"
+#include "Engine/World.h"
+#include "TimerManager.h"
 #include "SBGameplayTags.h"
 
 USBStatusHUDWidget::USBStatusHUDWidget(const FObjectInitializer& ObjectInitializer)
@@ -9,11 +11,33 @@ USBStatusHUDWidget::USBStatusHUDWidget(const FObjectInitializer& ObjectInitializ
 {
 }
 
-void USBStatusHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+void USBStatusHUDWidget::NativeConstruct()
 {
-	Super::NativeTick(MyGeometry, InDeltaTime);
+	Super::NativeConstruct();
 
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(
+			ResourceRefreshTimer, this, &USBStatusHUDWidget::RefreshResourceBars,
+			ResourceRefreshInterval, true);
+	}
+
+	// Primeira leitura imediata: sem isto as barras ficariam no valor de projeto ate o
+	// primeiro disparo do timer.
 	RefreshResourceBars();
+}
+
+void USBStatusHUDWidget::NativeDestruct()
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(ResourceRefreshTimer);
+	}
+
+	CachedAttributeComponent = nullptr;
+	CachedPawn = nullptr;
+
+	Super::NativeDestruct();
 }
 
 void USBStatusHUDWidget::RefreshResourceBars()

@@ -475,10 +475,29 @@ O evento continua existindo para transições discretas, que é o que ele deveri
 
 > [!NOTE] O que não tem cobertura automatizada
 > `Sandbox.Character.AttributeContract` cobre o contrato novo — resolução por interface, valor,
-> teto, proporção formada só com o contrato, e teto zero para atributo não registrado. **O tick
-> do widget não tem teste**: `GetOwningPlayerPawn()` exige `LocalPlayer` e `PlayerController`
-> reais, que a suíte não monta. A cola de três chamadas foi verificada por compilação e leitura,
-> não por execução automatizada.
+> teto, proporção formada só com o contrato, e teto zero para atributo não registrado. **A
+> atualização do widget não tem teste**: `GetOwningPlayerPawn()` exige `LocalPlayer` e
+> `PlayerController` reais, que a suíte não monta. A cola de três chamadas foi verificada por
+> compilação e leitura, não por execução automatizada.
+
+> [!DANGER] Revisão de 06/09/2026 — a primeira versão usava `NativeTick` e não teria funcionado
+> `UUserWidget::UpdateCanTick` só tica um widget de Blueprint quando
+> `WidgetBlueprintGeneratedClass::ClassRequiresNativeTick()` é verdadeiro, e **essa flag é
+> calculada pelo compilador de Blueprint e gravada dentro do `.uasset`**
+> (`WidgetBlueprintCompiler.cpp:676`). O asset `USBStatusHUDWidget.uasset` foi compilado em
+> 15/08/2026, quando a classe C++ ainda não implementava tick — a flag está falsa nele.
+>
+> Consequência: o `NativeTick` **nunca teria rodado** para o widget usado em jogo, e as barras
+> simplesmente não atualizariam. Sem erro, sem log, sem aviso, até alguém recompilar aquele
+> Blueprint por outro motivo qualquer.
+>
+> Substituído por timer de 30 Hz iniciado em `NativeConstruct` e limpo em `NativeDestruct`.
+> Timer não depende do estado de compilação do asset. E 30 Hz é imperceptível numa barra de
+> recurso, custando metade do trabalho de um tick a 60.
+>
+> **Lição transferível**: em UMG, sobrescrever `NativeTick` numa classe C++ não garante que ela
+> tique. Depende de uma flag gravada no asset derivado. Todo widget C++ deste projeto que
+> dependa de tick precisa dessa verificação.
 
 As duas saídas de maior alcance descritas acima ficam como registro. Nenhuma foi necessária:
 o payload por struct resolveria a alocação mantendo o desenho errado, e a reutilização de
