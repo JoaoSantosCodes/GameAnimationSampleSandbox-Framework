@@ -64,7 +64,13 @@ gerenciador, e é a chave de dependência entre eles.
    onze instalações manuais na ordem certa, e qualquer uma faltando quebra o build do cliente.
 2. **Nome**: `01_SandboxCommon` é um nome de pasta de trabalho, não de produto.
 
-**Correção proposta**: **consolidar em um plugin com onze módulos.**
+> [!IMPORTANT] Superado em 06/09/2026 — o usuário optou por vender como produtos separados
+> A consolidação descrita abaixo **não será feita**. Ver [[plano_produtos_separados]] para o
+> recorte adotado, o grafo de dependências que o sustenta e o bloqueador de módulos duplicados
+> que ele resolve. O resto deste documento — testes, conteúdo, `LogTemp`, metadados, licença de
+> asset — continua valendo, agora aplicado a cada produto.
+
+**Correção proposta (não adotada)**: consolidar em um plugin com onze módulos.
 
 ```
 Plugins/SandboxFramework/
