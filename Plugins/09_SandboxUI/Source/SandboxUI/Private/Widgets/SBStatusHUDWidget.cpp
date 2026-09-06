@@ -1,6 +1,7 @@
 #include "Widgets/SBStatusHUDWidget.h"
 #include "Components/ProgressBar.h"
-#include "Subsystems/SBEventPayloads.h"
+#include "Interfaces/SBAttributeComponentInterface.h"
+#include "GameFramework/Pawn.h"
 #include "SBGameplayTags.h"
 
 USBStatusHUDWidget::USBStatusHUDWidget(const FObjectInitializer& ObjectInitializer)
@@ -8,48 +9,59 @@ USBStatusHUDWidget::USBStatusHUDWidget(const FObjectInitializer& ObjectInitializ
 {
 }
 
-void USBStatusHUDWidget::NativeConstruct()
+void USBStatusHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
-	Super::NativeConstruct();
+	Super::NativeTick(MyGeometry, InDeltaTime);
 
-	FSBBlueprintEventDelegate Delegate;
-	Delegate.BindDynamic(this, &USBStatusHUDWidget::OnAttributeChanged);
-	SubscribeToEvent(FSBGameplayTags::Get().Event_Attribute_Changed, Delegate);
+	RefreshResourceBars();
 }
 
-void USBStatusHUDWidget::OnAttributeChanged(FGameplayTag EventTag, UObject* Payload)
+void USBStatusHUDWidget::RefreshResourceBars()
 {
-	if (!Payload) return;
+	APawn* OwningPawn = GetOwningPlayerPawn();
 
-	USBAttributeChangedPayload* AttrPayload = Cast<USBAttributeChangedPayload>(Payload);
-	if (!AttrPayload) return;
+	// Repossessao troca o pawn sob o widget; o cache precisa acompanhar em vez de continuar
+	// apontando para o componente do pawn anterior.
+	if (OwningPawn != CachedPawn.Get())
+	{
+		CachedPawn = OwningPawn;
+		CachedAttributeComponent = nullptr;
+	}
 
-	if (AttrPayload->TargetPawn != GetOwningPlayerPawn()) return;
+	if (!OwningPawn)
+	{
+		return;
+	}
+
+	if (!CachedAttributeComponent.IsValid())
+	{
+		CachedAttributeComponent = OwningPawn->FindComponentByInterface(USBAttributeComponentInterface::StaticClass());
+		if (!CachedAttributeComponent.IsValid())
+		{
+			return;
+		}
+	}
 
 	const FSBGameplayTags& Tags = FSBGameplayTags::Get();
+	SetBarPercent(PB_Health, Tags.Attribute_Health);
+	SetBarPercent(PB_Mana, Tags.Attribute_Mana);
+	SetBarPercent(PB_Stamina, Tags.Attribute_Stamina);
+}
 
-	if (AttrPayload->AttributeTag == Tags.Attribute_Health)
+void USBStatusHUDWidget::SetBarPercent(UProgressBar* Bar, FGameplayTag AttributeTag) const
+{
+	if (!Bar || !AttributeTag.IsValid() || !CachedAttributeComponent.IsValid())
 	{
-		if (PB_Health)
-		{
-			float Pct = (AttrPayload->MaxValue > 0.0f) ? (AttrPayload->CurrentValue / AttrPayload->MaxValue) : 0.0f;
-			PB_Health->SetPercent(FMath::Clamp(Pct, 0.0f, 1.0f));
-		}
+		return;
 	}
-	else if (AttrPayload->AttributeTag == Tags.Attribute_Mana)
+
+	UActorComponent* AttrComp = CachedAttributeComponent.Get();
+	const float MaxValue = ISBAttributeComponentInterface::Execute_GetAttributeMaxValue(AttrComp, AttributeTag);
+	if (MaxValue <= 0.0f)
 	{
-		if (PB_Mana)
-		{
-			float Pct = (AttrPayload->MaxValue > 0.0f) ? (AttrPayload->CurrentValue / AttrPayload->MaxValue) : 0.0f;
-			PB_Mana->SetPercent(FMath::Clamp(Pct, 0.0f, 1.0f));
-		}
+		return;
 	}
-	else if (AttrPayload->AttributeTag == Tags.Attribute_Stamina)
-	{
-		if (PB_Stamina)
-		{
-			float Pct = (AttrPayload->MaxValue > 0.0f) ? (AttrPayload->CurrentValue / AttrPayload->MaxValue) : 0.0f;
-			PB_Stamina->SetPercent(FMath::Clamp(Pct, 0.0f, 1.0f));
-		}
-	}
+
+	const float CurrentValue = ISBAttributeComponentInterface::Execute_GetAttributeValue(AttrComp, AttributeTag);
+	Bar->SetPercent(FMath::Clamp(CurrentValue / MaxValue, 0.0f, 1.0f));
 }

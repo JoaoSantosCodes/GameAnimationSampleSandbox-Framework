@@ -131,6 +131,15 @@ bool USBAttributeComponent::GetAttribute(FGameplayTag AttributeTag, FSBAttribute
 	return false;
 }
 
+float USBAttributeComponent::GetAttributeMaxValue_Implementation(FGameplayTag AttributeTag) const
+{
+	if (const FSBAttribute* Attr = AttributesMap.Find(AttributeTag))
+	{
+		return Attr->MaxValue;
+	}
+	return 0.0f;
+}
+
 float USBAttributeComponent::GetAttributeValue(FGameplayTag AttributeTag) const
 {
 	float CurrentBase = 0.0f;

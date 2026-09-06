@@ -103,6 +103,7 @@ public:
 
 	// ISBAttributeComponentInterface
 	virtual float GetAttributeValue_Implementation(FGameplayTag AttributeTag) const override { return GetAttributeValue(AttributeTag); }
+	virtual float GetAttributeMaxValue_Implementation(FGameplayTag AttributeTag) const override;
 
 	const TArray<FSBAttributeReplicationEntry>& GetPublicAttributes() const { return PublicAttributes; }
 	const TArray<FSBAttributeReplicationEntry>& GetPrivateAttributes() const { return PrivateAttributes; }

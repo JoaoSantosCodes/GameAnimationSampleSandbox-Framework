@@ -30,4 +30,15 @@ class SANDBOXINTERFACES_API ISBAttributeComponentInterface
 public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Attributes")
 	float GetAttributeValue(FGameplayTag AttributeTag) const;
+
+	/**
+	 * Teto do atributo, que vive em FSBAttribute::MaxValue e nao tem tag propria — existem
+	 * Attribute.MaxHealth e Attribute.MaxWeight, mas nao equivalentes para estamina ou mana.
+	 *
+	 * Sem isto, um consumidor que so pode ver este contrato (ex.: 09_SandboxUI, que nao
+	 * depende de 05_SandboxCharacter) consegue ler o valor corrente mas nao tem como formar
+	 * uma proporcao, e fica obrigado a receber o teto empurrado por evento.
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Attributes")
+	float GetAttributeMaxValue(FGameplayTag AttributeTag) const;
 };

@@ -444,10 +444,45 @@ ninguém escuta — servidor dedicado, personagens de IA, e qualquer momento em 
 estamina não esteja ativa —, que é onde 60·N objetos por segundo eram alocados para serem
 descartados sem destino.
 
-As duas saídas de maior alcance seguem disponíveis e continuam exigindo decisão, agora com o
-custo já medido para justificá-las. A mais promissora, se algum dia for necessária, é o payload
-por struct **restrito a este evento**; reutilizar a instância continua barrado enquanto não se
-auditar se algum Blueprint guarda o payload.
+### ✅ Fechamento em 06/09/2026 — o custo restante foi eliminado na origem
+
+O guard sozinho não resolvia o caso do cliente: com a HUD inscrita, a alocação continuava, e
+pior, era paga por **todo pawn do mundo** — o widget filtrava por `TargetPawn` no consumidor,
+depois que o produtor já tinha alocado.
+
+O erro era de categoria, não de implementação: **estamina não é evento, é estado.** Evento é
+algo que acontece; um número que muda continuamente é algo que se amostra. `USBStatusHUDWidget`
+passou a **ler** os três atributos em `NativeTick` em vez de ser empurrado.
+
+| | Antes | Depois |
+| :--- | :--- | :--- |
+| Alocações por frame | 1 por personagem do mundo | **0** |
+| Filtro por pawn | no consumidor, após alocar | inexistente — a pergunta só é feita sobre o próprio pawn |
+| Assinantes de `Event.Attribute.Changed` em produção | 1 | **0** |
+| Taxa de atualização | por mudança de atributo | por frame (a taxa do display) |
+
+Com zero assinantes, `HasListeners` passa a devolver falso em produção e o payload **nunca
+chega a ser construído** — o guard e esta mudança se completam.
+
+A leitura passa por `ISBAttributeComponentInterface`, porque `09_SandboxUI` não depende de
+`05_SandboxCharacter`. O contrato precisou de um método novo: `GetAttributeMaxValue`. O teto
+vive em `FSBAttribute::MaxValue` e não tem tag própria — existem `Attribute.MaxHealth` e
+`Attribute.MaxWeight`, mas não equivalentes para estamina ou mana. Sem ele, um consumidor
+restrito ao contrato lê o valor corrente mas não consegue formar proporção, e fica obrigado a
+receber o teto empurrado por evento. Era essa lacuna que sustentava o desenho antigo.
+
+O evento continua existindo para transições discretas, que é o que ele deveria ter sido.
+
+> [!NOTE] O que não tem cobertura automatizada
+> `Sandbox.Character.AttributeContract` cobre o contrato novo — resolução por interface, valor,
+> teto, proporção formada só com o contrato, e teto zero para atributo não registrado. **O tick
+> do widget não tem teste**: `GetOwningPlayerPawn()` exige `LocalPlayer` e `PlayerController`
+> reais, que a suíte não monta. A cola de três chamadas foi verificada por compilação e leitura,
+> não por execução automatizada.
+
+As duas saídas de maior alcance descritas acima ficam como registro. Nenhuma foi necessária:
+o payload por struct resolveria a alocação mantendo o desenho errado, e a reutilização de
+instância continua barrada enquanto não se auditar se algum Blueprint guarda o payload.
 
 ---
 
