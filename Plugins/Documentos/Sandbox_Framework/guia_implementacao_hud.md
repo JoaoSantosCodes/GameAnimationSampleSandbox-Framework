@@ -5,6 +5,9 @@
 **Diagnóstico levantado em**: 06/09/2026, lendo o código-fonte e inspecionando os `.uasset`.
 **Estado atual**: a HUD de status **não mostra nada em jogo, e nunca mostrou**.
 
+> Este guia cobre **um** elo do projeto. Para o quadro completo — o que mais falta, em que ordem,
+> e por quê — ver [[guia_implementacao_projeto]].
+
 ---
 
 ## 1. Por que ela não funciona
