@@ -330,6 +330,13 @@ relatório de auditoria e na memória do projeto, **mas não nos documentos orig
 
 ## 🔄 Bloco 5 — Sincronização para o V1 (P6)
 
+> [!DANGER] SEM ALVO — o workspace `D:\Unreal\V1` não existe nesta máquina (verificado em 06/09/2026)
+> A busca pela pasta `01_SandboxCommon` nas quatro unidades da máquina (C:, D:, E:, G:) retorna **um único resultado**: `D:\Unreal\GameAnimationSample\Plugins\01_SandboxCommon`. Também não há nenhum `.uproject` em D: além do `GameAnimationSample` e do `LyraStarterGame`, e este último não contém plugins Sandbox.
+>
+> O pré-requisito deste bloco (suíte verde) foi cumprido, mas não há para onde sincronizar. Todo o texto abaixo descreve um workspace ausente e fica preservado apenas como registro. **O V1 não é uma pendência de trabalho — é uma referência morta na documentação**, e o mesmo vale para as menções a ele no Dashboard, no `status_atual_do_projeto`, no `task.md` e no relatório de auditoria.
+>
+> Se o V1 existir em outra máquina, este bloco continua válido lá e precisa ser reavaliado com acesso a ela.
+
 **Pré-requisito absoluto**: Blocos 0 a 3 concluídos e suíte verde no GameAnimationSample.
 
 O V1 contém as mesmas três pastas órfãs e, por consequência, todos os defeitos corrigidos
