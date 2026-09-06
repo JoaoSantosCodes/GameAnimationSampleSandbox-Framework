@@ -16,7 +16,17 @@ bool USBWeaponBehaviorReload::CanEnter_Implementation(const FSBBehaviorContext& 
 	}
 
 	USBAttributeComponent* AttrComp = Cast<USBAttributeComponent>(CachedAttributeComponent);
+	if (!AttrComp && StackComponent && StackComponent->GetOwner())
+	{
+		AttrComp = StackComponent->GetOwner()->FindComponentByClass<USBAttributeComponent>();
+	}
+
 	USBStateComponent* StateComp = Cast<USBStateComponent>(CachedStateComponent);
+	if (!StateComp && StackComponent && StackComponent->GetOwner())
+	{
+		StateComp = StackComponent->GetOwner()->FindComponentByClass<USBStateComponent>();
+	}
+
 	if (!AttrComp || !StateComp)
 	{
 		return false;
@@ -24,6 +34,11 @@ bool USBWeaponBehaviorReload::CanEnter_Implementation(const FSBBehaviorContext& 
 
 	// Impedir recarga se já estiver recarregando
 	FGameplayTag ReloadingTag = FSBGameplayTags::Get().State_Character_Reloading;
+	if (!ReloadingTag.IsValid())
+	{
+		ReloadingTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Reloading"), false);
+	}
+
 	if (ReloadingTag.IsValid() && StateComp->HasTag(ReloadingTag))
 	{
 		return false;
@@ -31,6 +46,11 @@ bool USBWeaponBehaviorReload::CanEnter_Implementation(const FSBBehaviorContext& 
 
 	// Impedir recarga se a munição já estiver cheia
 	FGameplayTag AmmoTag = FSBGameplayTags::Get().Attribute_Weapon_Ammo;
+	if (!AmmoTag.IsValid())
+	{
+		AmmoTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Weapon.Ammo"), false);
+	}
+
 	FSBAttribute AmmoAttr;
 	if (AmmoTag.IsValid() && AttrComp->GetAttribute(AmmoTag, AmmoAttr))
 	{
@@ -48,9 +68,19 @@ void USBWeaponBehaviorReload::Enter_Implementation(const FSBBehaviorContext& Con
 	Super::Enter_Implementation(Context);
 
 	USBStateComponent* StateComp = Cast<USBStateComponent>(CachedStateComponent);
+	if (!StateComp && StackComponent && StackComponent->GetOwner())
+	{
+		StateComp = StackComponent->GetOwner()->FindComponentByClass<USBStateComponent>();
+	}
+
 	if (StateComp)
 	{
 		FGameplayTag ReloadingTag = FSBGameplayTags::Get().State_Character_Reloading;
+		if (!ReloadingTag.IsValid())
+		{
+			ReloadingTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Reloading"), false);
+		}
+
 		if (ReloadingTag.IsValid())
 		{
 			StateComp->AddTag(ReloadingTag);
@@ -69,9 +99,19 @@ void USBWeaponBehaviorReload::Update_Implementation(float DeltaTime, const FSBBe
 	if (ReloadTimeElapsed >= ReloadDuration)
 	{
 		USBAttributeComponent* AttrComp = Cast<USBAttributeComponent>(CachedAttributeComponent);
+		if (!AttrComp && StackComponent && StackComponent->GetOwner())
+		{
+			AttrComp = StackComponent->GetOwner()->FindComponentByClass<USBAttributeComponent>();
+		}
+
 		if (AttrComp)
 		{
 			FGameplayTag AmmoTag = FSBGameplayTags::Get().Attribute_Weapon_Ammo;
+			if (!AmmoTag.IsValid())
+			{
+				AmmoTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Weapon.Ammo"), false);
+			}
+
 			FSBAttribute AmmoAttr;
 			if (AmmoTag.IsValid() && AttrComp->GetAttribute(AmmoTag, AmmoAttr))
 			{
@@ -89,9 +129,19 @@ void USBWeaponBehaviorReload::Update_Implementation(float DeltaTime, const FSBBe
 void USBWeaponBehaviorReload::Exit_Implementation(const FSBBehaviorContext& Context)
 {
 	USBStateComponent* StateComp = Cast<USBStateComponent>(CachedStateComponent);
+	if (!StateComp && StackComponent && StackComponent->GetOwner())
+	{
+		StateComp = StackComponent->GetOwner()->FindComponentByClass<USBStateComponent>();
+	}
+
 	if (StateComp)
 	{
 		FGameplayTag ReloadingTag = FSBGameplayTags::Get().State_Character_Reloading;
+		if (!ReloadingTag.IsValid())
+		{
+			ReloadingTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Reloading"), false);
+		}
+
 		if (ReloadingTag.IsValid())
 		{
 			StateComp->RemoveTag(ReloadingTag);

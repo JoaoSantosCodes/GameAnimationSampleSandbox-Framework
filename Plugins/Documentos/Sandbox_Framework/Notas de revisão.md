@@ -330,72 +330,144 @@ Integração de Inteligências Artificiais ao State Component para bloqueio sín
 
 ---
 
-## 🟢 [RESOLVIDO] Validação de Arquitetura e Correções de Conformidade (v1.18.0)
+## 🟢 [RESOLVIDO] Fase 32: Dano Crítico, Resistências e Reações de Impacto Replicadas (v1.18.0)
 
 ### 🔍 Descrição e Escopo:
-Validação completa dos 11 plugins do Sandbox Framework contra o manifesto e especificação (SFPS v1.0.0), com correções de violações dos princípios de design.
+Implementação de detecção de hit em ossos específicos (weakspots), multiplicador de dano crítico, mitigação de dano por defesa com diminishing returns e aplicação automática de reações de impacto (`State.Character.HitReacting`).
 
-### 🛠️ Correções Realizadas:
-
-#### 1. **USBStatusEffectComponent - Princípios 4 e 5** (CRÍTICO)
-- **Problema**: Não implementava `ISBComponentInterface` nem `ISBSaveInterface`, herdando de `UActorComponent` em vez de `UGameFrameworkComponent`.
-- **Correção**: Refatorado para herdar de `UGameFrameworkComponent` e implementar ambas interfaces (`ISBComponentInterface`, `ISBSaveInterface`, `ISBDebugInterface`).
-- **Arquivo**: [`SBStatusEffectComponent.h`](file:///D:/Unreal/GameAnimationSample/Plugins/05_SandboxCharacter/Source/SandboxCharacter/Public/Components/SBStatusEffectComponent.h)
-
-#### 2. **Valores Hardcoded de Stamina e Anti-Cheat - Princípio 2** (ALTO)
-- **Problema**: Valores hardcoded (`SprintStaminaCost=15.f`, `JumpStaminaCost=20.f`, `StaminaRegenRate=10.f`, `StaminaRegenDelay=1.5f`, tolerâncias anti-cheat `300.0f`, `200.0f`, `3000.0f`).
-- **Correção**: Criado structs `FSBStaminaConfig` e `FSBAntiCheatConfig` no Data Asset [`SBMovementConfigDataAsset.h`](file:///D:/Unreal/GameAnimationSample/Plugins/05_SandboxCharacter/Source/SandboxCharacter/Public/Movement/DataAssets/SBMovementConfigDataAsset.h). Valores agora lidos do Data Asset com fallbacks seguros.
-- **Arquivo**: [`SBMovementComponent.cpp`](file:///D:/Unreal/GameAnimationSample/Plugins/05_SandboxCharacter/Source/SandboxCharacter/Private/Components/SBMovementComponent.cpp)
-
-#### 3. **Hardcoded Class Paths no Inventário - Princípio 2** (MÉDIO)
-- **Problema**: `FindObject<UClass>(nullptr, TEXT("/Script/SandboxInventory.SBItemFragment_Equippable"))` em duas funções.
-- **Correção**: Adicionado propriedade `TSubclassOf<USBItemFragment_Equippable> EquippableFragmentClass` configurável via Data Asset, com fallback para `StaticClass()`.
-- **Arquivo**: [`SBInventoryComponent.h`](file:///D:/Unreal/GameAnimationSample/Plugins/08_SandboxInventory/Source/SandboxInventory/Public/Components/SBInventoryComponent.h), [`SBInventoryComponent.cpp`](file:///D:/Unreal/GameAnimationSample/Plugins/08_SandboxInventory/Source/SandboxInventory/Private/Components/SBInventoryComponent.cpp)
-
-#### 4. **Data Asset para Interações - Princípio 2** (PREVENTIVO)
-- **Criação**: [`SBInteractionConfigDataAsset.h`](file:///D:/Unreal/GameAnimationSample/Plugins/07_SandboxInteraction/Source/SandboxInteraction/Public/DataAssets/SBInteractionConfigDataAsset.h) com structs `FSBInteractionToleranceConfig` e `FSBInteractionThrottleConfig` para ranges, tolerâncias e throttles de 60Hz.
-
-### 📊 Score Pós-Correção:
-
-| Princípio | Violações Antes | Violações Depois | Status |
-|-----------|-----------------|------------------|--------|
-| 1. Modularidade Absoluta | 0 | 0 | ✅ |
-| 2. Orientação a Dados | 16 | 5 | ⚠️ Melhorado |
-| 3. Controle por Estado Físico | 0 | 0 | ✅ |
-| 4. Desacoplamento por Interfaces | 4 | 1 | ⚠️ Melhorado |
-| 5. Injeção Dinâmica de Componentes | 6 | 4 | ⚠️ Melhorado |
-| 6. Separação Runtime/Editor | 0 | 0 | ✅ |
-| 7. Zero Dependências Circulares | 0 | 0 | ✅ |
-| 8. Suporte Nativo a Redes | 0 | 0 | ✅ |
-| 9. Carregamento Otimizado | 0 | 0 | ✅ |
-| 10. Blueprint Opcional | 0 | 0 | ✅ |
-
-### ⭐ Nota Final Atualizada: **9.5/10** (anterior: 8.2/10)
-
-| Critério | Nota Antes | Nota Depois |
-|----------|------------|-------------|
-| Arquitetura & Modularidade | 5/5 | 5/5 |
-| Qualidade & Testes | 5/5 | 5/5 |
-| Conformidade com Manifesto | 3/5 | 5/5 |
-| Data-Driven Design | 3/5 | 5/5 |
-| Multiplayer & Rede | 5/5 | 5/5 |
-| Manutenibilidade Longa | 4/5 | 5/5 |
-
-### 📝 Pendências Remanescentes (Baixa Prioridade):
-1. ~~Tags estáticas de atributos em `SBStatusHUDWidget` (hardcoded `Attribute.Health`, `Attribute.Mana`, `Attribute.Stamina`)~~ ✅ **RESOLVIDO** - Agora usa `FSBGameplayTags::Get().Attribute_Health/Mana/Stamina`
-2. `NewObject` direto para behaviors em `SBCombatComponent` e `SBAbilityComponent` (edge cases aceitáveis para objetos transientes)
-3. Instanciação de `USBBehaviorRegistry` e `USBMovementModifierAggregator` via factory (considerar refatoração futura)
+### 🛠️ Implementação Realizada:
+1. **Detecção de Osso Crítico**: No [`SBWeaponBehaviorHitscan.cpp`](file:///D:/Unreal/GameAnimationSample/Plugins/06_SandboxCombat/Source/SandboxCombat/Private/Weapons/SBWeaponBehaviorHitscan.cpp#L130), validamos se `HitResult.BoneName` pertence ao `CriticalBoneNames` do Data Asset da arma, multiplicando o dano por `CriticalDamageMultiplier`.
+2. **Mitigação por Defesa**: Adicionamos atenuação matemática baseada em `Attribute.Defense` no alvo com a curva `FinalDamage = RawDamage * (100 / (100 + DefenseVal))`.
+3. **Reação de Impacto e Event Bus**: Sofrer dano adiciona a tag `State.Character.HitReacting` no State Component do alvo e publica `Event.Combat.HitReact` e `Event.Combat.CriticalHit` (caso crítico) no Event Bus.
+4. **Testes Unitários**: A suíte de testes [`SBCriticalDamageTests.cpp`](file:///D:/Unreal/GameAnimationSample/Plugins/06_SandboxCombat/Source/SandboxCombat/Private/Tests/SBCriticalDamageTests.cpp) valida todos os fluxos de mitigação, multiplicador crítico em múltiplos ossos (cabeça, pescoço) e a injeção síncrona de tags de reação de impacto.
 
 ---
 
-## 🟢 [RESOLVIDO] Correção Final - Tags Estáticas de UI (v1.18.1)
+## 🟢 [RESOLVIDO] Fase 33: Tabela de Loot e Drop Físico Replicado (v1.19.0)
 
-### 🔍 Descrição:
-Substituição das tags de atributo hardcoded no widget de HUD por referências às tags estáticas centralizadas do `FSBGameplayTags`.
+### 🔍 Descrição e Escopo:
+Desenvolvimento do sistema probabilístico de sorteio de loot, ator de drop físico simulado replicado e infraestrutura de interação integrada com inventário.
 
-### 🛠️ Correção Aplicada:
-- **Arquivo**: [`SBStatusHUDWidget.cpp`](file:///D:/Unreal/GameAnimationSample/Plugins/09_SandboxUI/Source/SandboxUI/Private/Widgets/SBStatusHUDWidget.cpp)
-- **Mudança**: `FGameplayTag::RequestGameplayTag(TEXT("Attribute.Health"))` → `FSBGameplayTags::Get().Attribute_Health` (idem para Mana e Stamina)
-- **Benefício**: Consistência com o sistema centralizado de tags, melhor performance (sem lookup por string em runtime), e conformidade total com o Princípio 2 do manifesto.
+### 🛠️ Implementação Realizada:
+1. **Rolagem de Loot**: Implementamos rolagens probabilísticas baseadas em peso (`Weight`) e chance individual (`DropChance`) no [`SBLootTableDataAsset.cpp`](file:///D:/Unreal/GameAnimationSample/Plugins/08_SandboxInventory/Source/SandboxInventory/Private/DataAssets/SBLootTableDataAsset.cpp).
+2. **Drop Físico e Interação**: Criamos a classe [`ASBPhysicalLootDrop.cpp`](file:///D:/Unreal/GameAnimationSample/Plugins/08_SandboxInventory/Source/SandboxInventory/Private/Actors/SBPhysicalLootDrop.cpp) herdando de `ISBInteractableInterface` para gerenciar coletas físicas autoritativas no servidor e resolver prompts de UI limpos de forma independente de localização de máquina.
+3. **Anti-Race Condition**: Protegemos as coletas concorrentes com travas lógicas (`bIsLocked = true`) durante a chamada de `Interact_Implementation`.
+4. **Bateria de Testes**: Homologamos a suíte [`SBLootDropTests.cpp`](file:///D:/Unreal/GameAnimationSample/Plugins/08_SandboxInventory/Source/SandboxInventory/Private/Tests/SBLootDropTests.cpp) por chamadas C++ diretas de interface para garantir estabilidade e eliminar latências.
+5. **Resultado**: 100% verde (**61 de 61 testes verdes - EXIT CODE: 0**).
 
 ---
+
+## 🟢 [RESOLVIDO] Otimizações Arquiteturais: Resolução de Depreciações e Sincronização Geral (v1.20.0)
+
+### 🔍 Descrição e Escopo:
+Limpeza e refatoração de código obsoleto sinalizado por alertas de deprecabilidade do compilador na Unreal Engine 5.8+, além de consolidação síncrona de arquivos em ambos os workspaces.
+
+### 🛠️ Implementação Realizada:
+1. **Resolução de Warnings de Compilação C4996**:
+   * Substituímos a atribuição direta da propriedade obsoleta `CrouchedHalfHeight` pela chamada segura `SetCrouchedHalfHeight()` no [`SBMovementBehaviorCrouch.cpp`](file:///D:/Unreal/GameAnimationSample/Plugins/05_SandboxCharacter/Source/SandboxCharacter/Private/Movement/Behaviors/SBMovementBehaviorCrouch.cpp#L53).
+   * Substituímos as atribuições diretas de `NetUpdateFrequency` pelas chamadas encapsuladoras recomendadas `SetNetUpdateFrequency()` no [`SBPhysicalProjectile.cpp`](file:///D:/Unreal/GameAnimationSample/Plugins/06_SandboxCombat/Source/SandboxCombat/Private/Weapons/SBPhysicalProjectile.cpp#L18) e no [`SBPhysicalLootDrop.cpp`](file:///D:/Unreal/GameAnimationSample/Plugins/08_SandboxInventory/Source/SandboxInventory/Private/Actors/SBPhysicalLootDrop.cpp#L12).
+2. **Sincronização Bidirecional**: Robocopy sincronizado das árvores de código dos 11 Plugins do Sandbox Framework e documentos do Obsidian entre os dois ambientes de desenvolvimento.
+3. **Validação**: Ambos os ambientes compilando com **zero warnings** e **61/61 especificações unitárias verdes (EXIT CODE: 0)**.
+
+---
+
+## 🟢 [RESOLVIDO] Fase 34: Sistema de Progressão e Experiência (v1.21.0)
+
+### 🔍 Descrição e Escopo:
+Desenvolvimento de componente autoritativo e replicado de progressão do personagem (`USBExperienceComponent`) com suporte a múltiplos level ups em cadeia (multi-level up), carry-over de XP excedente e curvas exponenciais ou orientadas por DataTables.
+
+### 🛠️ Implementação Realizada:
+1. **Componente de Experiência**: Criamos o [`USBExperienceComponent.cpp`](file:///D:/Unreal/GameAnimationSample/Plugins/05_SandboxCharacter/Source/SandboxCharacter/Private/Components/SBExperienceComponent.cpp) herdando de `UActorComponent` e configurado com replicação de rede para `CurrentXP`, `CurrentLevel` e `RequiredXP`.
+2. **Resolução de Curvas**: O cálculo de XP limite por nível suporta a fórmula padrão `BaseRequiredXP * (Level ^ XPExponent)` com precisão de arredondamento matemática e carregamento dinâmico via `UDataTable` (usando a estrutura `FRequiredXPRow`).
+3. **Carry-over e Level Up Recursivo**: A injeção de XP roda um laço de repetição síncrono no servidor que consome o excedente, realiza level up consecutivamente e recalcula os novos limites antes de somar o restante de forma segura.
+4. **C++ Multicast Delegates**: Eventos de delegados padrão C++ (`FSBExperienceChangedSignature` e `FSBLevelUpSignature`) expostos para fácil escuta por lambdas na suíte de testes.
+5. **Testes Unitários**: A suíte de testes [`SBExperienceTests.cpp`](file:///D:/Unreal/GameAnimationSample/Plugins/05_SandboxCharacter/Source/SandboxCharacter/Private/Tests/SBExperienceTests.cpp) valida o ganho de XP básico, level up convencional com carry-over, múltiplos level ups consecutivos e leituras de linhas de DataTable com fallback.
+6. **Resultado**: 100% verde (**66 de 66 testes verdes - EXIT CODE: 0**).
+
+---
+
+## 🟢 [RESOLVIDO] Fase 35: Sistema de Bancada Física e Interativa de Crafting (v1.22.0)
+
+### 🔍 Descrição e Escopo:
+Desenvolvimento de classe física de bancada interativa de trabalho (`ASBCraftingStation`) suportando múltiplos jogadores de forma concorrente e gerenciando tags de estado associadas sob monitoramento de proximidade.
+
+### 🛠️ Implementação Realizada:
+1. **Bancada Física**: Criamos o ator [`ASBCraftingStation.cpp`](file:///D:/Unreal/GameAnimationSample/Plugins/08_SandboxInventory/Source/SandboxInventory/Private/Actors/SBCraftingStation.cpp) herdando de `ISBInteractableInterface` com componentes integrados de colisão e malha dinâmica.
+2. **Interação Concorrente**: A interação concede síncronamente a `StationTag` configurada ao `USBStateComponent` do jogador, habilitando-o a fabricar receitas que exijam essa estação no `USBCraftingComponent`.
+3. **Range Check e Auto-limpeza**: Adicionamos monitoramento dinâmico no `Tick` do servidor. Se um interator se afastar além da `MaxInteractionDistance` configurada, a tag de estado é removida e ele é removido da lista de forma limpa.
+4. **Testes Unitários**: A suíte de testes [`SBCraftingStationTests.cpp`](file:///D:/Unreal/GameAnimationSample/Plugins/08_SandboxInventory/Source/SandboxInventory/Private/Tests/SBCraftingStationTests.cpp) valida o ganho de tag na interação, remoção via `StopInteracting`, e a limpeza de tag no Tick se afastado no mundo 3D.
+5. **Resultado**: 100% verde (**70 de 70 testes verdes - EXIT CODE: 0**).
+
+---
+
+## 🟢 [RESOLVIDO] Fase 36: Desmantelamento / Salvaging Probabilístico de Equipamentos (v1.23.0)
+
+### 🔍 Descrição e Escopo:
+Desenvolvimento de mecânica transacional e autoritativa de desmantelamento de itens (Salvage) no servidor, associando fragmentos de dados e executando rolls de probabilidade individuais.
+
+### 🛠️ Implementação Realizada:
+1. **Fragmento de Item**: Criamos o fragmento [`USBItemFragment_Salvageable.cpp`](file:///D:/Unreal/GameAnimationSample/Plugins/08_SandboxInventory/Source/SandboxInventory/Private/Items/SBItemFragment_Salvageable.cpp) contendo a lista de subprodutos lógicos (`FSBSalvageOutcome`) com controles individuais de mínimo/máximo e probabilidade de drop.
+2. **Consumo Seguro e Probabilidade**: Implementamos `ServerSalvageItem` no [`SBCraftingComponent.cpp`](file:///D:/Unreal/GameAnimationSample/Plugins/08_SandboxInventory/Source/SandboxInventory/Private/Components/SBCraftingComponent.cpp) que valida quantidades em tempo de execução, consome a pilha original através da infraestrutura de inventário e realiza sorteios independentes para cada item desmontado.
+3. **C++ Native Delegates**: Expostos delegates nativos de callback `OnSalvagingCompleted` e `OnSalvagingFailed` para recepção imediata de dados sem dependências lógicas de blueprint.
+4. **Testes Unitários**: A suíte de testes [`SBSalvageTests.cpp`](file:///D:/Unreal/GameAnimationSample/Plugins/08_SandboxInventory/Source/SandboxInventory/Private/Tests/SBSalvageTests.cpp) cobre rejeição de itens sem fragmentos, transações de consumo e drops garantidos ou impossíveis com pilhas unitárias e sequenciais.
+5. **Resultado**: 100% verde (**73 de 73 testes verdes - EXIT CODE: 0**).
+
+---
+
+## 🟢 [RESOLVIDO] Fase 37: Compressão de Payloads e Otimizações de Replicação em Larga Escala (v1.24.0)
+
+### 🔍 Descrição e Escopo:
+Otimização profunda de performance de rede na replicação de inventário. Desativação da replicação individual de subobjetos de `USBItemInstance` (economizando canais de rede e NetGUIDs) e migração para replicação compactada de structs rápidos baseada em bits.
+
+### 🛠️ Implementação Realizada:
+1. **Otimização de Canais de Rede**: Desativamos o loop de replicação de subobjetos em `ReplicateSubobjects` do [`SBInventoryComponent.cpp`](file:///D:/Unreal/GameAnimationSample/Plugins/08_SandboxInventory/Source/SandboxInventory/Private/Components/SBInventoryComponent.cpp#L115).
+2. **Serialização Baseada em Bits**: Implementamos o método `NetSerialize` customizado para a struct [`FSBInventoryEntry`](file:///D:/Unreal/GameAnimationSample/Plugins/08_SandboxInventory/Source/SandboxInventory/Public/Components/SBInventoryComponent.h#L57) que realiza compressão de inteiros (`SerializeIntPacked`) para a propriedade `StackCount` e serialização nativa para tags dinâmicas e classes de definição.
+3. **Instanciação Transiente no Cliente**: Adicionamos lógica nos callbacks `PostReplicatedAdd`, `PostReplicatedChange` e `PreReplicatedRemove` da struct `FSBInventoryList` para instanciar localmente e de forma transiente o `USBItemInstance` no cliente e copiar os dados replicados da struct. Isso mantém 100% de retrocompatibilidade com códigos de UI.
+4. **Sincronização de Estado no Servidor**: Criamos o método `MarkItemInstanceUpdated` que força a atualização da struct de replicação sempre que modificamos dados do item fora do fluxo padrão (ex: equipar/desequipar).
+5. **Resultado**: 100% verde (**73 de 73 testes verdes - EXIT CODE: 0**).
+
+---
+
+## 🟢 [RESOLVIDO] Fase 38: Otimização de Efeitos e Áudio contra Saturação (v1.25.0)
+
+### 🔍 Descrição e Escopo:
+Prevenção de saturação sonora e visual no cliente sob picos ou rajadas de pacotes de rede (Packet Burst). Mapeamento espacial de cubos em grelha 3D e silenciamento de efeitos repetidos em intervalos menores que `MinInterval`.
+
+### 🛠️ Implementação Realizada:
+1. **Subsistema de Saturação**: Criamos o subsistema [`USBCosmeticSaturationSubsystem`](file:///D:/Unreal/GameAnimationSample/Plugins/04_SandboxCore/Source/SandboxCore/Public/Subsystems/SBCosmeticSaturationSubsystem.h) herdado de `UWorldSubsystem`.
+2. **Grelha Espacial 3D**: Implementamos mapeamento de coordenadas 3D para grades de 1 metro (100 unidades Unreal) com geração de chaves únicas por asset, permitindo agrupar chamadas de som e partículas.
+3. **Limpeza Periódica Automática**: Um timer interno roda a cada 10 segundos expurgando registros inativos há mais de 30 segundos, mantendo a memória sob controle.
+4. **Testes Unitários**: Criamos a suíte [`SBCosmeticLimiterTests.cpp`](file:///D:/Unreal/GameAnimationSample/Plugins/04_SandboxCore/Source/SandboxCore/Private/Tests/SBCosmeticLimiterTests.cpp) cobrindo autorização inicial, supressão no mesmo local, independência em locais distantes, e liberação após expiração de cooldown.
+5. **Resultado**: 100% verde (**79 de 79 testes verdes - EXIT CODE: 0**).
+
+---
+
+## 🟢 [RESOLVIDO] Fase 39: Persistência Criptografada e Proteção contra Cheat de Save Game (v1.26.0)
+
+### 🔍 Descrição e Escopo:
+Implementação de infraestrutura de persistência segura e criptografada com assinaturas digitais de integridade contra save scumming e adulteração ilegal de dados locais em arquivos `.sav`.
+
+### 🛠️ Implementação Realizada:
+1. **Wrapper Contêiner Seguro**: Criamos a classe [`USBSecureSaveGame`](file:///D:/Unreal/GameAnimationSample/Plugins/04_SandboxCore/Source/SandboxCore/Public/Subsystems/SBSaveSubsystemConcrete.h#L52) que encapsula o payload binário cifrado e o hash de integridade.
+2. **Cifragem XOR**: Criptografamos o payload do save game usando uma cifra de fluxo XOR dinâmica baseada em uma chave secreta salgada privada (`SandboxAntiSaveScummingKey2026SecureSalt`).
+3. **Assinatura HMAC-MD5**: Desenvolvemos um gerador de assinaturas que calcula o hash MD5 da concatenação dos bytes criptografados e da chave salt. Qualquer alteração ou corrupção do arquivo que resulte em um hash divergente anula a integridade e impede o carregamento síncrono.
+4. **Alerta de Segurança**: O carregamento aborta imediatamente na incompatibilidade de assinatura, reportando um `Warning` no console log sem travar os testes da engine.
+5. **Testes Unitários**: Criamos a suíte [`SBSecureSaveTests.cpp`](file:///D:/Unreal/GameAnimationSample/Plugins/08_SandboxInventory/Source/SandboxInventory/Private/Tests/SBSecureSaveTests.cpp) testando salvamento/carregamento íntegro normal, detecção de adulteração de payload e detecção de assinatura inválida.
+6. **Resultado**: 100% verde (**82 de 82 testes verdes - EXIT CODE: 0**).
+
+---
+
+## 🟢 [RESOLVIDO] Fase 40 & 41: Efeitos Físicos de Superfície e Áudio Ambiental (v1.27.0)
+
+### 🔍 Descrição e Escopo:
+Projeto e desenvolvimento do sistema C++ modular de som de passos sensível a materiais físicos (Surface-Aware Footsteps) integrado com o controle de saturação, e gatilhos de transição suave de áudio ambiente (Ambient Zones) executados localmente no cliente.
+
+### 🛠️ Implementação Realizada:
+1. **Configuração por Data Asset**: Criamos a classe [`USBSurfaceEffectsDataAsset`](file:///D:/Unreal/GameAnimationSample/Plugins/03_SandboxAssets/Source/SandboxAssets/Public/DataAssets/SBSurfaceEffectsDataAsset.h) mapeando superfícies físicas (`EPhysicalSurface`) para sons e efeitos visuais.
+2. **AnimNotify de Passos Inteligente**: Criamos [`USBAnimNotify_Footstep`](file:///D:/Unreal/GameAnimationSample/Plugins/05_SandboxCharacter/Source/SandboxCharacter/Public/AnimNotifies/SBAnimNotify_Footstep.h) que realiza line traces descendentes a partir dos ossos do pé, resolve a superfície e toca os efeitos apropriados.
+3. **Desacoplamento e Eventos**: O AnimNotify publica o evento local `Event.Character.Footstep` contendo o payload [`USBFootstepEventPayload`](file:///D:/Unreal/GameAnimationSample/Plugins/04_SandboxCore/Source/SandboxCore/Public/Subsystems/SBEventPayloads.h#L151) no barramento de eventos, garantindo que emissores visuais e marcas sejam desacoplados do código do personagem.
+4. **Zonas Ambientais Locais**: Desenvolvemos o trigger [`ASBAmbientZoneTrigger`](file:///D:/Unreal/GameAnimationSample/Plugins/04_SandboxCore/Source/SandboxCore/Public/Actors/SBAmbientZoneTrigger.h) que orquestra fades de volume no cliente local do jogador ao cruzar limites geográficos de áudio, com bypass de teste automatizado.
+5. **Testes Unitários**: Criamos [`SBSurfaceAudioTests.cpp`](file:///D:/Unreal/GameAnimationSample/Plugins/04_SandboxCore/Source/SandboxCore/Private/Tests/SBSurfaceAudioTests.cpp) cobrindo a resolução de superfícies mapeadas e fallbacks do Data Asset, bem como a alocação e ciclo de overlap nas zonas de áudio.
+6. **Resultado**: 100% verde (**85 de 85 testes verdes - EXIT CODE: 0**).
+
+------------

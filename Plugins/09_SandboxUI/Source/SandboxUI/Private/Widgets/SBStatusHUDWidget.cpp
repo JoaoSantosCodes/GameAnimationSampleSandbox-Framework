@@ -14,7 +14,7 @@ void USBStatusHUDWidget::NativeConstruct()
 
 	FSBBlueprintEventDelegate Delegate;
 	Delegate.BindDynamic(this, &USBStatusHUDWidget::OnAttributeChanged);
-	SubscribeToEvent(FGameplayTag::RequestGameplayTag(TEXT("Event.Attribute.Changed")), Delegate);
+	SubscribeToEvent(FSBGameplayTags::Get().Event_Attribute_Changed, Delegate);
 }
 
 void USBStatusHUDWidget::OnAttributeChanged(FGameplayTag EventTag, UObject* Payload)

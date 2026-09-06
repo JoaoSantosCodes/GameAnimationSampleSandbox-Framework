@@ -8,6 +8,8 @@
 #include "GameplayTagContainer.h"
 #include "Components/BoxComponent.h"
 #include "Subsystems/SBEventSubsystem.h"
+#include "Subsystems/SBEventPayloads.h"
+#include "SBGameplayTags.h"
 #include "SBInteractionTestTypes.generated.h"
 
 UCLASS()
@@ -143,8 +145,9 @@ public:
 			{
 				if (USBEventSubsystem* EventSubsystem = GetEventSubsystem())
 				{
-					FGameplayTag ClearedTag = FGameplayTag::RequestGameplayTag(TEXT("Event.Interaction.Cleared"));
-					EventSubsystem->PublishEvent(ClearedTag, CurrentInteractableActor);
+					USBPawnEventPayload* Payload = NewObject<USBPawnEventPayload>(this);
+					Payload->TargetPawn = Cast<APawn>(GetOwner());
+					EventSubsystem->PublishEvent(FSBGameplayTags::Get().Event_Interaction_Cleared, Payload);
 				}
 			}
 
@@ -155,13 +158,13 @@ public:
 				if (USBEventSubsystem* EventSubsystem = GetEventSubsystem())
 				{
 					USBInteractionAvailableEventPayload* Payload = NewObject<USBInteractionAvailableEventPayload>(this);
+					Payload->TargetPawn = Cast<APawn>(GetOwner());
 					Payload->InteractableActor = CurrentInteractableActor;
 
 					Payload->PromptText = Target_GetInteractionPrompt(CurrentInteractableActor);
 					Payload->Duration = Target_GetInteractionDuration(CurrentInteractableActor);
 
-					FGameplayTag AvailableTag = FGameplayTag::RequestGameplayTag(TEXT("Event.Interaction.Available"));
-					EventSubsystem->PublishEvent(AvailableTag, Payload);
+					EventSubsystem->PublishEvent(FSBGameplayTags::Get().Event_Interaction_Available, Payload);
 				}
 			}
 		}

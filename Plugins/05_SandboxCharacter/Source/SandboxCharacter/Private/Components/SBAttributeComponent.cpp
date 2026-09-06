@@ -1,10 +1,11 @@
-#include "Components/SBAttributeComponent.h"
+﻿#include "Components/SBAttributeComponent.h"
 #include "Utilities/SBLogCategories.h"
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/Pawn.h"
 #include "Engine/World.h"
 #include "Subsystems/SBEventSubsystem.h"
 #include "Subsystems/SBEventPayloads.h"
+#include "SBGameplayTags.h"
 
 USBAttributeComponent::USBAttributeComponent()
 	: Super(FObjectInitializer::Get())
@@ -530,6 +531,7 @@ void USBAttributeComponent::ModifyAttributeBaseValue(FGameplayTag Tag, float New
 	}
 
 	float NewVal = GetAttributeValue(Tag);
+
 	if (NewVal != OldVal)
 	{
 		OnAttributeChanged.Broadcast(Tag, NewVal, OldVal, Instigator);
@@ -631,7 +633,7 @@ void USBAttributeComponent::HandleAttributeChangedInternal(FGameplayTag Attribut
 				Payload->CurrentValue = NewValue;
 				Payload->MaxValue = MaxVal;
 
-				EventSubsystem->PublishEvent(FGameplayTag::RequestGameplayTag(TEXT("Event.Attribute.Changed")), Payload);
+				EventSubsystem->PublishEvent(FSBGameplayTags::Get().Event_Attribute_Changed, Payload);
 			}
 		}
 	}

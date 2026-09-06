@@ -15,7 +15,8 @@ public class SandboxAssets : ModuleRules
 				"GameplayTags",
 				"UMG",
 				"SandboxCommon",
-				"SandboxInterfaces"
+				"SandboxInterfaces",
+				"PhysicsCore"
 			}
 			);
 			

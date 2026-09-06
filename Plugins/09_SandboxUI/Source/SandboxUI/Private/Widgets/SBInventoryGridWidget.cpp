@@ -1,5 +1,6 @@
 #include "Widgets/SBInventoryGridWidget.h"
 #include "Subsystems/SBEventPayloads.h"
+#include "SBGameplayTags.h"
 
 USBInventoryGridWidget::USBInventoryGridWidget(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -12,7 +13,7 @@ void USBInventoryGridWidget::NativeConstruct()
 
 	FSBBlueprintEventDelegate SlotDelegate;
 	SlotDelegate.BindDynamic(this, &USBInventoryGridWidget::OnSlotUpdated);
-	SubscribeToEvent(FGameplayTag::RequestGameplayTag(TEXT("Event.Inventory.SlotUpdated")), SlotDelegate);
+	SubscribeToEvent(FSBGameplayTags::Get().Event_Inventory_SlotUpdated, SlotDelegate);
 }
 
 void USBInventoryGridWidget::OnSlotUpdated(FGameplayTag EventTag, UObject* Payload)

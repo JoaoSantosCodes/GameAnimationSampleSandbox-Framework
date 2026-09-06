@@ -6,8 +6,39 @@
 #include "Interfaces/SBInteractableInterface.h"
 #include "Items/SBItemDefinition.h"
 #include "Items/SBItemInstance.h"
+// Usado por ASBTestLootPickupActor::Interact_Implementation. A ausência deste include
+// era mascarada pelo unity build, que agrupava este header com um .cpp que já o trazia.
+#include "Components/SBInventoryComponent.h"
 #include "GameplayTagContainer.h"
 #include "SBInventoryTestTypes.generated.h"
+
+/**
+ * Receptor para os delegates dinâmicos dos componentes de inventário.
+ *
+ * DECLARE_DYNAMIC_MULTICAST_DELEGATE só admite AddDynamic com uma UFUNCTION;
+ * AddLambda existe apenas nos delegates não-dinâmicos. Os delegates precisam
+ * seguir BlueprintAssignable, então é o teste que fornece o receptor.
+ *
+ * Use UMA instância por binding para que o estado capturado não seja disputado.
+ */
+UCLASS()
+class USBInventoryTestListener : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	UFUNCTION()
+	void OnName(FName Value) { bFired = true; ++FireCount; NameArg = Value; NameArgs.Add(Value); }
+
+	UFUNCTION()
+	void OnNameInt(FName Value, int32 IntValue) { bFired = true; ++FireCount; NameArg = Value; NameArgs.Add(Value); IntArg = IntValue; }
+
+	bool bFired = false;
+	int32 FireCount = 0;
+	FName NameArg = NAME_None;
+	TArray<FName> NameArgs;
+	int32 IntArg = 0;
+};
 
 UCLASS()
 class USBTestInventoryListener : public UObject

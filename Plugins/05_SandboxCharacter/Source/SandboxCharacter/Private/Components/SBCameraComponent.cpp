@@ -73,75 +73,13 @@ void USBCameraComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 	APawn* PawnOwner = Cast<APawn>(Owner);
 	if (!PawnOwner) return;
 
-	if (GIsAutomationTesting)
-	{
-		if (bStackChangePending)
-		{
-			RebuildCameraStack();
-		}
-
-		FSBCameraContext Context;
-		Context.Character = Cast<ACharacter>(Owner);
-		Context.SpringArmComponent = CachedSpringArmComponent;
-		Context.CameraComponent = CachedCameraComponent;
-		Context.DeltaTime = DeltaTime;
-
-		for (USBCameraMode* Mode : ActiveCameraModes)
-		{
-			if (Mode)
-			{
-				Mode->Update(DeltaTime, Context);
-			}
-		}
-
-		if (ActiveCameraModes.Num() > 0 && ActiveCameraModes[0])
-		{
-			USBCameraModeDefinition* TopDef = ActiveCameraModes[0]->GetDefinition();
-			if (TopDef)
-			{
-				float TargetFOV = TopDef->TargetFOV;
-				float TargetArmLength = TopDef->TargetArmLength;
-				FVector TargetOffset = TopDef->TargetSocketOffset;
-				float BlendSpeed = TopDef->BlendSpeed;
-
-				if (CachedCameraComponent)
-				{
-					CachedCameraComponent->FieldOfView = FMath::FInterpTo(
-						CachedCameraComponent->FieldOfView,
-						TargetFOV,
-						DeltaTime,
-						BlendSpeed
-					);
-				}
-
-				if (CachedSpringArmComponent)
-				{
-					CachedSpringArmComponent->TargetArmLength = FMath::FInterpTo(
-						CachedSpringArmComponent->TargetArmLength,
-						TargetArmLength,
-						DeltaTime,
-						BlendSpeed
-					);
-
-					CachedSpringArmComponent->SocketOffset = FMath::VInterpTo(
-						CachedSpringArmComponent->SocketOffset,
-						TargetOffset,
-						DeltaTime,
-						BlendSpeed
-					);
-				}
-			}
-		}
-		return;
-	}
-
-	// Otimização de CPU e Suporte a Spectator/Replay:
-	// Só processa câmera se for controlado localmente OU se for o ViewTarget ativo do PlayerController local
-	APlayerController* LocalPC = GEngine ? GEngine->GetFirstLocalPlayerController(GetWorld()) : nullptr;
+	// Otimização de CPU e Suporte a Spectator/Replay/Automation:
+	// Só processa câmera se for em testes de automação OU se for controlado localmente OU se for o ViewTarget ativo do PlayerController local
+	APlayerController* LocalPC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
 	const bool bIsViewTarget = LocalPC && LocalPC->GetViewTarget() == Owner;
 	const bool bIsLocallyControlled = PawnOwner->IsLocallyControlled();
 
-	if (!bIsLocallyControlled && !bIsViewTarget)
+	if (!GIsAutomationTesting && !bIsLocallyControlled && !bIsViewTarget)
 	{
 		return;
 	}

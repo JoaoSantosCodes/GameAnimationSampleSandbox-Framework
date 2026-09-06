@@ -9,9 +9,9 @@ Bem-vindo ao painel central do **Sandbox Framework** no seu Obsidian. Este espa�
 - **Projeto Primário**: `D:\Unreal\V1` (Sandbox Framework C++ standalone)
 - **Integração Híbrida**: `D:\Unreal\GameAnimationSample` (Game Animation Sample com Sandbox C++)
 - **Repositório GitHub**: [GameAnimationSampleSandbox-Framework](https://github.com/JoaoSantosCodes/GameAnimationSampleSandbox-Framework)
-- **Fase Atual**: `Fase 31 Concluída` — **Inteligência Artificial Integrada com State Component**
-- **Suíte de Testes**: **100% Verde (56/56 Specs Passando em ambos os projetos)**
-- **Versão de Lançamento**: `v1.17.0` (Tabela de Agro, tags de bloqueio CC de movimento/armas e testes)
+- **Fase Atual**: `Fase 102 Concluída` — **Power Grid, Generators, Batteries, Circuit Wiring & Electric Consumers Framework (v1.87.0)**
+- **Suíte de Testes**: **100% Verde (322/322 Specs Passando em ambos os projetos - Zero Warnings/Errors - EXIT CODE: 0)**
+- **Versão de Lançamento**: `v1.87.0` (Redes elétricas, balanço de geração vs consumo, baterias acumuladoras, proteção contra sobrecarga/blackout, integridade estrutural e colapso físico, maquinário pesado hidráulico, mechas bípedes, espaçonaves 6-DOF orbitais, aeronaves atmosféricas, embarcações náuticas, veículos terrestres, parkour e combate avançado)
 
 ---
 
@@ -21,11 +21,13 @@ Use os links abaixo para navegar pelas notas e especificações de design do fra
 
 *   📋 **CHECKLIST & TAREFAS**: [[task|Checklist de Atividades e Fases]]
 *   🚀 **HISTÓRICO DE ENTREGAS**: [[walkthrough|Walkthrough de Refatorações e Recursos]]
+*   📊 **STATUS ATUAL DO PROJETO**: [[status_atual_do_projeto|Status Atual e Métricas]]
 *   📜 **DIRETRIZES DE ARQUITETURA**: [[manifesto_and_coding_standards|Manifesto & Padrões de Código C++]]
 *   📐 **ESPECIFICAÇÕES TÉCNICAS**: [[sfps_specification|Especificação Estrutural (SFPS v1.0.0)]]
 *   📘 **MANUAL DO DESENVOLVEDOR**: [[sfdg_guide|Guia de Desenvolvimento (SFDG v1.0.0)]]
 *   📘 **MANUAL DE USO DO PRODUTO**: [[manual_de_uso|Manual de Utilização do Framework]]
 *   🧪 **BATERIA DE TESTES**: [[bateria_de_testes|Guia da Bateria de Testes Automatizados]]
+*   ⏳ **LINHA DO TEMPO & ROADMAP**: [[linha_do_tempo_e_roadmap|Roadmap e Linha do Tempo Expandida]]
 
 ---
 
@@ -92,4 +94,3 @@ graph TD
     ```powershell
     & "C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "D:\Unreal\GameAnimationSample\GameAnimationSample.uproject" -NullRHI -NoSound -NoSplash -stdout -ExecCmds="Automation RunTest Sandbox; Quit" -log
     ```
-

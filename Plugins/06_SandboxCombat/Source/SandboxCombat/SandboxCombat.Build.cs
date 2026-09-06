@@ -31,7 +31,11 @@ public class SandboxCombat : ModuleRules
 				"SandboxCore",
 				"SandboxCharacter",
 				"ModularGameplay",
-				"ModularGameplayActors"
+				"ModularGameplayActors",
+				"AIModule",
+				"SmartObjectsModule",
+				"StateTreeModule",
+				"GameplayStateTreeModule"
 			}
 		);
 			

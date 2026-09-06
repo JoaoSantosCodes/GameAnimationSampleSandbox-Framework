@@ -11,6 +11,7 @@
 #include "Utilities/SBLogCategories.h"
 #include "Subsystems/SBEventSubsystem.h"
 #include "Subsystems/SBEventPayloads.h"
+#include "SBGameplayTags.h"
 
 USBAbilityComponent::USBAbilityComponent()
 {
@@ -164,13 +165,23 @@ bool USBAbilityComponent::RequestBehavior(FGameplayTag BehaviorTag)
 	}
 
 	int32 PredictionId = 0;
-	if (GetOwnerRole() == ROLE_Authority)
+	if (int32* FoundPredictionId = DeferredPredictionIds.Find(BehaviorTag))
+	{
+		PredictionId = *FoundPredictionId;
+		DeferredPredictionIds.Remove(BehaviorTag);
+	}
+	else if (GetOwnerRole() == ROLE_Authority)
 	{
 		PredictionId = CurrentServerPredictionId;
 	}
 	else
 	{
 		PredictionId = ++LocalPredictionId;
+	}
+
+	if (StackMutationDepth > 0)
+	{
+		DeferredPredictionIds.Add(BehaviorTag, PredictionId);
 	}
 
 	bool bResourceConsumed = false;
@@ -186,7 +197,7 @@ bool USBAbilityComponent::RequestBehavior(FGameplayTag BehaviorTag)
 				UE_LOG(LogSandboxCharacter, Warning, TEXT("Resource consumption failed for ability %s"), *BehaviorTag.ToString());
 				return false;
 			}
-			else if (Ability->ResourceTag.MatchesTag(FGameplayTag::RequestGameplayTag(TEXT("Attribute.Mana"))))
+			else if (Ability->ResourceTag.MatchesTag(FSBGameplayTags::Get().Attribute_Mana))
 			{
 				if (UWorld* World = GetWorld())
 				{
@@ -238,7 +249,7 @@ bool USBAbilityComponent::RequestBehavior(FGameplayTag BehaviorTag)
 						CooldownPayload->AbilityTag = BehaviorTag;
 						CooldownPayload->Duration = Ability->CooldownDuration;
 
-						EventSubsystem->PublishEvent(FGameplayTag::RequestGameplayTag(TEXT("Event.Ability.CooldownStarted")), CooldownPayload);
+						EventSubsystem->PublishEvent(FSBGameplayTags::Get().Event_Ability_CooldownStarted, CooldownPayload);
 					}
 				}
 			}
@@ -490,7 +501,7 @@ void USBAbilityComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 						CooldownPayload->AbilityTag = ExpiredTag;
 						CooldownPayload->Duration = 0.0f;
 
-						EventSubsystem->PublishEvent(FGameplayTag::RequestGameplayTag(TEXT("Event.Ability.CooldownEnded")), CooldownPayload);
+						EventSubsystem->PublishEvent(FSBGameplayTags::Get().Event_Ability_CooldownEnded, CooldownPayload);
 					}
 				}
 			}
@@ -504,7 +515,7 @@ void USBAbilityComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 				ISBCharacterInterface* CharInterface = Cast<ISBCharacterInterface>(GetOwner());
 				if (USBAttributeComponent* AttribComp = CharInterface ? Cast<USBAttributeComponent>(CharInterface->GetAttributeComponent_Implementation()) : nullptr)
 				{
-					FGameplayTag ManaTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Mana"), false);
+					FGameplayTag ManaTag = FSBGameplayTags::Get().Attribute_Mana;
 					FSBAttribute ManaAttr;
 					if (ManaTag.IsValid() && AttribComp->GetAttribute(ManaTag, ManaAttr))
 					{

@@ -11,6 +11,7 @@
 #include "UObject/UnrealType.h"
 #include "Engine/GameInstance.h"
 #include "Net/UnrealNetwork.h"
+#include "SBGameplayTags.h"
 
 USBCombatComponent::USBCombatComponent()
 	: Super()
@@ -98,12 +99,12 @@ void USBCombatComponent::OnInitialize_Implementation()
 			if (USBEventSubsystem* EventSubsystem = GI->GetSubsystem<USBEventSubsystem>())
 			{
 				EventSubsystem->SubscribeToEventNative(
-					FGameplayTag::RequestGameplayTag(TEXT("Event.Inventory.ItemEquipped")),
+					FSBGameplayTags::Get().Event_Inventory_ItemEquipped,
 					ESBEventPriority::Medium,
 					FSBNativeEventDelegate::CreateUObject(this, &USBCombatComponent::OnItemEquipped)
 				);
 				EventSubsystem->SubscribeToEventNative(
-					FGameplayTag::RequestGameplayTag(TEXT("Event.Inventory.ItemUnequipped")),
+					FSBGameplayTags::Get().Event_Inventory_ItemUnequipped,
 					ESBEventPriority::Medium,
 					FSBNativeEventDelegate::CreateUObject(this, &USBCombatComponent::OnItemUnequipped)
 				);
@@ -122,7 +123,7 @@ void USBCombatComponent::OnReady_Implementation()
 		USBAttributeComponent* AttrComp = Owner->FindComponentByClass<USBAttributeComponent>();
 		if (AttrComp)
 		{
-			FGameplayTag AmmoTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Weapon.Ammo"), false);
+			FGameplayTag AmmoTag = FSBGameplayTags::Get().Attribute_Weapon_Ammo;
 			FSBAttribute DummyAmmo;
 			if (AmmoTag.IsValid() && !AttrComp->GetAttribute(AmmoTag, DummyAmmo))
 			{
@@ -300,7 +301,7 @@ bool USBCombatComponent::RequestWeaponBehavior(FGameplayTag BehaviorTag, int32 P
 	{
 		if (Def->AmmoCost > 0.0f)
 		{
-			FGameplayTag AmmoTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Weapon.Ammo"));
+			FGameplayTag AmmoTag = FSBGameplayTags::Get().Attribute_Weapon_Ammo;
 			bool bAmmoConsumed = CachedAttributeComponent->TryConsumeAttribute(AmmoTag, Def->AmmoCost, Owner, PredictionId);
 			if (!bAmmoConsumed)
 			{
@@ -310,7 +311,7 @@ bool USBCombatComponent::RequestWeaponBehavior(FGameplayTag BehaviorTag, int32 P
 
 		if (Def->ManaCost > 0.0f)
 		{
-			FGameplayTag ManaTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Mana"));
+			FGameplayTag ManaTag = FSBGameplayTags::Get().Attribute_Mana;
 			bool bManaConsumed = CachedAttributeComponent->TryConsumeAttribute(ManaTag, Def->ManaCost, Owner, PredictionId);
 			if (!bManaConsumed)
 			{
@@ -429,11 +430,8 @@ void USBCombatComponent::ClientRollbackFire_Implementation(FGameplayTag Behavior
 	// 2. Reverte os atributos locais correspondentes a essa predição
 	if (CachedAttributeComponent)
 	{
-		FGameplayTag AmmoTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Weapon.Ammo"));
-		CachedAttributeComponent->ClientRollbackPrediction(AmmoTag, PredictionId);
-
-		FGameplayTag ManaTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Mana"));
-		CachedAttributeComponent->ClientRollbackPrediction(ManaTag, PredictionId);
+		CachedAttributeComponent->ClientRollbackPrediction(FSBGameplayTags::Get().Attribute_Weapon_Ammo, PredictionId);
+		CachedAttributeComponent->ClientRollbackPrediction(FSBGameplayTags::Get().Attribute_Mana, PredictionId);
 	}
 }
 
@@ -483,10 +481,14 @@ void USBCombatComponent::OnItemEquipped(FGameplayTag EventTag, UObject* Payload)
 			if (BehaviorClass && DefAsset && BehaviorClass->IsChildOf(USBWeaponBehavior::StaticClass()))
 			{
 				FGameplayTag WeaponTag = DefAsset->BehaviorTag;
-				if (!FindAvailableWeaponByTag(WeaponTag))
+				UObject* ItemInstance = ISBEquipEventPayloadInterface::Execute_GetItemInstance(Payload);
+
+				USBWeaponBehavior* ExistingBehavior = Cast<USBWeaponBehavior>(FindAvailableWeaponByTag(WeaponTag));
+				if (!ExistingBehavior)
 				{
 					USBWeaponBehavior* NewBehavior = NewObject<USBWeaponBehavior>(this, BehaviorClass);
 					NewBehavior->Initialize(this, DefAsset);
+					NewBehavior->SetEquippedItemInstance(ItemInstance);
 					AvailableBehaviors.Add(NewBehavior);
 
 					// Spawn do Actor Visual no Servidor
@@ -520,6 +522,10 @@ void USBCombatComponent::OnItemEquipped(FGameplayTag EventTag, UObject* Payload)
 							}
 						}
 					}
+				}
+				else
+				{
+					ExistingBehavior->SetEquippedItemInstance(ItemInstance);
 				}
 			}
 		}
@@ -616,6 +622,7 @@ void USBCombatComponent::AddAgro(APawn* TargetPawn, float Amount)
 	{
 		float& CurrentAgro = AgroTable.FindOrAdd(TargetPawn);
 		CurrentAgro += Amount;
+		UpdateHighestAgroTarget();
 	}
 }
 
@@ -630,6 +637,7 @@ void USBCombatComponent::ClearAgro(APawn* TargetPawn)
 	if (Owner && Owner->HasAuthority())
 	{
 		AgroTable.Remove(TargetPawn);
+		UpdateHighestAgroTarget();
 	}
 }
 
@@ -639,6 +647,7 @@ void USBCombatComponent::ClearAllAgro()
 	if (Owner && Owner->HasAuthority())
 	{
 		AgroTable.Empty();
+		UpdateHighestAgroTarget();
 	}
 }
 
@@ -649,6 +658,19 @@ APawn* USBCombatComponent::GetHighestAgroTarget() const
 	{
 		return nullptr;
 	}
+
+	// Se o target cacheado se tornou inválido, precisamos recalcular
+	if (!CachedHighestAgroTarget.IsValid() && AgroTable.Num() > 0)
+	{
+		const_cast<USBCombatComponent*>(this)->UpdateHighestAgroTarget();
+	}
+
+	return CachedHighestAgroTarget.Get();
+}
+
+void USBCombatComponent::UpdateHighestAgroTarget()
+{
+	APawn* PreviousTarget = CachedHighestAgroTarget.Get();
 
 	APawn* BestTarget = nullptr;
 	float HighestAgro = -1.0f;
@@ -673,12 +695,15 @@ APawn* USBCombatComponent::GetHighestAgroTarget() const
 
 	if (InvalidKeys.Num() > 0)
 	{
-		USBCombatComponent* MutableThis = const_cast<USBCombatComponent*>(this);
 		for (const auto& Key : InvalidKeys)
 		{
-			MutableThis->AgroTable.Remove(Key);
+			AgroTable.Remove(Key);
 		}
 	}
 
-	return BestTarget;
+	if (BestTarget != PreviousTarget)
+	{
+		CachedHighestAgroTarget = BestTarget;
+		OnAgroTargetChanged.Broadcast(BestTarget);
+	}
 }

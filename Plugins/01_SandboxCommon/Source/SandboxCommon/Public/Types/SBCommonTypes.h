@@ -27,7 +27,48 @@ enum class ESBEventPriority : uint8
 	Low = 20,
 	Lowest = 30
 };
+UENUM(BlueprintType)
+enum class ESBRuleOperator : uint8
+{
+	Equal,
+	NotEqual,
+	LessThan,
+	LessThanOrEqual,
+	GreaterThan,
+	GreaterThanOrEqual,
+	HasTag,
+	DoesNotHaveTag
+};
 
+USTRUCT(BlueprintType)
+struct SANDBOXCOMMON_API FSBRuleCondition
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RuleEngine")
+	FGameplayTag ConditionTag;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RuleEngine")
+	ESBRuleOperator Operator = ESBRuleOperator::Equal;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RuleEngine")
+	float NumericValue = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RuleEngine")
+	FGameplayTag TagValue;
+};
+
+USTRUCT(BlueprintType)
+struct SANDBOXCOMMON_API FSBRule
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RuleEngine")
+	TArray<FSBRuleCondition> Conditions;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RuleEngine")
+	bool bRequireAll = true;
+};
 USTRUCT(BlueprintType)
 struct SANDBOXCOMMON_API FSBAttribute
 {

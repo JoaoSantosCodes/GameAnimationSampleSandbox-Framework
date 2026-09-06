@@ -346,7 +346,7 @@ void USBStatusEffectComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (!GetOwner() || !GetOwner()->HasAuthority())
+	if (!GetOwner() || !GetOwner()->HasAuthority() || ActiveEffects.Entries.Num() == 0)
 	{
 		return;
 	}

@@ -22,7 +22,8 @@ public class SandboxCharacter : ModuleRules
 				"SandboxCore",
 				"AIModule",
 				"NetCore",
-				"EnhancedInput"
+				"EnhancedInput",
+				"PhysicsCore"
 			}
 			);
 			

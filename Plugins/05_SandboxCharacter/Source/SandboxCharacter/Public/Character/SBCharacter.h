@@ -39,5 +39,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sandbox|Character")
 	TObjectPtr<USBPawnDataAsset> PawnData;
 
+	UPROPERTY(Transient)
+	mutable TWeakObjectPtr<UActorComponent> CachedAttributeComponent = nullptr;
+
+	UPROPERTY(Transient)
+	mutable TWeakObjectPtr<UActorComponent> CachedStateComponent = nullptr;
+
+	UPROPERTY(Transient)
+	mutable TWeakObjectPtr<UActorComponent> CachedAbilityComponent = nullptr;
+
 	void InitializeFromPawnData();
 };

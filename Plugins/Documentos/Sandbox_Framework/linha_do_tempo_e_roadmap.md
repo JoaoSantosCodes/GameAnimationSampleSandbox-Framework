@@ -165,3 +165,40 @@ gantt
     *   **Estamina Avançada**: Consumo ao correr/pular e controle do estado de fadiga.
     *   **Munição & Recarga**: Consumo de balas, estado de recarregando e predição local.
     *   **Cooldowns & Custo de Mana**: Bloqueio de ativação e regeneração passiva de recursos.
+
+### 🤖 Marco 6: Inteligência Artificial e Combate Avançado (Fases 31 a 33) - CONCLUÍDO
+*   **Objetivo**: Integrar sistemas de controle de IA (Agro e CC), reações de combate com mitigação refinada e tabelas de drops físicos seguros.
+*   **Entregas**:
+    *   **Inteligência Artificial Integrada**: Tabela de agro autoritativa, controle de movimentação zero sob atordoamento/congelamento e bloqueio lógico de disparos.
+    *   **Dano Crítico e Resistências**: Detecção síncrona de ossos críticos, atenuadores defensivos diminishing returns e injeção automática de hit reacts.
+    *   **Drops de Loot Físicos Replicados**: Rolagens probabilísticas de loot tables e drops físicos equipados com travas de concorrência anti-race condition.
+    *   **Resolução de Depreciações (v1.20.0)**: Adaptação das propriedades e APIs obsoletas (`CrouchedHalfHeight`, `NetUpdateFrequency`) para garantir total compatibilidade com Unreal Engine 5.8+.
+    *   **Qualidade Homologada**: 61 de 61 especificações unitárias passando verdes na suíte de testes em ambos os workspaces.
+
+### 🤖 Marco 7: Sistema de Crafting e Progressão Avançada - CONCLUÍDO
+*   **Objetivo**: Expandir a árvore de itens, implementando bancadas de trabalho físicas com receitas lógicas dinâmicas, desmanche de itens para matérias-primas e progressão de nível/atributos de personagens baseada em experiência (XP).
+*   **Entregas**:
+    *   *Fase 34 (CONCLUÍDA - v1.21.0)*: Estruturar componente de experiência (`USBExperienceComponent`) e níveis com curva de ganho de atributos por fórmula matemática e por tabelas de dados (`UDataTable`), com suporte a multi-level up, carry-over e 66 de 66 specs verdes.
+    *   *Fase 35 (CONCLUÍDA - v1.22.0)*: Implementar o sistema de bancada física de Crafting interativa (`ASBCraftingStation`), suportando múltiplos acessos concorrentes e efetuando monitoramento de proximidade ativa no servidor.
+    *   *Fase 36 (CONCLUÍDA - v1.23.0)*: Adicionar mecânica de desmantelamento (Salvage) transacional e probabilística no servidor, com consumo seguro e rolls por fragmento (`USBItemFragment_Salvageable`).
+
+### 🌐 Marco 8: Persistência Multijogador e Otimizações de Rede - CONCLUÍDO
+*   **Objetivo**: Refinar a estabilidade de rede em larga escala e consolidar persistência de dados segura.
+*   **Entregas**:
+    *   *Fase 37 (CONCLUÍDA - v1.24.0)*: Implementar compressão dinâmica de payloads de rede para replicação de inventário através de `NetSerialize` customizado e desativação de subobjetos redundantes.
+    *   *Fase 38 (CONCLUÍDA - v1.25.0)*: Otimização de canais de áudio e efeitos estéticos sob latências extremas (network saturation protection) com mapeamento espacial de cubos 3D de 1m e limites de cooldown de reprodução.
+    *   *Fase 39 (CONCLUÍDA - v1.26.0)*: Integração do banco de dados local com save games criptografados do servidor (Anti-Save Scumming) através de contêiner assinado digitalmente.
+
+### 🔊 Marco 9: Efeitos Físicos de Superfície e Áudio Ambiental (Fases 40 & 41) - CONCLUÍDO (v1.27.0)
+*   **Objetivo**: Introduzir um sistema de passos sensível a materiais físicos (Surface-Aware Footsteps) integrado com o limitador de saturação, e zonas de áudio ambiental em C++.
+*   **Fases Entregues**:
+    *   *Fase 40*: Sistema de passos dinâmicos que executam line traces descendentes a partir dos pés do personagem, determinam a superfície física e reproduzem efeitos sonoros e visuais correspondentes do `USBSurfaceEffectsDataAsset`.
+    *   *Fase 41*: Subsistema de zonas e orquestração de trilhas de som ambiente (`ASBAmbientZoneTrigger`) com suporte a crossfades e transições suaves de áudio baseadas em proximidade ou volume.
+
+### 📜 Marco 10: Sistema de Missões e Comércio (Fases 42 & 43) (Roadmap)
+*   **Objetivo**: Introduzir infraestrutura replicada e segura para missões lógicas dinâmicas baseadas em eventos e transações de compras/vendas com NPCs.
+*   **Fases Planejadas**:
+    *   *Fase 42*: Sistema de missões com o componente `USBQuestComponent` que rastreia objetivos do jogador a partir do barramento de eventos.
+    *   *Fase 43*: Sistema de economia e transações comerciais através de `USBMerchantComponent` com verificação server-side de proximidade física e de ouro/moedas.
+
+

@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
 #include "GameplayTagContainer.h"
+#include "Chaos/ChaosEngineInterface.h"
 #include "SBEventPayloads.generated.h"
 
 UCLASS(BlueprintType)
@@ -99,4 +100,83 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Events")
 	float Duration = 0.0f;
+};
+
+UCLASS(BlueprintType)
+class SANDBOXCORE_API USBHitReactEventPayload : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Events")
+	TObjectPtr<APawn> TargetPawn = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Events")
+	TObjectPtr<AActor> InstigatorActor = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Events")
+	FName HitBoneName = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Events")
+	FVector HitDirection = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Events")
+	float DamageDealt = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Events")
+	bool bIsCritical = false;
+};
+
+UCLASS(BlueprintType)
+class SANDBOXCORE_API USBCraftingEventPayload : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Events")
+	TObjectPtr<APawn> TargetPawn = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Events")
+	FGameplayTag RecipeTag;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Events")
+	TObjectPtr<UObject> ResultItemDef = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Events")
+	int32 ResultQuantity = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Events")
+	bool bSuccess = false;
+};
+
+UCLASS(BlueprintType)
+class SANDBOXCORE_API USBFootstepEventPayload : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Events")
+	TObjectPtr<APawn> TargetPawn = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Events")
+	FVector Location = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Events")
+	TEnumAsByte<EPhysicalSurface> SurfaceType = SurfaceType_Default;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Events")
+	FName FootSocketName = NAME_None;
+};
+
+UCLASS(BlueprintType)
+class SANDBOXCORE_API USBQuestRewardsPayload : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Events")
+	TObjectPtr<APawn> TargetPawn = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Events")
+	TObjectPtr<UObject> QuestData = nullptr;
 };

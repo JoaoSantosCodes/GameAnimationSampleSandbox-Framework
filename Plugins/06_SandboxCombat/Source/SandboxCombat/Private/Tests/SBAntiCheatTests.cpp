@@ -269,6 +269,9 @@ void FSBAntiCheatTestsSpec::Define()
 		
 		UBoxComponent* BoxComp = NewObject<UBoxComponent>(ObstacleWall);
 		BoxComp->RegisterComponent();
+		// AActor puro nao tem RootComponent no momento do spawn, entao a posicao passada a
+		// SpawnActor nao e aplicada. Posicionar explicitamente apos o root existir.
+		ObstacleWall->SetActorLocation(FVector(250.f, 0.f, 100.f));
 		ObstacleWall->SetRootComponent(BoxComp);
 		BoxComp->SetBoxExtent(FVector(50.f, 200.f, 200.f));
 		BoxComp->SetCollisionResponseToAllChannels(ECR_Block);

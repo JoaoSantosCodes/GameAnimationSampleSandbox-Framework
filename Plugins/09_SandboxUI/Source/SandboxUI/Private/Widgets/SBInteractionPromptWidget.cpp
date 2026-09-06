@@ -2,6 +2,7 @@
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "Subsystems/SBEventPayloads.h"
+#include "SBGameplayTags.h"
 
 USBInteractionPromptWidget::USBInteractionPromptWidget(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -14,17 +15,19 @@ void USBInteractionPromptWidget::NativeConstruct()
 
 	SetVisibility(ESlateVisibility::Collapsed);
 
+	const FSBGameplayTags& Tags = FSBGameplayTags::Get();
+
 	FSBBlueprintEventDelegate AvailableDelegate;
 	AvailableDelegate.BindDynamic(this, &USBInteractionPromptWidget::OnInteractionAvailable);
-	SubscribeToEvent(FGameplayTag::RequestGameplayTag(TEXT("Event.Interaction.Available")), AvailableDelegate);
+	SubscribeToEvent(Tags.Event_Interaction_Available, AvailableDelegate);
 
 	FSBBlueprintEventDelegate ClearedDelegate;
 	ClearedDelegate.BindDynamic(this, &USBInteractionPromptWidget::OnInteractionCleared);
-	SubscribeToEvent(FGameplayTag::RequestGameplayTag(TEXT("Event.Interaction.Cleared")), ClearedDelegate);
+	SubscribeToEvent(Tags.Event_Interaction_Cleared, ClearedDelegate);
 
 	FSBBlueprintEventDelegate ProgressDelegate;
 	ProgressDelegate.BindDynamic(this, &USBInteractionPromptWidget::OnInteractionProgress);
-	SubscribeToEvent(FGameplayTag::RequestGameplayTag(TEXT("Event.Interaction.Progress")), ProgressDelegate);
+	SubscribeToEvent(Tags.Event_Interaction_Progress, ProgressDelegate);
 }
 
 void USBInteractionPromptWidget::OnInteractionAvailable(FGameplayTag EventTag, UObject* Payload)

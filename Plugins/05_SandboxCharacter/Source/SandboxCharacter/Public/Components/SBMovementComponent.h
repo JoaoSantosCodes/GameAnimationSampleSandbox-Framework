@@ -110,6 +110,15 @@ protected:
 
 	mutable double LastLogDesyncTime = 0.0;
 
+	UPROPERTY(Transient)
+	float CachedCmcMaxWalkSpeed = 0.f;
+
+	UPROPERTY(Transient)
+	float CachedAttrBaseSpeed = 0.f;
+
+	UPROPERTY(Transient)
+	bool bHasInitializedCachedSpeeds = false;
+
 public:
 	// Helper para encontrar instâncias tipadas
 	USBMovementBehavior* FindAvailableBehaviorByTag(FGameplayTag Tag) const;

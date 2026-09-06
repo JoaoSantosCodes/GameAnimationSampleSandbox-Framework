@@ -1,6 +1,7 @@
 #include "Misc/AutomationTest.h"
 #include "CoreMinimal.h"
 #include "Engine/World.h"
+#include "Components/SceneComponent.h"
 #include "Components/SBBehaviorStackComponent.h"
 #include "Behaviors/SBGameplayBehavior.h"
 #include "Behaviors/SBGameplayBehaviorDefinition.h"
@@ -20,6 +21,11 @@ void FSBBehaviorStackTestsSpec::Define()
 		
 		FActorSpawnParameters SpawnParams;
 		TestActor = TestWorld->SpawnActor<AActor>(AActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		// Um AActor puro nao tem RootComponent: sem ele, SetActorLocation, SetActorTransform
+		// e TeleportTo falham em silencio e o ator fica preso na origem.
+		USceneComponent* TestActorRoot = NewObject<USceneComponent>(TestActor, TEXT("TestActorRoot"));
+		TestActor->SetRootComponent(TestActorRoot);
+		TestActorRoot->RegisterComponent();
 		
 		StackComponent = NewObject<USBBehaviorStackComponent>(TestActor);
 		StackComponent->RegisterComponent();

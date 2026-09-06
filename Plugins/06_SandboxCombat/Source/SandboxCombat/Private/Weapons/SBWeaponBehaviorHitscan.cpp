@@ -5,14 +5,19 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/PlayerState.h"
 #include "Engine/World.h"
+#include "Engine/GameInstance.h"
 #include "CollisionQueryParams.h"
 #include "Subsystems/SBLagCompensationSubsystem.h"
+#include "Subsystems/SBEventSubsystem.h"
+#include "Subsystems/SBEventPayloads.h"
 #include "Utilities/SBLogCategories.h"
 #include "Components/CapsuleComponent.h"
+#include "SBGameplayTags.h"
+#include "Engine/DamageEvents.h"
 
 USBWeaponBehaviorHitscan::USBWeaponBehaviorHitscan()
 {
-	WeaponStateTag = FGameplayTag::RequestGameplayTag(TEXT("State.Weapon.Firing"));
+	WeaponStateTag = FSBGameplayTags::Get().State_Weapon_Firing;
 }
 
 void USBWeaponBehaviorHitscan::Enter_Implementation(const FSBBehaviorContext& Context)
@@ -123,10 +128,75 @@ void USBWeaponBehaviorHitscan::PerformHitscanTrace(const FSBBehaviorContext& Con
 			USBAttributeComponent* HitAttrComp = HitActor->FindComponentByClass<USBAttributeComponent>();
 			if (HitAttrComp && WeaponDefinition)
 			{
-				FGameplayTag HealthTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Health"));
+				float RawDamage = WeaponDefinition->Damage;
+				FName HitBone = HitResult.BoneName;
+				bool bIsCritical = false;
+
+				if (HitBone != NAME_None && WeaponDefinition->CriticalBoneNames.Contains(HitBone))
+				{
+					RawDamage *= WeaponDefinition->CriticalDamageMultiplier;
+					bIsCritical = true;
+				}
+
+				// Mitigação por Defesa
+				FGameplayTag DefenseTag = FSBGameplayTags::Get().Attribute_Defense;
+				float DefenseVal = 0.0f;
+				if (DefenseTag.IsValid())
+				{
+					DefenseVal = HitAttrComp->GetAttributeValue(DefenseTag);
+				}
+
+				float FinalDamage = RawDamage;
+				if (DefenseVal > 0.0f)
+				{
+					// Diminishing returns curve: Damage * (100 / (100 + Defense))
+					float MitigationRatio = 100.0f / (100.0f + DefenseVal);
+					FinalDamage = FMath::Max(1.0f, RawDamage * MitigationRatio);
+				}
+
+				FGameplayTag HealthTag = FSBGameplayTags::Get().Attribute_Health;
 				float CurrentHealth = HitAttrComp->GetAttributeValue(HealthTag);
-				float NewHealth = FMath::Max(0.0f, CurrentHealth - WeaponDefinition->Damage);
+				float NewHealth = FMath::Max(0.0f, CurrentHealth - FinalDamage);
 				HitAttrComp->SetAttributeBaseValue(HealthTag, NewHealth);
+
+				// Aciona Hit Reaction no State Component do alvo
+				if (USBStateComponent* TargetStateComp = HitActor->FindComponentByClass<USBStateComponent>())
+				{
+					FGameplayTag HitReactTag = FSBGameplayTags::Get().State_Character_HitReacting;
+					if (HitReactTag.IsValid())
+					{
+						TargetStateComp->AddTag(HitReactTag);
+					}
+				}
+
+				// Emite Eventos de Combate no Event Bus
+				if (UGameInstance* GI = World->GetGameInstance())
+				{
+					if (USBEventSubsystem* EventSubsystem = GI->GetSubsystem<USBEventSubsystem>())
+					{
+						USBHitReactEventPayload* HitPayload = NewObject<USBHitReactEventPayload>(this);
+						HitPayload->TargetPawn = Cast<APawn>(HitActor);
+						HitPayload->InstigatorActor = Character;
+						HitPayload->HitBoneName = HitBone;
+						HitPayload->HitDirection = (HitResult.TraceEnd - HitResult.TraceStart).GetSafeNormal();
+						HitPayload->DamageDealt = FinalDamage;
+						HitPayload->bIsCritical = bIsCritical;
+
+						EventSubsystem->PublishEvent(FSBGameplayTags::Get().Event_Combat_HitReact, HitPayload);
+
+						if (bIsCritical)
+						{
+							EventSubsystem->PublishEvent(FSBGameplayTags::Get().Event_Combat_CriticalHit, HitPayload);
+						}
+					}
+				}
+			}
+			else if (WeaponDefinition)
+			{
+				float RawDamage = WeaponDefinition->Damage;
+				FVector ShotDirection = (TraceEnd - TraceStart).GetSafeNormal();
+				FPointDamageEvent DamageEvent(RawDamage, HitResult, ShotDirection, nullptr);
+				HitActor->TakeDamage(RawDamage, DamageEvent, Character->GetController(), Character);
 			}
 		}
 	}

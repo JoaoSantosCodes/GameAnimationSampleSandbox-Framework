@@ -179,3 +179,42 @@ Durante o gameplay em execução (PIE ou standalone):
 ### 9.2 Wall-Shot Protection (Obstrução Física)
 * Ao disparar uma arma hitscan, o servidor realiza um traço físico extra a partir do tórax do personagem até o ponto de impacto.
 * **Altura Dinâmica**: Para evitar falsos positivos quando o personagem está agachado (Crouch), a origem do traço é calculada dinamicamente com base em metade do scaled capsule half height do personagem. Se houver alguma parede estática entre o atirador e o impacto, o dano é rejeitado imediatamente pelo servidor.
+
+---
+
+## 📝 Aula 10: Criptografia e Segurança Anti-Cheat de Saves (Fase 39)
+
+### 10.1 Cifragem e Assinaturas
+O Sandbox protege os arquivos de save game (`.sav`) contra adulteração local e *save scumming*:
+1. **Ativação**: A encriptação XOR baseada em chave e o cálculo de checksum MD5 são síncronos e transparentes.
+2. **Configuração da Chave**: Adicione ao arquivo `Config/DefaultGame.ini`:
+   ```ini
+   [/Script/SandboxCommon.SBDeveloperSettings]
+   SaveEncryptionKey="MinhaChaveSecretaCustomizada"
+   ```
+3. **Validação**: Ao invocar `LoadGame`, o subsistema calcula o digest MD5 do payload e o confronta com a assinatura salva. Caso divirja (por adulteração externa do arquivo), o carregamento aborta de forma segura e gera um log `SECURITY WARNING` no console.
+
+---
+
+## 📝 Aula 11: Passos Físicos de Superfície e Zonas de Áudio (Fases 40 & 41)
+
+### 11.1 Mapeamento e Configuração de Passos
+1. Clique com o **botão direito** no Content Browser -> **Miscellaneous** -> **Data Asset** -> Escolha **`SBSurfaceEffectsDataAsset`** e nomeie como `DA_SurfaceEffects`.
+2. Abra-o e adicione mapeamentos na lista `SurfaceEffectsMap`:
+   * Chave: Tipo de Superfície Física (ex: `SurfaceType1` mapeado nas configurações do projeto como Grama).
+   * **Sound**: Selecione um arquivo de som de passo (ex: `SoundWave` ou `MetaSound` correspondente).
+   * **Visual Effect**: Selecione o sistema de partículas Niagara (ex: poeira de grama).
+3. Abra as sequências de animação do seu personagem (ex: `Run_Fwd` ou `Walk_Fwd`).
+4. Clique com o botão direito na timeline de Notifies -> **Add Notify** -> **Sandbox Footstep Notify** (classe `USBAnimNotify_Footstep`).
+5. Nas propriedades da notificação, configure:
+   * `FootSocketName` = `foot_l` ou `foot_r` (ossos correspondentes).
+   * `SurfaceEffectsConfig` = `DA_SurfaceEffects` criado no passo 1.
+
+### 11.2 Configuração de Zonas Ambientais
+1. Digite e busque por **`SBAmbientZoneTrigger`** no painel de Atores do Editor e arraste uma instância para a fase.
+2. Ajuste o componente `TriggerBox` para que ele envolva a área específica (ex: dentro de uma casa).
+3. Selecione o ator no nível e, no painel Details, configure:
+   * **AmbientSound**: O loop de áudio correspondente (ex: som de chuva/vento).
+   * **FadeInDuration** / **FadeOutDuration**: Velocidade das transições ao cruzar o gatilho (ex: `1.5` segundos).
+   * O trigger gerencia as transições síncronas no cliente local de forma otimizada.
+

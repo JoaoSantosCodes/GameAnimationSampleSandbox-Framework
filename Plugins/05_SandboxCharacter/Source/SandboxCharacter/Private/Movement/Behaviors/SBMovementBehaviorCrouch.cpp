@@ -50,7 +50,7 @@ void USBMovementBehaviorCrouch::Enter_Implementation(const FSBBehaviorContext& C
 		if (CharMove)
 		{
 			// Configura a altura do Crouch definida pelo designer no Data Asset
-			CharMove->CrouchedHalfHeight = CrouchDef->CrouchedHalfHeight;
+			CharMove->SetCrouchedHalfHeight(CrouchDef->CrouchedHalfHeight);
 		}
 
 		if (Character)

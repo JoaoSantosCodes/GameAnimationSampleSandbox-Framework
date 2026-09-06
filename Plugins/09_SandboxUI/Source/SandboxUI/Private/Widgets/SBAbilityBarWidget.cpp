@@ -3,6 +3,7 @@
 #include "Components/TextBlock.h"
 #include "Subsystems/SBEventPayloads.h"
 #include "Utilities/SBLogCategories.h"
+#include "SBGameplayTags.h"
 
 USBAbilityBarWidget::USBAbilityBarWidget(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -28,13 +29,15 @@ void USBAbilityBarWidget::NativeConstruct()
 		UE_LOG(LogSandboxUI, Warning, TEXT("USBAbilityBarWidget: WatchedAbilityTag is invalid! Cooldown tracking will not function for this slot. Please configure it in the editor."));
 	}
 
+	const FSBGameplayTags& Tags = FSBGameplayTags::Get();
+
 	FSBBlueprintEventDelegate StartDelegate;
 	StartDelegate.BindDynamic(this, &USBAbilityBarWidget::OnCooldownStarted);
-	SubscribeToEvent(FGameplayTag::RequestGameplayTag(TEXT("Event.Ability.CooldownStarted")), StartDelegate);
+	SubscribeToEvent(Tags.Event_Ability_CooldownStarted, StartDelegate);
 
 	FSBBlueprintEventDelegate EndDelegate;
 	EndDelegate.BindDynamic(this, &USBAbilityBarWidget::OnCooldownEnded);
-	SubscribeToEvent(FGameplayTag::RequestGameplayTag(TEXT("Event.Ability.CooldownEnded")), EndDelegate);
+	SubscribeToEvent(Tags.Event_Ability_CooldownEnded, EndDelegate);
 }
 
 void USBAbilityBarWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)

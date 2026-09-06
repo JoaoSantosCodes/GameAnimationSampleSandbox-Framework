@@ -19,7 +19,8 @@ public class SandboxCore : ModuleRules
 				"EnhancedInput",
 				"SandboxCommon",
 				"SandboxInterfaces",
-				"SandboxAssets"
+				"SandboxAssets",
+				"PhysicsCore"
 			}
 			);
 			

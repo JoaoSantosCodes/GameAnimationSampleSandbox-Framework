@@ -35,12 +35,16 @@ void FSBReloadTestsSpec::Define()
 		TestCharacter = TestWorld->SpawnActor<ASBCharacter>(ASBCharacter::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 		TestCharacter->SetRole(ROLE_Authority);
 
-		// Inicializa Tags
-		UGameplayTagsManager& TagsManager = UGameplayTagsManager::Get();
-		AmmoTag = TagsManager.AddNativeGameplayTag(TEXT("Attribute.Weapon.Ammo"));
-		ReloadingTag = TagsManager.AddNativeGameplayTag(TEXT("State.Character.Reloading"));
-		FireBehaviorTag = TagsManager.AddNativeGameplayTag(TEXT("Combat.Action.Fire"));
-		ReloadBehaviorTag = TagsManager.AddNativeGameplayTag(TEXT("Combat.Action.Reload"));
+		// Inicializa Tags Nativas
+		FSBGameplayTags::InitializeNativeTags();
+		AmmoTag = FSBGameplayTags::Get().Attribute_Weapon_Ammo;
+		ReloadingTag = FSBGameplayTags::Get().State_Character_Reloading;
+		FireBehaviorTag = FGameplayTag::RequestGameplayTag(TEXT("Combat.Action.Fire"), false);
+		if (!FireBehaviorTag.IsValid())
+		{
+			FireBehaviorTag = UGameplayTagsManager::Get().AddNativeGameplayTag(TEXT("Combat.Action.Fire"));
+		}
+		ReloadBehaviorTag = FSBGameplayTags::Get().Combat_Action_Reload;
 
 		// Instancia componentes
 		StateComponent = NewObject<USBStateComponent>(TestCharacter);

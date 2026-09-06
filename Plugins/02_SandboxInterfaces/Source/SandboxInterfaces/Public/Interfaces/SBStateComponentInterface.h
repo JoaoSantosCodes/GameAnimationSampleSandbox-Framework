@@ -24,4 +24,14 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "State")
 	bool HasAll(FGameplayTagContainer TagsContainer) const;
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "State")
+	void AddTag(FGameplayTag StateTag);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "State")
+	void RemoveTag(FGameplayTag StateTag);
+
+	/** Retorna por valor: UFUNCTION não admite retorno por referência constante. */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "State")
+	FGameplayTagContainer GetActiveStateTags() const;
 };

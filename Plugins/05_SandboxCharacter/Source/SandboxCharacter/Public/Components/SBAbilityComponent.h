@@ -109,6 +109,9 @@ protected:
 	int32 CurrentServerPredictionId = 0;
 
 	UPROPERTY(Transient)
+	TMap<FGameplayTag, int32> DeferredPredictionIds;
+
+	UPROPERTY(Transient)
 	FSBRPCRateLimiter AbilityRPCLimiter;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sandbox|Abilities")

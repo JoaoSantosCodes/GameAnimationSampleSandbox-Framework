@@ -29,10 +29,12 @@ public class SandboxInventory : ModuleRules
 				"SandboxCommon",
 				"SandboxInterfaces",
 				"SandboxCore",
+				"SandboxAssets",
 				"SandboxCharacter",
 				"NetCore",
 				"ModularGameplay",
-				"ModularGameplayActors"
+				"ModularGameplayActors",
+				"PCG"
 			}
 		);
 			

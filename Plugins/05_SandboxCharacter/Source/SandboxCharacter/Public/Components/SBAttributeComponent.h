@@ -8,6 +8,7 @@
 #include "Interfaces/SBComponentInterface.h"
 #include "Interfaces/SBSaveInterface.h"
 #include "Interfaces/SBDebugInterface.h"
+#include "Interfaces/SBAttributeComponentInterface.h"
 #include "SBAttributeComponent.generated.h"
 
 USTRUCT(BlueprintType)
@@ -55,7 +56,7 @@ struct FSBAttributeReplicationEntry
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FSBAttributeChangedSignature, FGameplayTag, AttributeTag, float, NewValue, float, OldValue, AActor*, Instigator);
 
 UCLASS(BlueprintType, meta = (BlueprintSpawnableComponent))
-class SANDBOXCHARACTER_API USBAttributeComponent : public UGameFrameworkComponent, public ISBComponentInterface, public ISBSaveInterface, public ISBDebugInterface
+class SANDBOXCHARACTER_API USBAttributeComponent : public UGameFrameworkComponent, public ISBComponentInterface, public ISBSaveInterface, public ISBDebugInterface, public ISBAttributeComponentInterface
 {
 	GENERATED_BODY()
 
@@ -96,8 +97,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sandbox|Attributes")
 	bool GetAttribute(FGameplayTag AttributeTag, FSBAttribute& OutAttribute) const;
 
-	UFUNCTION(BlueprintCallable, Category = "Sandbox|Attributes")
+	// Sem UFUNCTION: a exposicao a Blueprint vem de ISBAttributeComponentInterface.
+	// Duplicar a marcacao aqui colidiria no sistema de reflexao.
 	float GetAttributeValue(FGameplayTag AttributeTag) const;
+
+	// ISBAttributeComponentInterface
+	virtual float GetAttributeValue_Implementation(FGameplayTag AttributeTag) const override { return GetAttributeValue(AttributeTag); }
 
 	const TArray<FSBAttributeReplicationEntry>& GetPublicAttributes() const { return PublicAttributes; }
 	const TArray<FSBAttributeReplicationEntry>& GetPrivateAttributes() const { return PrivateAttributes; }

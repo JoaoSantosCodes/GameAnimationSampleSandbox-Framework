@@ -91,16 +91,16 @@ void USBComponentFactory::InitializeComponentsFromSet(AActor* TargetActor, USBCo
 			NewComp->RegisterComponent();
 			SpawnedComponents.Add(NewComp);
 
-			if (ComponentManager)
-			{
-				ComponentManager->AddReceiver(TargetActor);
-			}
-
 			if (NewComp->GetClass()->ImplementsInterface(USBComponentInterface::StaticClass()))
 			{
 				ISBComponentInterface::Execute_OnComponentCreated(NewComp);
 			}
 		}
+	}
+
+	if (ComponentManager && SpawnedComponents.Num() > 0)
+	{
+		ComponentManager->AddReceiver(TargetActor);
 	}
 
 	// Trigger Lifecycle Sequence

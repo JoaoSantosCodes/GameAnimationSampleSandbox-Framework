@@ -29,6 +29,12 @@ void USBGameplayBehavior::Initialize(USBBehaviorStackComponent* InStackComp, USB
 			CachedStateComponent = ISBCharacterInterface::Execute_GetStateComponent(Owner);
 		}
 
+		// Fallback por contrato: o acessor do personagem pode retornar nulo (override nao
+		// registrado na reflexao em ASBCharacter).
+		if (!CachedStateComponent)
+		{
+			CachedStateComponent = Owner->FindComponentByInterface(USBStateComponentInterface::StaticClass());
+		}
 	}
 }
 

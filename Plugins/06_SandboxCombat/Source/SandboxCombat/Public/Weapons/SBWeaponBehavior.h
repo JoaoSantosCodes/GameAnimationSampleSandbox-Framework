@@ -35,6 +35,12 @@ public:
 
 	USBWeaponBehaviorDefinition* GetDefinition() const { return WeaponDefinition; }
 
+	UFUNCTION(BlueprintCallable, Category = "Behavior")
+	void SetEquippedItemInstance(UObject* InItemInstance) { EquippedItemInstance = InItemInstance; }
+
+	UFUNCTION(BlueprintPure, Category = "Behavior")
+	UObject* GetEquippedItemInstance() const { return EquippedItemInstance.Get(); }
+
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Behavior")
 	TObjectPtr<USBCombatComponent> CombatComponent = nullptr;
@@ -48,4 +54,7 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Behavior|Cache")
 	TObjectPtr<USBStateComponent> CombatStateComponent = nullptr;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Behavior|Cache")
+	TWeakObjectPtr<UObject> EquippedItemInstance = nullptr;
 };

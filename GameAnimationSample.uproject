@@ -1,6 +1,6 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "5.8",
+	"EngineAssociation": "{A29EA5CD-4B0C-73B2-EF14-3E9E47C79842}",
 	"Category": "Samples",
 	"Description": "",
 	"Modules": [
@@ -175,6 +175,10 @@
 			"Enabled": true
 		},
 		{
+			"Name": "PCG",
+			"Enabled": true
+		},
+		{
 			"Name": "01_SandboxCommon",
 			"Enabled": true
 		},
@@ -216,6 +220,30 @@
 		},
 		{
 			"Name": "11_SandboxEditor",
+			"Enabled": true
+		},
+		{
+			"Name": "ModelContextProtocol",
+			"Enabled": true
+		},
+		{
+			"Name": "Terminal",
+			"Enabled": true
+		},
+		{
+			"Name": "EditorToolset",
+			"Enabled": true
+		},
+		{
+			"Name": "PCGToolset",
+			"Enabled": true
+		},
+		{
+			"Name": "UMGToolSet",
+			"Enabled": true
+		},
+		{
+			"Name": "NiagaraToolsets",
 			"Enabled": true
 		}
 	],

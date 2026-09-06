@@ -189,4 +189,47 @@ void FSBCombatTestsSpec::Define()
 		TestFalse("Rifle deve ter sido ejetado da pilha", CombatComponent->HasWeaponBehavior(RifleTag));
 		TestTrue("Pistola deve assumir o controle ativo", CombatComponent->HasWeaponBehavior(PistolTag));
 	});
+
+	It("Cenário 4: Bloqueio e Consumo de Durabilidade", [this]()
+	{
+		// Configura o Pawn como Servidor Autoritativo
+		TestCharacter->SetRole(ROLE_Authority);
+
+		// Busca a arma na pilha de disponíveis ou cria mock
+		USBWeaponBehavior* WeaponBehavior = nullptr;
+		TArray<TObjectPtr<USBWeaponBehavior>> Avail = CombatComponent->GetAvailableWeapons();
+		for (USBWeaponBehavior* Behavior : Avail)
+		{
+			if (Behavior->GetBehaviorTag() == RifleTag)
+			{
+				WeaponBehavior = Behavior;
+				break;
+			}
+		}
+
+		TestNotNull("Rifle Behavior deve estar instanciado", WeaponBehavior);
+		if (!WeaponBehavior) return;
+
+		// 1. Cria um Mock de item com Durabilidade
+		USBTestDurabilityMock* DurabilityMock = NewObject<USBTestDurabilityMock>(TestWorld);
+		DurabilityMock->CurrentDurability = 100.0f;
+		WeaponBehavior->SetEquippedItemInstance(DurabilityMock);
+
+		// Configura custo na definição
+		WeaponBehavior->GetDefinition()->DurabilityCost = 15.0f;
+
+		// 2. Dispara e valida o consumo
+		bool bFireSuccess = CombatComponent->RequestWeaponBehavior(RifleTag);
+		TestTrue("Rifle deve disparar com durabilidade inicial de 100", bFireSuccess);
+		TestEqual("Durabilidade deve ter sido reduzida em 15", DurabilityMock->CurrentDurability, 85.0f);
+
+		// Para o comportamento de disparo
+		CombatComponent->StopWeaponBehavior(RifleTag);
+
+		// 3. Zera a durabilidade e tenta disparar novamente
+		DurabilityMock->CurrentDurability = 0.0f;
+		bool bFireFailed = CombatComponent->RequestWeaponBehavior(RifleTag);
+		TestFalse("Não deve permitir disparo com durabilidade zerada", bFireFailed);
+		TestFalse("Rifle não deve estar na pilha ativa", CombatComponent->HasWeaponBehavior(RifleTag));
+	});
 }

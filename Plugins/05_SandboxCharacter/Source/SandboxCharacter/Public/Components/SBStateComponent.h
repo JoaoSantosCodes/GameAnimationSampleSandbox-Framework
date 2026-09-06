@@ -29,10 +29,8 @@ public:
 	virtual void OnReady_Implementation() override {}
 	virtual void OnShutdown_Implementation() override {}
 
-	UFUNCTION(BlueprintCallable, Category = "Sandbox|States")
 	void AddTag(FGameplayTag StateTag);
 
-	UFUNCTION(BlueprintCallable, Category = "Sandbox|States")
 	void RemoveTag(FGameplayTag StateTag);
 
 	bool HasTag(FGameplayTag StateTag) const;
@@ -41,10 +39,15 @@ public:
 
 	bool HasAll(FGameplayTagContainer TagsContainer) const;
 
+	const FGameplayTagContainer& GetActiveStateTags() const { return ActiveStateTags; }
+
 	// ISBStateComponentInterface
 	virtual bool HasTag_Implementation(FGameplayTag StateTag) const override { return HasTag(StateTag); }
 	virtual bool HasAny_Implementation(FGameplayTagContainer TagsContainer) const override { return HasAny(TagsContainer); }
 	virtual bool HasAll_Implementation(FGameplayTagContainer TagsContainer) const override { return HasAll(TagsContainer); }
+	virtual void AddTag_Implementation(FGameplayTag StateTag) override { AddTag(StateTag); }
+	virtual void RemoveTag_Implementation(FGameplayTag StateTag) override { RemoveTag(StateTag); }
+	virtual FGameplayTagContainer GetActiveStateTags_Implementation() const override { return ActiveStateTags; }
 
 	UPROPERTY(BlueprintAssignable, Category = "Sandbox|States")
 	FSBStateChangedSignature OnStateChanged;

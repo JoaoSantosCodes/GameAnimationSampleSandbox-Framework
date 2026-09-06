@@ -20,7 +20,13 @@ bool USBMovementBehaviorSprint::CanEnter_Implementation(const FSBBehaviorContext
 	}
 
 	// Bloqueia se estiver exausto
-	if (MovementStateComponent && MovementStateComponent->HasTag(FGameplayTag::RequestGameplayTag(TEXT("State.Character.Exhausted"), false)))
+	if (MovementStateComponent && MovementStateComponent->HasTag(FSBGameplayTags::Get().State_Character_Exhausted))
+	{
+		return false;
+	}
+
+	// Bloqueia se estiver sobrecarregado (encumbered)
+	if (MovementStateComponent && MovementStateComponent->HasTag(FSBGameplayTags::Get().State_Character_Encumbered))
 	{
 		return false;
 	}

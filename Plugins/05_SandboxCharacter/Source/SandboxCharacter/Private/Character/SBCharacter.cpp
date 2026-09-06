@@ -29,17 +29,29 @@ UObject* ASBCharacter::GetPawnData_Implementation() const
 
 UActorComponent* ASBCharacter::GetAttributeComponent_Implementation() const
 {
-	return FindComponentByClass<USBAttributeComponent>();
+	if (!CachedAttributeComponent.IsValid())
+	{
+		CachedAttributeComponent = FindComponentByClass<USBAttributeComponent>();
+	}
+	return CachedAttributeComponent.Get();
 }
 
 UActorComponent* ASBCharacter::GetStateComponent_Implementation() const
 {
-	return FindComponentByClass<USBStateComponent>();
+	if (!CachedStateComponent.IsValid())
+	{
+		CachedStateComponent = FindComponentByClass<USBStateComponent>();
+	}
+	return CachedStateComponent.Get();
 }
 
 UActorComponent* ASBCharacter::GetAbilityComponent_Implementation() const
 {
-	return FindComponentByClass<USBAbilityComponent>();
+	if (!CachedAbilityComponent.IsValid())
+	{
+		CachedAbilityComponent = FindComponentByClass<USBAbilityComponent>();
+	}
+	return CachedAbilityComponent.Get();
 }
 
 void ASBCharacter::PossessedBy(AController* NewController)
@@ -67,6 +79,11 @@ void ASBCharacter::InitializeFromPawnData()
 	{
 		USBComponentFactory::InitializeComponentsFromSet(this, PawnData->ComponentSet);
 	}
+
+	// Cache components locally for fast access
+	CachedAttributeComponent = FindComponentByClass<USBAttributeComponent>();
+	CachedStateComponent = FindComponentByClass<USBStateComponent>();
+	CachedAbilityComponent = FindComponentByClass<USBAbilityComponent>();
 
 	// 2. Setting up mesh and animations if provided
 	if (PawnData->Mesh)

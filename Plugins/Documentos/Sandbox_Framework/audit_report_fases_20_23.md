@@ -101,9 +101,9 @@ Este documento apresenta a análise de auditoria linha a linha realizada nas imp
 
 ## 📊 Matriz de Gravidade dos Achados
 
-| Achado | Componente | Descrição | Gravidade | Esforço de Correção | Status (2026-08-18) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Gargalo no Tick** | `USBLagCompensationSubsystem` | Uso de `TActorIterator` a cada frame para histórico | **Média-Alta** (Performance) | Baixo | ⏳ Pendente |
-| **Drift de Ticks** | `USBStatusEffectComponent` | Perda de ticks sob lag/baixo FPS (LastPeriodTriggerTime) | **Média** (Consistência) | Mínimo | ✅ **Corrigido** — código usa `+= Entry.Period` (linha 376) |
-| **Vulnerabilidade Visual**| `USBCombatComponent` | Falha visual se Blueprint do ator não estiver replicado | **Baixa-Média** (Robustez) | Mínimo | ⏳ Pendente |
-| **Falta de RPCs** | `USBInventoryComponent` | Sem RPCs de equipar/soltar no cliente | **Baixa** (Integração) | Médio | ⏳ Pendente |
+| Achado | Componente | Descrição | Gravidade | Esforço de Correção |
+| :--- | :--- | :--- | :--- | :--- |
+| **Gargalo no Tick** | `USBLagCompensationSubsystem` | Uso de `TActorIterator` a cada frame para histórico | **Média-Alta** (Performance) | Baixo |
+| **Drift de Ticks** | `USBStatusEffectComponent` | Perda de ticks sob lag/baixo FPS (LastPeriodTriggerTime) | **Média** (Consistência) | Mínimo |
+| **Vulnerabilidade Visual**| `USBCombatComponent` | Falha visual se Blueprint do ator não estiver replicado | **Baixa-Média** (Robustez) | Mínimo |
+| **Falta de RPCs** | `USBInventoryComponent` | Sem RPCs de equipar/soltar no cliente | **Baixa** (Integração) | Médio |

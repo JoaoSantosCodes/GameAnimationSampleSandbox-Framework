@@ -271,28 +271,389 @@
 - [x] Escrever suíte de testes unitários `SBAIBehaviorTests.cpp` cobrindo agro, detecção de alvos e restrição por tags
 - [x] Compilar projeto editor e homologar suíte completa de testes verdes (56 de 56 specs verdes - EXIT CODE: 0)
 
-## Fase 32: Dano Crítico, Resistências e Reações de Impacto Replicadas (Pendente)
-- [ ] Implementar leitura de `HitResult.BoneName` para multiplicar danos no `USBWeaponBehaviorHitscan`
-- [ ] Adicionar mitigação baseada no atributo `Attribute.Defense` no `USBAttributeComponent`
-- [ ] Integrar montagem de impacto síncrona forçando a tag `State.Character.HitReacting` predita e replicada
-- [ ] Escrever suíte de testes `SBCriticalDamageTests.cpp` validando multiplicadores, mitigação e impactos
+## Fase 32: Dano Crítico, Resistências e Reações de Impacto Replicadas (Concluída)
+- [x] Implementar leitura de `HitResult.BoneName` para multiplicar danos no `USBWeaponBehaviorHitscan`
+- [x] Adicionar mitigação baseada no atributo `Attribute.Defense` no `USBAttributeComponent`
+- [x] Integrar montagem de impacto síncrona forçando a tag `State.Character.HitReacting` predita e replicada
+- [x] Escrever suíte de testes `SBCriticalDamageTests.cpp` validando multiplicadores, mitigação e impactos
 
-## Fase 33: Tabela de Loot e Drop Físico Replicado (Pendente)
-- [ ] Criar classe `ASBPhysicalLootDrop` com simulação física e componente interativo `USBInteractionComponent`
-- [ ] Criar Data Asset `USBLootTableDataAsset` mapeando itens lógicos e percentuais de raridade
-- [ ] Implementar spawn seguro no servidor ao tocar o solo e integração com inventário lúdico
-- [ ] Escrever suíte de testes `SBLootDropTests.cpp` validando probabilidade e coletas físicas
+## Fase 33: Tabela de Loot e Drop Físico Replicado (Concluída)
+- [x] Criar classe `ASBPhysicalLootDrop` com simulação física e componente interativo `USBInteractionComponent`
+- [x] Criar Data Asset `USBLootTableDataAsset` mapeando itens lógicos e percentuais de raridade
+- [x] Implementar spawn seguro no servidor ao tocar o solo e integração com inventário lúdico
+- [x] Escrever suíte de testes `SBLootDropTests.cpp` validando probabilidade e coletas físicas (61 de 61 specs verdes - EXIT CODE: 0)
 
----
+## Fase 34: Sistema de Progressão e Experiência (Concluída)
+- [x] Criar classe `USBExperienceComponent` herdando de `UActorComponent` em `05_SandboxCharacter`
+- [x] Implementar propriedades replicadas `CurrentXP`, `CurrentLevel` e `RequiredXP`
+- [x] Adicionar suporte a curvas exponenciais e carregamento opcional via `UDataTable`
+- [x] Implementar lógica recursiva de level up em cadeia com carry-over de XP excedente
+- [x] Escrever suíte de testes unitários `SBExperienceTests.cpp` cobrindo ganho de XP, level up simples/múltiplo e DataTables (66 de 66 specs verdes - EXIT CODE: 0)
 
-## ✅ Refatoração Pós-Fase 31 (2026-08-18) — Não Requer Nova Fase
+## Fase 35: Sistema de Bancada Física e Interativa de Crafting (Concluída)
+- [x] Criar classe `ASBCraftingStation` em `08_SandboxInventory` com suporte a `ISBInteractableInterface`
+- [x] Adicionar lógica para adicionar `StationTag` ao jogador que interagir com a bancada
+- [x] Implementar monitoramento dinâmico (Tick) de distância máxima e auto-limpeza de tags e interatores
+- [x] Escrever suíte de testes unitários `SBCraftingStationTests.cpp` validando acesso, proximidade física e desassociação de tags (70 de 70 specs verdes - EXIT CODE: 0)
 
-As seguintes melhorias foram implementadas e validadas contra o Manifesto, prontas para commit:
+## Fase 36: Desmantelamento / Salvaging Probabilístico de Equipamentos (Concluída)
+- [x] Criar fragmento de item `USBItemFragment_Salvageable` e a struct `FSBSalvageOutcome`
+- [x] Expor assinaturas e métodos de Salvage no `USBCraftingComponent`
+- [x] Implementar a lógica de desmontagem e chances probabilísticas com consumo atômico
+- [x] Escrever suíte de testes unitários `SBSalvageTests.cpp` validando drops fixos/probabilísticos e consumos de pilhas (73 de 73 specs verdes - EXIT CODE: 0)
 
-| Item | Arquivos | Princípio do Manifesto |
-|------|----------|------------------------|
-| `SBMovementConfigDataAsset`: `FSBStaminaConfig` + `FSBAntiCheatConfig` | `SBMovementConfigDataAsset.h`, `SBMovementComponent.cpp/.h` | **#2 Orientação a Dados**, **#10 C++ Core BP Configurable** |
-| `SBStatusEffectComponent`: Herda `UGameFrameworkComponent` + 3 interfaces + Save/Load/Debug | `SBStatusEffectComponent.cpp/.h` | **#4 Desacoplamento por Interfaces**, **#8 Multiplayer Ready**, **#10 C++ Core** |
-| `SBInventoryComponent`: `EquippableFragmentClass` configurável | `SBInventoryComponent.cpp/.h` | **#4 Desacoplamento**, **#5 Injeção Dinâmica** |
-| `SBStatusHUDWidget`: `FSBGameplayTags` singleton | `SBStatusHUDWidget.cpp` | **#2 Orientação a Dados**, **#10 C++ Core** |
-| `LoadMovementConfig`: `AddUnique` idempotente | `SBMovementComponent.cpp` | **Qualidade** |
+## Fase 37: Compressão de Payloads e Otimizações de Replicação em Larga Escala (Concluída)
+- [x] Desativar a replicação individual de subobjetos de `USBItemInstance` em `ReplicateSubobjects`
+- [x] Declarar `ItemDef`, `StackCount` e `DynamicTags` diretamente na struct `FSBInventoryEntry`
+- [x] Implementar `NetSerialize` com compactação de bits (`SerializeIntPacked`) para o `StackCount`
+- [x] Adicionar callbacks `PostReplicatedAdd`, `PostReplicatedChange` e `PreReplicatedRemove` para instanciar localmente os itens no cliente
+- [x] Validar que toda a suíte de inventário e equipamentos continua passando 100% verde (73 de 73 specs verdes - EXIT CODE: 0)
+
+## Fase 38: Otimização de canais de áudio e efeitos estéticos sob latências extremas (Concluída)
+- [x] Criar classe `USBCosmeticSaturationSubsystem` herdando de `UWorldSubsystem` em `04_SandboxCore`
+- [x] Implementar agrupamento espacial (Grid 3D) e validação de intervalos de tempo para supressão sob rajadas
+- [x] Implementar timer periódico automático para limpeza de registros de TMap obsoletos
+- [x] Escrever suíte de testes unitários `SBCosmeticLimiterTests.cpp` cobrindo supressão concorrente, independência espacial e expiração de cooldowns (79 de 79 specs verdes - EXIT CODE: 0)
+
+## Fase 39: Persistência Criptografada e Proteção contra Cheat de Save Game (Concluída)
+- [x] Declarar `USBSecureSaveGame` em `SBSaveSubsystemConcrete.h`
+- [x] Implementar helpers de cifragem XOR de fluxo e assinatura digital HMAC-MD5 em `SBSaveSubsystemConcrete.cpp`
+- [x] Adaptar métodos `SaveGame` e `LoadGame` para empacotar, cifrar, assinar e verificar saves na memória
+- [x] Escrever suíte de testes unitários `SBSecureSaveTests.cpp` validando integridade, adulteração maliciosa e carregamentos normais (82 de 82 specs verdes - EXIT CODE: 0)
+
+## Fase 40: Passos Dinâmicos Sensíveis a Superfícies (Concluída)
+- [x] Criar classe `USBSurfaceEffectsDataAsset` em `03_SandboxAssets`
+- [x] Criar AnimNotify `USBAnimNotify_Footstep` em `05_SandboxCharacter`
+- [x] Implementar line trace, detecção de material físico, consulta de efeitos e integração com o subsistema de saturação
+- [x] Registrar tipos de superfície e associar sons e efeitos Niagara
+
+## Fase 41: Subsistema de Zonas de Áudio Ambiental (Concluída)
+- [x] Criar ator `ASBAmbientZoneTrigger` em `04_SandboxCore` com box/sphere trigger
+- [x] Implementar ativação local (client-side) e transições suaves de fade-in/fade-out e crossfade
+- [x] Escrever suíte de testes unitários `SBSurfaceAudioTests.cpp` cobrindo passos em superfícies mapeadas, supressão de passos e crossfade de zonas ambientais (85 de 85 specs verdes - EXIT CODE: 0)
+
+## Fase 42: Sistema de Missões Replicado (Concluída)
+- [x] Declarar `Attribute.Coins` em `SBGameplayTags.h`/`SBGameplayTags.cpp` e registrar no `USBAttributeComponent`
+- [x] Criar classe `USBQuestDataAsset` em `03_SandboxAssets`
+- [x] Criar componente `USBQuestComponent` em `05_SandboxCharacter` com replicação de quests ativas e escuta do `USBEventSubsystem`
+- [x] Implementar recompensa autoritativa de missões no servidor (XP e Itens)
+
+## Fase 43: Sistema de Comerciantes e Economia (Concluída)
+- [x] Criar componente `USBMerchantComponent` em `08_SandboxInventory` com estoque de compras/vendas
+- [x] Implementar RPCs de Compra e Venda no servidor com validações de ouro, inventário e alcance
+- [x] Escrever suíte de testes unitários `SBQuestMerchantTests.cpp` validando missões, barramento, compras legítimas, limites financeiros e proteção de distância (88 de 88 specs verdes - EXIT CODE: 0)
+
+## Fase 44: Sistema de Construção e Edificação Replicado (Concluída)
+- [x] Criar classe `USBItemFragment_Placeable` em `08_SandboxInventory`
+- [x] Criar classe `ASBBuildingPiece` em `08_SandboxInventory` representando as peças e HP
+- [x] Criar componente `USBBuildingComponent` em `08_SandboxInventory` com preview local e Server RPC de posicionamento
+- [x] Escrever suíte de testes unitários `SBBuildingTests.cpp` validando proximidade, overlap físico, posse de item, snapping de grade e danos/destruição de peças (95 de 95 specs verdes - EXIT CODE: 0)
+
+## Fase 45: Sistema de Coleta de Recursos e Mineração Replicado (Concluída)
+- [x] Modificar `SBWeaponBehaviorHitscan.cpp` em `06_SandboxCombat` para aplicar dano nativo via `TakeDamage` em atores sem componentes de atributos
+- [x] Criar classe `ASBResourceNode` em `08_SandboxInventory` com suporte a HP, tool validation por reflexão, rolls de loot table e respawn
+- [x] Escrever suíte de testes unitários `SBResourceTests.cpp` em `08_SandboxInventory` validando dano, colheita de itens e ciclo de respawn
+- [x] Compilar, rodar testes de automação e garantir 100% verde (98 de 98 specs verdes)
+
+## Fase 46: Sistema de Durabilidade de Equipamentos e Reparo (Concluída)
+- [x] Criar a interface `ISBItemDurabilityInterface` em `02_SandboxInterfaces`
+- [x] Adicionar `DurabilityCost` no `USBWeaponBehaviorDefinition` em `06_SandboxCombat`
+- [x] Adicionar `EquippedItemInstance` e métodos de acesso em `USBWeaponBehavior` e associá-lo no `USBCombatComponent::OnItemEquipped`
+- [x] Adicionar consumo de durabilidade e verificação de durabilidade zerada no `USBWeaponBehavior`
+- [x] Criar o fragmento `USBItemFragment_Durability` em `08_SandboxInventory`
+- [x] Adicionar propriedade replicada `Durability` em `USBItemInstance` e implementar a interface
+- [x] Adicionar `Durability` em `FSBInventoryEntry` e serializá-lo em `FSBInventoryEntry::NetSerialize`
+- [x] Sincronizar durabilidade nos callbacks de replicação e no helper `MarkItemInstanceUpdated`
+- [x] Implementar `ServerRepairItem` no `USBCraftingComponent`
+- [x] Criar suíte de testes automatizados `SBDurabilityTests.cpp` e verificar 100% verde
+
+## Fase 47: Sistema de Peso e Sobrecarga de Inventário (Concluída)
+- [x] Criar o fragmento `USBItemFragment_Weight` em `08_SandboxInventory`
+- [x] Registrar automaticamente os atributos de peso no `USBInventoryComponent::OnInitialize_Implementation`
+- [x] Implementar `RecalculateInventoryWeight()` no `USBInventoryComponent` e chamá-lo nas adições, consumos e remoções
+- [x] Bloquear corrida (Sprint) sob efeito de sobrecarga no `USBMovementBehaviorSprint::CanEnter_Implementation`
+- [x] Aplicar redução de 50% de velocidade de caminhada no `USBMovementComponent::GetMaxSpeed`
+- [x] Criar a suíte de testes unitários `SBWeightTests.cpp` e obter 100% verde
+
+## Fase 48: Baús de Armazenamento Compartilhados (Concluída)
+- [x] Criar ator `ASBContainerChest` com suporte a `USBInventoryComponent` e interface de interação
+- [x] Implementar ciclo de vida, distância de segurança e cancelamento de interação no `ASBContainerChest`
+- [x] Adicionar método `ServerTransferItem` no `USBInventoryComponent` com validações de proximidade e preservação de metadados
+- [x] Criar a suíte de testes unitários `SBContainerTests.cpp` e obter 100% verde
+
+## Fase 49: Raridade e Efeitos Visuais nos Drops de Loot (Concluída)
+- [x] Registrar as tags de raridade `Loot.Rarity.*` no `SBGameplayTags`
+- [x] Criar o fragmento de item `USBItemFragment_Rarity` em `08_SandboxInventory`
+- [x] Adicionar `GetRarityTag()` e `GetRarityColor()` no `ASBPhysicalLootDrop` e implementar no material dinâmico em `UpdateVisuals()`
+- [x] Criar a suíte de testes unitários `SBLootRarityTests.cpp` e obter 100% verde
+
+## Fase 50: Sistema de Upgrade de Equipamentos (Concluída)
+- [x] Adicionar propriedade `UpgradeLevel` replicada no `USBItemInstance` e no struct `FSBInventoryEntry`
+- [x] Adicionar suporte de persistência em save game para `Durability` e `UpgradeLevel`
+- [x] Criar fragmento de item `USBItemFragment_Upgrade` em `08_SandboxInventory`
+- [x] Implementar método de upgrade autoritativo `ServerUpgradeItem` no `USBCraftingComponent`
+- [x] Integrar bônus multiplicador cumulativo de atributos do upgrade em `ServerEquipItem`
+- [x] Criar suíte de testes unitários `SBUpgradeTests.cpp` e validar com 100% verde
+
+## Fase 51: Sistema de Auto-Equipar Melhor Armadura (Concluída)
+- [x] Adicionar flag `bAutoEquipBetterLoot` no `USBInventoryComponent`
+- [x] Implementar método auxiliar `CalculateEffectiveDefense` no `USBInventoryComponent`
+- [x] Implementar métodos `ServerAutoEquipBestArmor` e `ServerAutoEquipBestArmorAllSlots`
+- [x] Integrar auto-equipamento dinâmico no `ServerAddItem`
+- [x] Criar suíte de testes unitários `SBAutoEquipTests.cpp` e obter 100% verde
+
+## Fase 52: Durabilidade Conforme o Uso das Armaduras (Concluída)
+- [x] Se registrar em `OnAttributeChanged` e implementar `HandleOwnerAttributeChanged` no `USBInventoryComponent`
+- [x] Deduzir durabilidade de armaduras equipadas proporcionalmente ao dano recebido
+- [x] Implementar `DeactivateArmorModifiers` e desativar atributos de armaduras quando a durabilidade chega a zero
+- [x] Re-aplicar modificadores de atributos quando a armadura equipada for reparada ou melhorada
+- [x] Criar suíte de testes unitários `SBArmorDurabilityTests.cpp` e obter 100% verde
+
+## Fase 53: Refinamento e Otimizações de Sistemas de IA, NPCs e Bosses (Concluída)
+- [x] Otimizar AgroTable no `USBCombatComponent` com sistema baseado em eventos (`OnAgroTargetChanged` e cache)
+- [x] Criar o AI Controller base em C++ `ASBAIController` herdando de `AAIController`
+- [x] Implementar gerenciamento automático de foco da IA com base no maior alvo de agro
+- [x] Pausar `BrainComponent` (behavior/state trees) e interromper movimentos de IA sob efeitos de Crowd Control (Stun/Frozen)
+- [x] Monitorar HP no `ASBAIController` e notificar mudanças de fase do boss via delegate `OnBossPhaseChanged`
+- [x] Criar suíte de testes em C++ `SBAIBehaviorTests.cpp` e obter 100% verde (188 de 188 specs verdes)
+
+## Fase 54: Automação de Geração de Assets no Editor (v1.39.0) (Concluída)
+- [x] Adicionar dependências dos plugins no descritor de SandboxEditor
+- [x] Adicionar dependências e módulos em SandboxEditor.Build.cs
+- [x] Criar classe C++ `USBSandboxAssetActionUtility` herdando de `UAssetActionUtility`
+- [x] Implementar a geração automática de personagens (ComponentSet, PawnData, Character Blueprint)
+- [x] Implementar a geração automática de armas (WeaponDefinition, Weapon Blueprint)
+- [x] Implementar a geração automática de habilidades (AbilityDefinition, Ability Blueprint)
+- [x] Implementar a geração automática de missões (Quest Data Asset)
+- [x] Compilar editor e validar que a suíte de testes legada se mantém intacta e funcional
+
+## Fase 55: Sistema de Validação Estrita de Assets (v1.40.0) (Concluída)
+- [x] Declarar funções de validação em SBSandboxAssetActionUtility.h
+- [x] Implementar a validação de PawnData e ComponentSets (componentes obrigatórios)
+- [x] Implementar a validação de Gameplay Tags (verificação no GameplayTagsManager)
+- [x] Implementar feedback visual (MessageDialog para erros e Notifications para sucesso)
+- [x] Compilar editor e validar toda a suíte de testes legada (188 specs verdes)
+
+## Fase 56: Ferramenta de Auto-Reparo de ComponentSets (v1.41.0) (Concluída)
+- [x] Declarar funções de auto-reparo em SBSandboxAssetActionUtility.h
+- [x] Implementar a injeção automática de componentes core em SBSandboxAssetActionUtility.cpp
+- [x] Suportar reparo a partir de PawnData e ComponentSets selecionados
+- [x] Implementar feedback visual de resumo de reparos via MessageDialog
+- [x] Compilar editor e validar toda a suíte de testes legada (188 specs verdes)
+
+## Fase 57: Linter e Renomeador Automático de Assets (v1.42.0) (Concluída)
+- [x] Declarar funções de auto-renomeação em SBSandboxAssetActionUtility.h
+- [x] Implementar a verificação de prefixos corretos para ComponentSet, PawnData, Definitions e Blueprints
+- [x] Integrar com IAssetTools::RenameAssets para realizar refatoração segura de referências
+- [x] Implementar feedback visual com lista de alterações
+- [x] Compilar editor e validar toda a suíte de testes legada (188 specs verdes)
+
+## Fase 58: Geração Automática de Enhanced Input Assets (v1.43.0) (Concluída)
+- [x] Adicionar dependência de EnhancedInput em SandboxEditor.Build.cs
+- [x] Declarar GenerateEnhancedInputContext em SBSandboxAssetActionUtility.h
+- [x] Implementar a geração de Input Actions (IA_Sprint, IA_Crouch, IA_Interact, IA_Ability1, IA_Ability2) em SBSandboxAssetActionUtility.cpp
+- [x] Implementar a geração e mapeamento de chaves padrão no Input Mapping Context (IMC)
+- [x] Compilar editor e validar toda a suíte de testes legada (188 specs verdes)
+
+## Fase 59: Prevenção Dinâmica de Duplicidade (v1.44.0) (Concluída)
+- [x] Declarar helper CreateAssetSafely em SBSandboxAssetActionUtility.h
+- [x] Implementar CreateAssetSafely em SBSandboxAssetActionUtility.cpp carregando assets existentes
+- [x] Refatorar todos os métodos de criação/geração do editor para usar o helper seguro
+- [x] Impedir colisões de renomeação em AutoRenameSandboxAssets
+- [x] Impedir mapeamentos de teclas duplicados em GenerateEnhancedInputContext
+- [x] Compilar editor e validar toda a suíte de testes legada (188 specs verdes)
+
+## Fase 60: Linhagem de Predição em Habilidades Cascateadas (v1.45.0) (Concluída)
+- [x] Declarar DeferredPredictionIds em SBAbilityComponent.h
+- [x] Implementar a captura e armazenamento de PredictionId em SBAbilityComponent.cpp::RequestBehavior
+- [x] Implementar a recuperação e limpeza de PredictionId da linhagem armazenada
+- [x] Compilar projeto primário V1 e secundário GameAnimationSample
+- [x] Validar toda a suíte de testes legada (188 specs verdes)
+
+## Fase 61: Sincronização Dinâmica Bidirecional de Velocidade (v1.46.0) (Concluída)
+- [x] Declarar variáveis de cache em SBMovementComponent.h
+- [x] Inicializar valores de cache de velocidade em SBMovementComponent.cpp::OnReady_Implementation
+- [x] Implementar verificação e sincronização dinâmica bidirecional em SBMovementComponent.cpp::TickComponent
+- [x] Compilar projeto primário V1 e secundário GameAnimationSample
+- [x] Validar toda a suíte de testes legada (188 specs verdes)
+
+## Fase 62: Validador de Consistência de Dados de RPG e Inventário (v1.47.0) (Concluída)
+- [x] Adicionar dependências de cabeçalho do inventário em SBSandboxAssetActionUtility.cpp
+- [x] Implementar regras de integridade para ItemDefinition (DisplayName, MaxStack, fragmentos duplicados)
+- [x] Implementar regras de integridade para LootTable (DropChance, pesos, Min/Max stacks)
+- [x] Implementar regras de integridade para CraftingRecipe (ingredientes nulos, quantidades, estações)
+- [x] Compilar projeto primário V1 e secundário GameAnimationSample
+- [x] Validar toda a suíte de testes legada (188 specs verdes)
+
+## Fase 63: Integração Procedural com PCG (v1.48.0) (Concluída)
+- [x] Adicionar dependência PCG em 08_SandboxInventory.uplugin
+- [x] Adicionar dependência PCG em SandboxInventory.Build.cs
+- [x] Criar cabeçalho do nó PCG customizado (SBPCGLootSpawnerSettings.h)
+- [x] Implementar execução do elemento PCG (SBPCGLootSpawnerSettings.cpp)
+- [x] Compilar projeto primário V1 e secundário GameAnimationSample
+- [x] Validar toda a suíte de testes legada (188 specs verdes)
+
+## Fase 64: Sistema de Descoberta de Áreas e Apresentação (v1.49.0) (Concluída)
+- [x] Adicionar propriedade Event_Area_Discovered em SBGameplayTags.h e SBGameplayTags.cpp
+- [x] Declarar a classe USBAreaDiscoveryPayload em SBAmbientZoneTrigger.h
+- [x] Adicionar propriedades de área ao ASBAmbientZoneTrigger em SBAmbientZoneTrigger.h
+- [x] Implementar a publicação de evento de descoberta em SBAmbientZoneTrigger.cpp::OnOverlapBegin
+- [x] Compilar projeto primário V1 e secundário GameAnimationSample
+- [x] Validar toda a suíte de testes legada (188 specs verdes)
+
+## Fase 65: Feature & Capability Management (v1.50.0) (Concluída)
+- [x] Declarar propriedades Feature e tags correspondentes em SBGameplayTags.h e SBGameplayTags.cpp
+- [x] Criar subsistema de controle global de Features (SBSandboxFeatureSubsystem.h e SBSandboxFeatureSubsystem.cpp)
+- [x] Implementar testes automatizados unitários para o subsistema de Features (SBFeatureTests.cpp)
+- [x] Compilar projeto primário V1 e secundário GameAnimationSample
+- [x] Validar toda a suíte de testes expandida (189 specs verdes)
+
+## Fase 66: Persistência Mundial Completa & Identidades por GUID (v1.51.0) (Concluída)
+- [x] Criar tipos e estruturas de persistência em SBPersistenceTypes.h
+- [x] Criar componente de persistência USBPersistenceComponent (header e source)
+- [x] Criar subsistema de persistência de mundo USBSandboxPersistenceSubsystem (header e source)
+- [x] Criar teste automatizado unitário para o sistema de persistência (SBPersistenceTests.cpp)
+- [x] Compilar projeto primário V1 e secundário GameAnimationSample
+## Fase 124: Hierarchical Spatial Partitioning, Octree & Fast Spatial Queries (v2.09.0) (Concluída)
+- [x] Criar tipos e estruturas de particionamento espacial em SBSpatialPartitionTypes.h (`FSBSpatialCellCoord`, `FSBSpatialEntityElement`, `FSBSpatialGridMetrics`)
+- [x] Registrar tags de particionamento espacial em SBGameplayTags.h/cpp (`State.Spatial.*`)
+- [x] Criar subsistema de particionamento espacial USBSpatialPartitionSubsystem (`.h`/`.cpp`) em 02_SandboxCore com consultas em raio e AABB
+- [x] Criar componente de indexação espacial USBSpatialIndexedComponent (`.h`/`.cpp`) em 02_SandboxCore com detecção de migração de células
+- [x] Criar suíte de testes unitários automatizados em SBSpatialPartitionTests.cpp
+- [x] Sincronizar arquivos para o projeto secundário GameAnimationSample
+- [x] Compilar ambos os projetos (V1Editor e GameAnimationSampleEditor)
+- [x] Validar toda a suíte de testes (410 specs 100% verdes, EXIT CODE: 0)
+
+## Fase 125: Lock-Free Queues, Event Rings & High-Throughput Message Passing (v2.10.0) (Concluída)
+- [x] Criar tipos e estruturas lock-free em SBLockFreeTypes.h (`FSBLockFreeEvent`, `FSBLockFreeQueueMetrics`)
+- [x] Registrar tags lock-free em SBGameplayTags.h/cpp (`State.LockFree.*`)
+- [x] Criar subsistema de barramento de eventos lock-free USBLockFreeEventSubsystem (`.h`/`.cpp`) em 02_SandboxCore
+- [x] Criar componente produtor atômico USBLockFreeProducerComponent (`.h`/`.cpp`) em 02_SandboxCore
+- [x] Criar suíte de testes unitários automatizados em SBLockFreeQueueTests.cpp (validação de FIFO, rotação de anel, concorrência massiva e saturação)
+- [x] Sincronizar arquivos para o projeto secundário GameAnimationSample
+- [x] Compilar ambos os projetos (V1Editor e GameAnimationSampleEditor)
+- [x] Validar toda a suíte de testes (414 specs 100% verdes, EXIT CODE: 0)
+
+## Fase 126: Event Bus Centralizado, Type-Safe Pub/Sub & Inter-Plugin Decoupling (v2.11.0) (Concluída)
+- [x] Criar tipos e payloads de mensageria em SBEventBusTypes.h (`FSBEventBusPayload`, `FSBEventBusMetrics`)
+- [x] Registrar tags do barramento em SBGameplayTags.h/cpp (`Event.*`, `State.EventBus.*`)
+- [x] Criar subsistema de barramento centralizado USBEventBusSubsystem (`.h`/`.cpp`) em 02_SandboxCore com suporte a assinaturas nativas tipadas
+- [x] Criar componente ouvinte dinâmico USBEventListenerComponent (`.h`/`.cpp`) em 02_SandboxCore com auto-inscrição e limpeza de tags
+- [x] Criar suíte de testes unitários automatizados em SBEventBusTests.cpp (validação de Pub/Sub, payload, múltiplos ouvintes e cancelamento)
+- [x] Sincronizar arquivos para o projeto secundário GameAnimationSample
+- [x] Compilar ambos os projetos (V1Editor e GameAnimationSampleEditor)
+- [x] Validar toda a suíte de testes (418 specs 100% verdes, EXIT CODE: 0)
+
+## Fase 127: Async Multi-Threaded Save/Load & Binary Delta Serialization (v2.12.0) (Concluída)
+- [x] Criar tipos e estruturas de serialização em SBAsyncSerializationTypes.h (`FSBAsyncSaveRecord`, `FSBAsyncSaveChunk`, `FSBAsyncSaveMetrics`)
+- [x] Registrar tags de persistência em SBGameplayTags.h/cpp (`State.Save.*`)
+- [x] Criar subsistema de serialização assíncrona USBAsyncSerializationSubsystem (`.h`/`.cpp`) em 02_SandboxCore com hashing determinístico MD5
+- [x] Criar componente serializável USBAsyncSerializableComponent (`.h`/`.cpp`) em 02_SandboxCore com suporte a GUID e integridade
+- [x] Criar suíte de testes unitários automatizados em SBAsyncSerializationTests.cpp (validação de serialização, chunks, integridade/corrupção e componente)
+- [x] Sincronizar arquivos para o projeto secundário GameAnimationSample
+- [x] Compilar ambos os projetos (V1Editor e GameAnimationSampleEditor)
+- [x] Validar toda a suíte de testes (422 specs 100% verdes, EXIT CODE: 0)
+
+## Fase 128: Dynamic Subsystem Fallback & Fault Tolerance Framework (v2.13.0) (Concluída)
+- [x] Criar tipos e estruturas de tolerância a falhas em SBFaultToleranceTypes.h (`ESBFaultToleranceMode`, `FSBFallbackServiceRecord`, `FSBFaultToleranceMetrics`)
+- [x] Registrar tags de tolerância em SBGameplayTags.h/cpp (`State.Fault.*`)
+- [x] Criar subsistema de tolerância a falhas USBFaultToleranceSubsystem (`.h`/`.cpp`) em 02_SandboxCore com suporte a auto-degradação e contingência
+- [x] Criar componente resiliente USBFaultResilientComponent (`.h`/`.cpp`) em 02_SandboxCore com avaliação protegida e controle de tags de estado
+- [x] Criar suíte de testes unitários automatizados em SBFaultToleranceTests.cpp (validação de operação nominal, degradação/fallback, recuperação e componente)
+- [x] Sincronizar arquivos para o projeto secundário GameAnimationSample
+- [x] Compilar ambos os projetos (V1Editor e GameAnimationSampleEditor)
+- [x] Validar toda a suíte de testes (426 specs 100% verdes, EXIT CODE: 0)
+
+## Fase 129: State Machine & Gameplay Tag Matrix Verification System (v2.14.0) (Concluída)
+- [x] Criar tipos e estruturas da matriz em SBStateMatrixTypes.h (`ESBMatrixViolationAction`, `FSBTagMutualExclusionRule`, `FSBStateMatrixMetrics`)
+- [x] Registrar tags de verificação em SBGameplayTags.h/cpp (`State.Matrix.*`)
+- [x] Criar subsistema validador da matriz USBStateMatrixSubsystem (`.h`/`.cpp`) em 02_SandboxCore com suporte a regras de exclusão mútua e poda automática
+- [x] Criar componente guardião USBStateMatrixGuardComponent (`.h`/`.cpp`) em 02_SandboxCore com transições protegidas e concessão de tags de estado
+- [x] Criar suíte de testes unitários automatizados em SBStateMatrixTests.cpp (validação de regras nominais, bloqueio de transição, poda de incompatíveis e componente)
+- [x] Sincronizar arquivos para o projeto secundário GameAnimationSample
+- [x] Compilar ambos os projetos (V1Editor e GameAnimationSampleEditor)
+- [x] Validar toda a suíte de testes (430 specs 100% verdes, EXIT CODE: 0)
+
+## Fase 130: Live Reflection & Config Schema Hot-Reloading System (v2.15.0) (Concluída)
+- [x] Criar tipos e estruturas de live config em SBLiveConfigTypes.h (`FSBLiveConfigProperty`, `FSBLiveConfigSchema`, `FSBLiveConfigMetrics`)
+- [x] Registrar tags de live config em SBGameplayTags.h/cpp (`State.Config.*`)
+- [x] Criar subsistema de configuração dinâmica USBLiveConfigSubsystem (`.h`/`.cpp`) em 02_SandboxCore com suporte a hot-reload e versionamento
+- [x] Criar componente observador USBLiveConfigObserverComponent (`.h`/`.cpp`) em 02_SandboxCore com auto-inscrição e controle de tags de estado
+- [x] Criar suíte de testes unitários automatizados em SBLiveConfigTests.cpp (validação de schema inicial, hot-reload em tempo real, métricas e componente)
+- [x] Sincronizar arquivos para o projeto secundário GameAnimationSample
+- [x] Compilar ambos os projetos (V1Editor e GameAnimationSampleEditor)
+- [x] Validar toda a suíte de testes (434 specs 100% verdes, EXIT CODE: 0)
+
+## Fase 131: In-Editor Visual Debugger HUD & Live World Viewport Overlays (v2.16.0) (Concluída)
+- [x] Criar tipos e estruturas de depuração visual em SBVisualDebuggerTypes.h (`ESBOverlayCategory`, `FSBOverlayRenderItem`, `FSBVisualDebuggerMetrics`)
+- [x] Registrar tags de depuração visual em SBGameplayTags.h/cpp (`State.Debug.*`)
+- [x] Criar subsistema de depuração visual USBVisualDebuggerSubsystem (`.h`/`.cpp`) em 02_SandboxCore com controle de categorias, filas de renderização e telemetria
+- [x] Criar componente de overlay visual USBVisualDebugOverlayComponent (`.h`/`.cpp`) em 02_SandboxCore com envio de dados visuais e sincronização de tags
+- [x] Criar suíte de testes unitários automatizados em SBVisualDebuggerTests.cpp (validação de toggle de categorias, enfileiramento filtrado, métricas e componente)
+- [x] Sincronizar arquivos para o projeto secundário GameAnimationSample
+- [x] Compilar ambos os projetos (V1Editor e GameAnimationSampleEditor)
+- [x] Validar toda a suíte de testes (438 specs 100% verdes, EXIT CODE: 0)
+
+## Fase 132: Real-Time Performance Profiler & Component Cost Heatmap (v2.17.0) (Concluída)
+- [x] Criar tipos e estruturas de profiler em SBProfilerTypes.h (`FSBComponentSampleData`, `FSBPerformanceProfilerMetrics`)
+- [x] Registrar tags de profiler em SBGameplayTags.h/cpp (`State.Profiler.*`)
+- [x] Criar subsistema de profiling USBPerformanceProfilerSubsystem (`.h`/`.cpp`) em 02_SandboxCore com estatísticas de CPU/memória e limites de orçamento
+- [x] Criar componente de instrumentação USBPerformanceInstrumentComponent (`.h`/`.cpp`) em 02_SandboxCore com registro de amostras e controle de tags de estado
+- [x] Criar suíte de testes unitários automatizados em SBPerformanceProfilerTests.cpp (validação estatística, monitoramento de budget, métricas e componente)
+- [x] Sincronizar arquivos para o projeto secundário GameAnimationSample
+- [x] Compilar ambos os projetos (V1Editor e GameAnimationSampleEditor)
+- [x] Validar toda a suíte de testes (442 specs 100% verdes, EXIT CODE: 0)
+
+## Fase 133: Procedural World Validation & Integrity Validator Commandlet (v2.18.0) (Concluída)
+- [x] Criar tipos e estruturas de integridade em SBWorldIntegrityTypes.h (`ESBIntegritySeverity`, `FSBIntegrityIssue`, `FSBWorldIntegrityReport`)
+- [x] Registrar tags de integridade em SBGameplayTags.h/cpp (`State.Integrity.*`)
+- [x] Criar subsistema de integridade USBWorldIntegritySubsystem (`.h`/`.cpp`) em 02_SandboxCore com validação de receitas, tabelas de loot, malhas e relatórios
+- [x] Criar componente auditor USBWorldIntegrityAuditorComponent (`.h`/`.cpp`) em 02_SandboxCore com auto-auditoria e controle de tags de estado
+- [x] Criar suíte de testes unitários automatizados em SBWorldIntegrityTests.cpp (validação de receitas, loot tables, conexões de rede, auto-fix e componente)
+- [x] Sincronizar arquivos para o projeto secundário GameAnimationSample
+- [x] Compilar ambos os projetos (V1Editor e GameAnimationSampleEditor)
+- [x] Validar toda a suíte de testes (446 specs 100% verdes, EXIT CODE: 0)
+
+## Fase 134: Automated Stress-Testing & Simulated Bot Swarm Framework (v2.19.0) (Concluída)
+- [x] Criar tipos e estruturas de teste de estresse em SBStressTestTypes.h (`ESBBotSimAction`, `FSBBotSimAgentState`, `FSBStressTestMetrics`)
+- [x] Registrar tags de teste de estresse em SBGameplayTags.h/cpp (`State.Stress.*`)
+- [x] Criar subsistema de estresse USBStressTestSubsystem (`.h`/`.cpp`) em 02_SandboxCore com gerenciamento de enxame de bots e métricas de carga
+- [x] Criar componente de bot USBStressTestBotComponent (`.h`/`.cpp`) em 02_SandboxCore com simulação de ações e controle de tags de estado
+- [x] Criar suíte de testes unitários automatizados em SBStressTestTests.cpp (validação de enxame, ticks de estresse, métricas e componente)
+- [x] Sincronizar arquivos para o projeto secundário GameAnimationSample
+- [x] Compilar ambos os projetos (V1Editor e GameAnimationSampleEditor)
+- [x] Validar toda a suíte de testes (450 specs 100% verdes, EXIT CODE: 0)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

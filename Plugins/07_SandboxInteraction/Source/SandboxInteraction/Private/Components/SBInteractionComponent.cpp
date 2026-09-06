@@ -2,6 +2,8 @@
 #include "Components/SBStateComponent.h"
 #include "Interfaces/SBInteractableInterface.h"
 #include "Subsystems/SBEventSubsystem.h"
+#include "Subsystems/SBEventPayloads.h"
+#include "SBGameplayTags.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
 #include "Engine/World.h"
@@ -29,12 +31,6 @@ void USBInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType
 	AActor* Owner = GetOwner();
 	APawn* PawnOwner = Cast<APawn>(Owner);
 	const bool bIsLocallyControlled = GIsAutomationTesting || (PawnOwner && PawnOwner->IsLocallyControlled());
-
-	UE_LOG(LogTemp, Warning, TEXT("TickComponent: Owner=%s, PawnOwner=%s, bIsLocallyControlled=%d, GIsAutomationTesting=%d"),
-		Owner ? *Owner->GetName() : TEXT("nullptr"),
-		PawnOwner ? *PawnOwner->GetName() : TEXT("nullptr"),
-		bIsLocallyControlled,
-		GIsAutomationTesting);
 
 	if (bIsLocallyControlled)
 	{
@@ -66,8 +62,7 @@ void USBInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType
 					Payload->InteractableActor = CurrentInteractableActor;
 					Payload->ProgressPercent = GetHoldProgressPercent();
 
-					FGameplayTag ProgressTag = FGameplayTag::RequestGameplayTag(TEXT("Event.Interaction.Progress"));
-					EventSubsystem->PublishEvent(ProgressTag, Payload);
+					EventSubsystem->PublishEvent(FSBGameplayTags::Get().Event_Interaction_Progress, Payload);
 				}
 			}
 
@@ -79,8 +74,9 @@ void USBInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType
 
 				if (USBEventSubsystem* EventSubsystem = GetEventSubsystem())
 				{
-					FGameplayTag CompletedTag = FGameplayTag::RequestGameplayTag(TEXT("Event.Interaction.Completed"));
-					EventSubsystem->PublishEvent(CompletedTag, CurrentInteractableActor);
+					USBPawnEventPayload* Payload = NewObject<USBPawnEventPayload>(this);
+					Payload->TargetPawn = Cast<APawn>(GetOwner());
+					EventSubsystem->PublishEvent(FSBGameplayTags::Get().Event_Interaction_Completed, Payload);
 				}
 
 				if (!Owner->HasAuthority())
@@ -94,8 +90,7 @@ void USBInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType
 
 				if (CachedStateComponent)
 				{
-					FGameplayTag InteractingTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Interacting"));
-					CachedStateComponent->RemoveTag(InteractingTag);
+					CachedStateComponent->RemoveTag(FSBGameplayTags::Get().State_Character_Interacting);
 				}
 			}
 		}
@@ -164,8 +159,9 @@ void USBInteractionComponent::ScanForInteractables()
 		{
 			if (USBEventSubsystem* EventSubsystem = GetEventSubsystem())
 			{
-				FGameplayTag ClearedTag = FGameplayTag::RequestGameplayTag(TEXT("Event.Interaction.Cleared"));
-				EventSubsystem->PublishEvent(ClearedTag, CurrentInteractableActor);
+				USBPawnEventPayload* Payload = NewObject<USBPawnEventPayload>(this);
+				Payload->TargetPawn = Cast<APawn>(GetOwner());
+				EventSubsystem->PublishEvent(FSBGameplayTags::Get().Event_Interaction_Cleared, Payload);
 			}
 		}
 
@@ -181,8 +177,7 @@ void USBInteractionComponent::ScanForInteractables()
 				Payload->PromptText = Target_GetInteractionPrompt(CurrentInteractableActor);
 				Payload->Duration = Target_GetInteractionDuration(CurrentInteractableActor);
 
-				FGameplayTag AvailableTag = FGameplayTag::RequestGameplayTag(TEXT("Event.Interaction.Available"));
-				EventSubsystem->PublishEvent(AvailableTag, Payload);
+				EventSubsystem->PublishEvent(FSBGameplayTags::Get().Event_Interaction_Available, Payload);
 			}
 		}
 	}
@@ -203,14 +198,18 @@ void USBInteractionComponent::StartInteract()
 
 		if (CachedStateComponent)
 		{
-			FGameplayTag InteractingTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Interacting"));
-			CachedStateComponent->AddTag(InteractingTag);
+			CachedStateComponent->AddTag(FSBGameplayTags::Get().State_Character_Interacting);
 		}
 
 		if (USBEventSubsystem* EventSubsystem = GetEventSubsystem())
 		{
-			FGameplayTag StartedTag = FGameplayTag::RequestGameplayTag(TEXT("Event.Interaction.Started"));
-			EventSubsystem->PublishEvent(StartedTag, CurrentInteractableActor);
+			USBInteractionAvailableEventPayload* Payload = NewObject<USBInteractionAvailableEventPayload>(this);
+			Payload->TargetPawn = Cast<APawn>(GetOwner());
+			Payload->InteractableActor = CurrentInteractableActor;
+			Payload->PromptText = Target_GetInteractionPrompt(CurrentInteractableActor);
+			Payload->Duration = Duration;
+
+			EventSubsystem->PublishEvent(FSBGameplayTags::Get().Event_Interaction_Started, Payload);
 		}
 
 		if (!Owner->HasAuthority())
@@ -226,8 +225,9 @@ void USBInteractionComponent::StartInteract()
 	{
 		if (USBEventSubsystem* EventSubsystem = GetEventSubsystem())
 		{
-			FGameplayTag CompletedTag = FGameplayTag::RequestGameplayTag(TEXT("Event.Interaction.Completed"));
-			EventSubsystem->PublishEvent(CompletedTag, CurrentInteractableActor);
+			USBPawnEventPayload* Payload = NewObject<USBPawnEventPayload>(this);
+			Payload->TargetPawn = Cast<APawn>(GetOwner());
+			EventSubsystem->PublishEvent(FSBGameplayTags::Get().Event_Interaction_Completed, Payload);
 		}
 
 		if (!Owner->HasAuthority())
@@ -250,14 +250,14 @@ void USBInteractionComponent::StopInteract()
 
 		if (CachedStateComponent)
 		{
-			FGameplayTag InteractingTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Interacting"));
-			CachedStateComponent->RemoveTag(InteractingTag);
+			CachedStateComponent->RemoveTag(FSBGameplayTags::Get().State_Character_Interacting);
 		}
 
 		if (USBEventSubsystem* EventSubsystem = GetEventSubsystem())
 		{
-			FGameplayTag ClearedTag = FGameplayTag::RequestGameplayTag(TEXT("Event.Interaction.Cleared"));
-			EventSubsystem->PublishEvent(ClearedTag, CurrentInteractableActor);
+			USBPawnEventPayload* Payload = NewObject<USBPawnEventPayload>(this);
+			Payload->TargetPawn = Cast<APawn>(GetOwner());
+			EventSubsystem->PublishEvent(FSBGameplayTags::Get().Event_Interaction_Cleared, Payload);
 		}
 
 		AActor* Owner = GetOwner();
@@ -364,8 +364,7 @@ void USBInteractionComponent::ServerStartInteract_Implementation(AActor* Target)
 	{
 		if (CachedStateComponent)
 		{
-			FGameplayTag InteractingTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Interacting"));
-			CachedStateComponent->AddTag(InteractingTag);
+			CachedStateComponent->AddTag(FSBGameplayTags::Get().State_Character_Interacting);
 		}
 	}
 }
@@ -391,8 +390,7 @@ void USBInteractionComponent::ServerStopInteract_Implementation()
 
 		if (CachedStateComponent)
 		{
-			FGameplayTag InteractingTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Interacting"));
-			CachedStateComponent->RemoveTag(InteractingTag);
+			CachedStateComponent->RemoveTag(FSBGameplayTags::Get().State_Character_Interacting);
 		}
 	}
 }
@@ -466,8 +464,7 @@ void USBInteractionComponent::ServerCompleteInteract_Implementation(AActor* Targ
 
 	if (CachedStateComponent)
 	{
-		FGameplayTag InteractingTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Interacting"));
-		CachedStateComponent->RemoveTag(InteractingTag);
+		CachedStateComponent->RemoveTag(FSBGameplayTags::Get().State_Character_Interacting);
 	}
 }
 
@@ -478,14 +475,14 @@ void USBInteractionComponent::ClientCancelInteraction_Implementation()
 
 	if (CachedStateComponent)
 	{
-		FGameplayTag InteractingTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Interacting"));
-		CachedStateComponent->RemoveTag(InteractingTag);
+		CachedStateComponent->RemoveTag(FSBGameplayTags::Get().State_Character_Interacting);
 	}
 
 	if (USBEventSubsystem* EventSubsystem = GetEventSubsystem())
 	{
-		FGameplayTag ClearedTag = FGameplayTag::RequestGameplayTag(TEXT("Event.Interaction.Cleared"));
-		EventSubsystem->PublishEvent(ClearedTag, CurrentInteractableActor);
+		USBPawnEventPayload* Payload = NewObject<USBPawnEventPayload>(this);
+		Payload->TargetPawn = Cast<APawn>(GetOwner());
+		EventSubsystem->PublishEvent(FSBGameplayTags::Get().Event_Interaction_Cleared, Payload);
 	}
 }
 

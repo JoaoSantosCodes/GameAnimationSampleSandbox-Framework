@@ -11,6 +11,7 @@
 #include "Components/SBAttributeComponent.h"
 #include "Components/SBStateComponent.h"
 #include "Utilities/SBLogCategories.h"
+#include "SBGameplayTags.h"
 
 USBMovementComponent::USBMovementComponent()
 	: Super()
@@ -31,7 +32,7 @@ void USBMovementComponent::OnReady_Implementation()
 		USBAttributeComponent* AttrComp = Owner->FindComponentByClass<USBAttributeComponent>();
 		if (AttrComp)
 		{
-			FGameplayTag SpeedTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Speed"), false);
+			FGameplayTag SpeedTag = FSBGameplayTags::Get().Attribute_Speed;
 			FSBAttribute SpeedAttribute;
 			if (SpeedTag.IsValid() && AttrComp->GetAttribute(SpeedTag, SpeedAttribute))
 			{
@@ -43,9 +44,13 @@ void USBMovementComponent::OnReady_Implementation()
 
 					AttrComp->SetAttributeBaseValue(SpeedTag, CmcMaxWalkSpeed);
 				}
+
+				CachedCmcMaxWalkSpeed = CmcMaxWalkSpeed;
+				CachedAttrBaseSpeed = AttrComp->GetAttributeValue(SpeedTag);
+				bHasInitializedCachedSpeeds = true;
 			}
 
-			FGameplayTag StaminaTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Stamina"), false);
+			FGameplayTag StaminaTag = FSBGameplayTags::Get().Attribute_Stamina;
 			FSBAttribute DummyStamina;
 			if (StaminaTag.IsValid() && !AttrComp->GetAttribute(StaminaTag, DummyStamina))
 			{
@@ -73,8 +78,8 @@ float USBMovementComponent::GetCalculatedMaxSpeed() const
 	USBStateComponent* StateComp = Owner->FindComponentByClass<USBStateComponent>();
 	if (StateComp)
 	{
-		FGameplayTag StunnedTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Stunned"), false);
-		FGameplayTag FrozenTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Frozen"), false);
+		FGameplayTag StunnedTag = FSBGameplayTags::Get().State_Character_Stunned;
+		FGameplayTag FrozenTag = FSBGameplayTags::Get().State_Character_Frozen;
 		if ((StunnedTag.IsValid() && StateComp->HasTag(StunnedTag)) || (FrozenTag.IsValid() && StateComp->HasTag(FrozenTag)))
 		{
 			return 0.0f;
@@ -89,7 +94,7 @@ float USBMovementComponent::GetCalculatedMaxSpeed() const
 		// Se o comportamento de Crouch NÃO estiver ativo na pilha (agachamento nativo fora da pilha),
 		// usamos MaxWalkSpeedCrouched como base direta. Caso contrário, usamos a base padrão (MaxWalkSpeed)
 		// e deixamos que o Aggregator aplique o modificador correspondente de forma predição síncrona.
-		FGameplayTag CrouchTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Crouching"), false);
+		FGameplayTag CrouchTag = FSBGameplayTags::Get().State_Character_Crouching;
 		bool bIsCrouchBehaviorActive = CrouchTag.IsValid() && HasBehavior(CrouchTag);
 		if (!bIsCrouchBehaviorActive)
 		{
@@ -106,7 +111,7 @@ float USBMovementComponent::GetCalculatedMaxSpeed() const
 	USBAttributeComponent* AttrComp = Owner->FindComponentByClass<USBAttributeComponent>();
 	if (AttrComp)
 	{
-		FGameplayTag SpeedTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Speed"), false);
+		FGameplayTag SpeedTag = FSBGameplayTags::Get().Attribute_Speed;
 		FSBAttribute SpeedAttribute;
 		if (SpeedTag.IsValid() && AttrComp->GetAttribute(SpeedTag, SpeedAttribute))
 		{
@@ -131,6 +136,12 @@ float USBMovementComponent::GetCalculatedMaxSpeed() const
 		}
 	}
 
+	// Reduz a velocidade de movimento pela metade se estiver sobrecarregado (encumbered)
+	if (StateComp && StateComp->HasTag(FSBGameplayTags::Get().State_Character_Encumbered))
+	{
+		MaxSpeed *= 0.5f;
+	}
+
 	return MaxSpeed;
 }
 
@@ -142,6 +153,46 @@ void USBMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 	if (!Owner || DeltaTime <= 0.0f)
 	{
 		return;
+	}
+
+	// Sincronização dinâmica bidirecional de velocidade em tempo de execução no Servidor
+	ACharacter* CharOwner = Cast<ACharacter>(Owner);
+	if (CharOwner && CharOwner->GetCharacterMovement() && Owner->HasAuthority())
+	{
+		UCharacterMovementComponent* CMC = CharOwner->GetCharacterMovement();
+		USBAttributeComponent* AttrComp = Owner->FindComponentByClass<USBAttributeComponent>();
+		if (AttrComp)
+		{
+			FGameplayTag SpeedTag = FSBGameplayTags::Get().Attribute_Speed;
+			FSBAttribute SpeedAttribute;
+			if (SpeedTag.IsValid() && AttrComp->GetAttribute(SpeedTag, SpeedAttribute))
+			{
+				float CurrentCmcSpeed = CMC->MaxWalkSpeed;
+				float CurrentAttrBase = SpeedAttribute.BaseValue;
+
+				if (!bHasInitializedCachedSpeeds)
+				{
+					CachedCmcMaxWalkSpeed = CurrentCmcSpeed;
+					CachedAttrBaseSpeed = CurrentAttrBase;
+					bHasInitializedCachedSpeeds = true;
+				}
+
+				if (!FMath::IsNearlyEqual(CurrentCmcSpeed, CachedCmcMaxWalkSpeed))
+				{
+					AttrComp->SetAttributeBaseValue(SpeedTag, CurrentCmcSpeed);
+					CachedCmcMaxWalkSpeed = CurrentCmcSpeed;
+					CachedAttrBaseSpeed = CurrentCmcSpeed;
+					UE_LOG(LogSandboxCharacter, Log, TEXT("Dynamic Speed Sync: CMC MaxWalkSpeed updated attribute to %f"), CurrentCmcSpeed);
+				}
+				else if (!FMath::IsNearlyEqual(CurrentAttrBase, CachedAttrBaseSpeed))
+				{
+					CMC->MaxWalkSpeed = CurrentAttrBase;
+					CachedCmcMaxWalkSpeed = CurrentAttrBase;
+					CachedAttrBaseSpeed = CurrentAttrBase;
+					UE_LOG(LogSandboxCharacter, Log, TEXT("Dynamic Speed Sync: Attribute.Speed base updated CMC MaxWalkSpeed to %f"), CurrentAttrBase);
+				}
+			}
+		}
 	}
 
 	// 1. Processamento de Estamina (Consumo e Regeneração) - Roda em Cliente e Servidor para predição local
@@ -156,9 +207,9 @@ void USBMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 		float ExhaustionThreshold = DefaultMovementConfig ? DefaultMovementConfig->StaminaConfig.ExhaustionRecoveryThreshold : 30.0f;
 
 		float CurrentTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.f;
-		FGameplayTag SprintStateTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Sprinting"), false);
-		FGameplayTag ExhaustedTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Exhausted"), false);
-		FGameplayTag StaminaTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Stamina"), false);
+		FGameplayTag SprintStateTag = FSBGameplayTags::Get().State_Character_Sprinting;
+		FGameplayTag ExhaustedTag = FSBGameplayTags::Get().State_Character_Exhausted;
+		FGameplayTag StaminaTag = FSBGameplayTags::Get().Attribute_Stamina;
 
 		bool bIsSprinting = SprintStateTag.IsValid() && StateComp->HasTag(SprintStateTag);
 
@@ -192,7 +243,7 @@ void USBMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 			if (CurrentStamina <= 0.f && !StateComp->HasTag(ExhaustedTag))
 			{
 				StateComp->AddTag(ExhaustedTag);
-				FGameplayTag SprintBehaviorTag = FGameplayTag::RequestGameplayTag(TEXT("Movement.Action.Sprint"), false);
+				FGameplayTag SprintBehaviorTag = FSBGameplayTags::Get().Movement_Action_Sprint;
 				if (SprintBehaviorTag.IsValid())
 				{
 					StopBehavior(SprintBehaviorTag);
@@ -211,7 +262,7 @@ void USBMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 		return;
 	}
 
-	ACharacter* CharOwner = Cast<ACharacter>(Owner);
+	CharOwner = Cast<ACharacter>(Owner);
 	if (!CharOwner || !CharOwner->GetCharacterMovement())
 	{
 		return;
@@ -473,13 +524,13 @@ bool USBMovementComponent::ConsumeJumpStamina()
 		float JumpCost = DefaultMovementConfig ? DefaultMovementConfig->StaminaConfig.JumpCost : 20.0f;
 		float ExhaustionThreshold = DefaultMovementConfig ? DefaultMovementConfig->StaminaConfig.ExhaustionRecoveryThreshold : 30.0f;
 
-		FGameplayTag ExhaustedTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Exhausted"), false);
+		FGameplayTag ExhaustedTag = FSBGameplayTags::Get().State_Character_Exhausted;
 		if (ExhaustedTag.IsValid() && StateComp->HasTag(ExhaustedTag))
 		{
 			return false; // Bloqueado
 		}
 
-		FGameplayTag StaminaTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Stamina"), false);
+		FGameplayTag StaminaTag = FSBGameplayTags::Get().Attribute_Stamina;
 		float CurrentStamina = AttrComp->GetAttributeValue(StaminaTag);
 		if (CurrentStamina >= JumpCost)
 		{
@@ -490,7 +541,7 @@ bool USBMovementComponent::ConsumeJumpStamina()
 			if (NewStamina <= 0.f && ExhaustedTag.IsValid())
 			{
 				StateComp->AddTag(ExhaustedTag);
-				FGameplayTag SprintBehaviorTag = FGameplayTag::RequestGameplayTag(TEXT("Movement.Action.Sprint"), false);
+				FGameplayTag SprintBehaviorTag = FSBGameplayTags::Get().Movement_Action_Sprint;
 				if (SprintBehaviorTag.IsValid())
 				{
 					StopBehavior(SprintBehaviorTag);

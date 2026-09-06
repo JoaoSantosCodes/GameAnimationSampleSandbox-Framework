@@ -7,74 +7,55 @@ USBEventSubsystem::USBEventSubsystem()
 
 void USBEventSubsystem::PublishEvent(FGameplayTag EventTag, UObject* Payload)
 {
-	struct FSBExecutionItem
-	{
-		uint8 Priority;
-		TFunction<void()> Callback;
-
-		bool operator<(const FSBExecutionItem& Other) const
-		{
-			return Priority < Other.Priority;
-		}
+	static const ESBEventPriority PriorityTiers[] = {
+		ESBEventPriority::High,
+		ESBEventPriority::Medium,
+		ESBEventPriority::Low,
+		ESBEventPriority::Lowest
 	};
 
-	TArray<FSBExecutionItem> ExecutionList;
-
-	// Gather native listeners
-	if (TArray<FSBNativeListener>* NativeList = NativeListeners.Find(EventTag))
+	for (ESBEventPriority CurrentPriority : PriorityTiers)
 	{
-		// Clean up invalid delegates while gathering
-		for (int32 i = NativeList->Num() - 1; i >= 0; --i)
+		// Process native listeners in this priority tier
+		if (TArray<FSBNativeListener>* NativeList = NativeListeners.Find(EventTag))
 		{
-			const FSBNativeListener& Listener = (*NativeList)[i];
-			if (Listener.Delegate.IsBound())
+			for (int32 i = NativeList->Num() - 1; i >= 0; --i)
 			{
-				FSBExecutionItem Item;
-				Item.Priority = static_cast<uint8>(Listener.Priority);
-				Item.Callback = [Listener, EventTag, Payload]()
+				FSBNativeListener& Listener = (*NativeList)[i];
+				if (Listener.Priority == CurrentPriority)
 				{
-					Listener.Delegate.ExecuteIfBound(EventTag, Payload);
-				};
-				ExecutionList.Add(Item);
-			}
-			else
-			{
-				NativeList->RemoveAt(i);
+					if (Listener.Delegate.IsBound())
+					{
+						Listener.Delegate.Execute(EventTag, Payload);
+					}
+					else
+					{
+						NativeList->RemoveAt(i);
+					}
+				}
 			}
 		}
-	}
 
-	// Gather blueprint listeners
-	if (FSBBlueprintListenerArray* BPListWrapper = BlueprintListeners.Find(EventTag))
-	{
-		TArray<FSBBlueprintListener>& BPList = BPListWrapper->Listeners;
-		for (int32 i = BPList.Num() - 1; i >= 0; --i)
+		// Process blueprint listeners in this priority tier
+		if (FSBBlueprintListenerArray* BPListWrapper = BlueprintListeners.Find(EventTag))
 		{
-			const FSBBlueprintListener& Listener = BPList[i];
-			if (Listener.Delegate.IsBound())
+			TArray<FSBBlueprintListener>& BPList = BPListWrapper->Listeners;
+			for (int32 i = BPList.Num() - 1; i >= 0; --i)
 			{
-				FSBExecutionItem Item;
-				Item.Priority = static_cast<uint8>(Listener.Priority);
-				Item.Callback = [Listener, EventTag, Payload]()
+				FSBBlueprintListener& Listener = BPList[i];
+				if (Listener.Priority == CurrentPriority)
 				{
-					Listener.Delegate.ExecuteIfBound(EventTag, Payload);
-				};
-				ExecutionList.Add(Item);
-			}
-			else
-			{
-				BPList.RemoveAt(i);
+					if (Listener.Delegate.IsBound())
+					{
+						Listener.Delegate.Execute(EventTag, Payload);
+					}
+					else
+					{
+						BPList.RemoveAt(i);
+					}
+				}
 			}
 		}
-	}
-
-	// Sort by priority ascending (High priority = 0, Lowest = 30)
-	ExecutionList.StableSort();
-
-	// Dispatch
-	for (const FSBExecutionItem& Item : ExecutionList)
-	{
-		Item.Callback();
 	}
 }
 

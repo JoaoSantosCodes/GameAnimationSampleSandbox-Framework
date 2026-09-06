@@ -17,4 +17,7 @@ public:
 
 	UPROPERTY(Config, EditAnywhere, Category = "Gameplay")
 	bool bShowDebugDraws = false;
+
+	UPROPERTY(Config, EditAnywhere, Category = "Security")
+	FString SaveEncryptionKey = TEXT("SandboxAntiSaveScummingKey2026SecureSalt");
 };

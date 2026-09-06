@@ -1,11 +1,10 @@
-# Manual de Uso Simplificado - Sandbox Framework (v1.10.0)
+# Manual de Uso Simplificado - Sandbox Framework (v1.28.0)
 
 Guia rápido e prático de referência para inicialização e uso das mecânicas do **Sandbox Framework** nos workspaces `V1` e `GameAnimationSample`.
 
 ---
 
-## 🚀 Setup Rápido em 6 Passos
-
+## 🚀 Setup Rápido
 ### Passo 1: Configurar os Componentes via Dados (PawnData)
 O personagem não possui componentes hardcoded. Tudo é injetado dinamicamente:
 1. Clique com o botão direito no Content Browser -> **Miscellaneous** -> **Data Asset**.
@@ -44,6 +43,19 @@ Qualquer Ator ou Componente que implemente a interface **`ISBSaveInterface`** é
 ### Passo 6: Anti-Cheat e Segurança (Fase 24)
 * **Anti-Cheat de Velocidade**: O servidor valida a movimentação a partir da velocidade máxima teórica calculada por `GetCalculatedMaxSpeed()`. O CMC e o atributo de velocidade devem ser mantidos sincronizados (desvios em runtime geram avisos de desync a cada 5 segundos).
 * **Wall-Shot Protection**: Disparos hitscan são invalidados pelo servidor se houver barreiras físicas estáticas entre o tórax do atirador (obtido dinamicamente usando metade do capsule half height) e o ponto de impacto.
+
+### Passo 7: Proteção Anti-Cheat de Saves (Fase 39)
+* Os saves são criptografados com validação de checksum MD5 automaticamente.
+* Defina a chave privada no arquivo `Config/DefaultGame.ini` sob a chave `SaveEncryptionKey` da seção `[/Script/SandboxCommon.SBDeveloperSettings]`.
+* Modificações não autorizadas ou corrupção do hash de assinatura abortam o carregamento síncrono.
+
+### Passo 8: Som de Passos e Zonas Ambientais (Fases 40 & 41)
+* **Passos**: Crie um `USBSurfaceEffectsDataAsset` definindo sons/VFX por material físico. Na animação, adicione a notificação **`USBAnimNotify_Footstep`** apontando para o socket do pé e o data asset.
+* **Zonas**: Arraste um ator **`SBAmbientZoneTrigger`** para o nível, posicione-o sobre a área e configure o arquivo de som looping e tempos de fade-in e fade-out. O processamento é realizado de forma otimizada no cliente.
+
+### Passo 9: Missões e Comércio (Fases 42 & 43)
+* **Missões**: Crie um `USBQuestDataAsset`, defina seus objetivos (ex: `Quest.Objective.Footstep`) e recompensas. Adicione `USBQuestComponent` ao player. O progresso é incrementado de forma autoritativa no servidor por eventos publicados no `USBEventSubsystem`.
+* **Comércio**: Adicione `USBMerchantComponent` a um ator do mapa, configure o estoque de `USBItemDefinition` e preços. Use `ServerBuyItem` e `ServerSellItem` para transacionar itens de forma segura, verificando saldo do atributo `Attribute.Coins` do cliente, espaço de inventário e proximidade.
 
 ---
 

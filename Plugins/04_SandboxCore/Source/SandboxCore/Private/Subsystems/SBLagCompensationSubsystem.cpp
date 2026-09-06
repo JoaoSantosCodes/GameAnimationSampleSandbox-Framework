@@ -79,10 +79,15 @@ void USBLagCompensationSubsystem::RecordPositions()
 
 		History.Positions.Add(NewPos);
 
-		// 3. Remove registros mais velhos que MaxHistoryDuration
-		while (History.Positions.Num() > 0 && (CurrentTime - History.Positions[0].Timestamp > MaxHistoryDuration))
+		// 3. Remove registros mais velhos que MaxHistoryDuration em bloco único
+		int32 ExpiredCount = 0;
+		while (ExpiredCount < History.Positions.Num() && (CurrentTime - History.Positions[ExpiredCount].Timestamp > MaxHistoryDuration))
 		{
-			History.Positions.RemoveAt(0);
+			++ExpiredCount;
+		}
+		if (ExpiredCount > 0)
+		{
+			History.Positions.RemoveAt(0, ExpiredCount, EAllowShrinking::No);
 		}
 	}
 }

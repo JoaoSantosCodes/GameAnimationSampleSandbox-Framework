@@ -60,10 +60,33 @@ struct FSBInventoryEntry : public FFastArraySerializerItem
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
-	TObjectPtr<USBItemInstance> Instance = nullptr;
+	TObjectPtr<const USBItemDefinition> ItemDef = nullptr;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
 	int32 StackCount = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
+	FGameplayTagContainer DynamicTags;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
+	float Durability = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
+	int32 UpgradeLevel = 0;
+
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Inventory")
+	TObjectPtr<USBItemInstance> Instance = nullptr;
+
+	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess);
+};
+
+template<>
+struct TStructOpsTypeTraits<FSBInventoryEntry> : public TStructOpsTypeTraitsBase2<FSBInventoryEntry>
+{
+	enum
+	{
+		WithNetSerializer = true,
+	};
 };
 
 USTRUCT(BlueprintType)
@@ -84,6 +107,7 @@ struct FSBInventoryList : public FFastArraySerializer
 
 	void PostReplicatedAdd(const TArrayView<int32>& AddedIndices, int32 FinalSize);
 	void PostReplicatedChange(const TArrayView<int32>& ChangedIndices, int32 FinalSize);
+	void PreReplicatedRemove(const TArrayView<int32>& RemovedIndices, int32 FinalSize);
 };
 
 template<>
@@ -108,6 +132,12 @@ struct FSBSavedInventorySlot
 
 	UPROPERTY(SaveGame)
 	FGameplayTagContainer DynamicTags;
+
+	UPROPERTY(SaveGame)
+	float Durability = 100.0f;
+
+	UPROPERTY(SaveGame)
+	int32 UpgradeLevel = 0;
 };
 
 USTRUCT()
@@ -143,7 +173,9 @@ public:
 	virtual void OnComponentCreated_Implementation() override {} // Intentionally empty
 	virtual void OnPreInitialize_Implementation() override {} // Intentionally empty
 	virtual void OnInitialize_Implementation() override;
-	virtual void OnPostInitialize_Implementation() override {} // Intentionally empty (ready for future UI registration)
+	// Cacheamento e inscricao em componentes irmaos vive aqui, conforme o manifesto:
+	// "OnPostInitialize: Consulta e cacheamento de outros componentes locais".
+	virtual void OnPostInitialize_Implementation() override;
 	virtual void OnReady_Implementation() override {} // Intentionally empty
 	virtual void OnShutdown_Implementation() override {} // Intentionally empty
 
@@ -163,6 +195,12 @@ public:
 	bool ServerRemoveItem(USBItemInstance* ItemInstance, int32 Quantity);
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Inventory")
+	bool ServerConsumeItemQuantity(const USBItemDefinition* ItemDef, int32 Quantity);
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	int32 GetTotalItemQuantity(const USBItemDefinition* ItemDef) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Inventory")
 	void ServerEquipItem(USBItemInstance* ItemInstance);
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Inventory")
@@ -171,9 +209,39 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	TArray<USBItemInstance*> GetAllItems() const;
 
+	const FSBInventoryList& GetInventoryList() const { return InventoryList; }
+
 	void OnEntryReplicated(int32 ReplicationID);
 
+	/** Sincroniza e marca dirty as alterações de tags ou quantidades de um ItemInstance no servidor */
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Inventory")
+	void MarkItemInstanceUpdated(USBItemInstance* ItemInstance);
+
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Inventory")
+	bool ServerTransferItem(USBInventoryComponent* TargetInventory, USBItemInstance* ItemInstance, int32 Quantity);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = "Inventory")
+	bool bAutoEquipBetterLoot = false;
+
+	UFUNCTION(BlueprintPure, Category = "Inventory")
+	float CalculateEffectiveDefense(const USBItemInstance* ItemInstance) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Inventory")
+	bool ServerAutoEquipBestArmor(FGameplayTag SlotTag);
+
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Inventory")
+	void ServerAutoEquipBestArmorAllSlots();
+
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Inventory")
+	void DeactivateArmorModifiers(USBItemInstance* ItemInstance);
+
 protected:
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	UFUNCTION()
+	void HandleOwnerAttributeChanged(FGameplayTag AttributeTag, float NewValue, float OldValue, AActor* Instigator);
+
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Inventory")
 	FSBInventoryList InventoryList;
 
@@ -182,11 +250,15 @@ protected:
 	TSubclassOf<USBItemFragment_Equippable> EquippableFragmentClass;
 
 private:
+	FDelegateHandle QuestRewardsHandle;
+	void HandleQuestRewardsClaimed(FGameplayTag EventTag, UObject* Payload);
+
 	UPROPERTY(Transient)
 	TArray<FSBPendingInventoryActivation> PendingActivationSlots;
 
 	class USBEventSubsystem* GetEventSubsystem() const;
 	void PublishSlotUpdate(USBItemInstance* Instance, int32 StackCount);
+	void RecalculateInventoryWeight();
 
 	UFUNCTION()
 	void RestoreEquippedItems();

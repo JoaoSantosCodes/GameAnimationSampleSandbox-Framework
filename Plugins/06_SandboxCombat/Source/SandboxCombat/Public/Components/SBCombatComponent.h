@@ -7,6 +7,7 @@
 #include "Types/SBCommonTypes.h"
 #include "Components/SBBehaviorStackComponent.h"
 #include "Subsystems/SBRPCRateLimiter.h"
+#include "Interfaces/SBItemDurabilityInterface.h"
 #include "SBCombatComponent.generated.h"
 
 class USBWeaponBehavior;
@@ -25,6 +26,8 @@ struct FSBWeaponConfigEntry
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	TObjectPtr<USBWeaponBehaviorDefinition> DefinitionAsset;
 };
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSBAgroTargetChangedSignature, APawn*, NewTarget);
 
 UCLASS(BlueprintType)
 class SANDBOXCOMBAT_API USBCombatConfigDataAsset : public UPrimaryDataAsset
@@ -52,6 +55,10 @@ UCLASS(BlueprintType, meta = (BlueprintSpawnableComponent))
 class SANDBOXCOMBAT_API USBCombatComponent : public USBBehaviorStackComponent
 {
 	GENERATED_BODY()
+
+public:
+	UPROPERTY(BlueprintAssignable, Category = "Sandbox|Combat")
+	FSBAgroTargetChangedSignature OnAgroTargetChanged;
 
 public:
 	USBCombatComponent();
@@ -121,7 +128,12 @@ protected:
 	TObjectPtr<USBCombatConfigDataAsset> DefaultCombatConfig = nullptr;
 
 	UPROPERTY(Transient)
-	TMap<TObjectPtr<APawn>, float> AgroTable;
+	mutable TMap<TObjectPtr<APawn>, float> AgroTable;
+
+	UPROPERTY(Transient)
+	TWeakObjectPtr<APawn> CachedHighestAgroTarget = nullptr;
+
+	void UpdateHighestAgroTarget();
 
 	UPROPERTY(Transient)
 	TMap<FGameplayTag, float> LastExecutionTimes;
@@ -165,4 +177,18 @@ public:
 	int32 LastRollbackPredictionId = 0;
 
 	virtual void ClientRollbackFire_Implementation(FGameplayTag BehaviorTag, int32 PredictionId) override;
+};
+
+UCLASS()
+class SANDBOXCOMBAT_API USBTestDurabilityMock : public UObject, public ISBItemDurabilityInterface
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(BlueprintReadWrite, Category = "Test")
+	float CurrentDurability = 100.0f;
+
+	virtual float GetDurability_Implementation() const override { return CurrentDurability; }
+	virtual void SetDurability_Implementation(float NewDurability) override { CurrentDurability = NewDurability; }
+	virtual void ConsumeDurability_Implementation(float Amount) override { CurrentDurability = FMath::Max(0.0f, CurrentDurability - Amount); }
 };

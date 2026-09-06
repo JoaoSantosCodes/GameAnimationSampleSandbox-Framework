@@ -37,6 +37,22 @@
 		{
 			"Name": "04_SandboxCore",
 			"Enabled": true
+		},
+		{
+			"Name": "05_SandboxCharacter",
+			"Enabled": true
+		},
+		{
+			"Name": "06_SandboxCombat",
+			"Enabled": true
+		},
+		{
+			"Name": "07_SandboxInteraction",
+			"Enabled": true
+		},
+		{
+			"Name": "08_SandboxInventory",
+			"Enabled": true
 		}
 	],
 	"SandboxVersion": {

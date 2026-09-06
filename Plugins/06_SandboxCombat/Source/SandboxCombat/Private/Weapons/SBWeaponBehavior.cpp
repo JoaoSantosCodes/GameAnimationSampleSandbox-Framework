@@ -4,6 +4,8 @@
 #include "Components/SBAttributeComponent.h"
 #include "Components/SBStateComponent.h"
 #include "GameFramework/Actor.h"
+#include "SBGameplayTags.h"
+#include "Interfaces/SBItemDurabilityInterface.h"
 
 USBWeaponBehavior::USBWeaponBehavior()
 {
@@ -26,9 +28,18 @@ bool USBWeaponBehavior::CanEnter_Implementation(const FSBBehaviorContext& Contex
 		return false;
 	}
 
+	if (EquippedItemInstance.IsValid() && EquippedItemInstance->GetClass()->ImplementsInterface(USBItemDurabilityInterface::StaticClass()))
+	{
+		float CurrentDurability = ISBItemDurabilityInterface::Execute_GetDurability(EquippedItemInstance.Get());
+		if (CurrentDurability <= 0.0f)
+		{
+			return false;
+		}
+	}
+
 	if (CombatStateComponent)
 	{
-		FGameplayTag ReloadingTag = FGameplayTag::RequestGameplayTag(TEXT("State.Character.Reloading"), false);
+		FGameplayTag ReloadingTag = FSBGameplayTags::Get().State_Character_Reloading;
 		if (ReloadingTag.IsValid() && CombatStateComponent->HasTag(ReloadingTag))
 		{
 			return false;
@@ -49,7 +60,7 @@ bool USBWeaponBehavior::CanEnter_Implementation(const FSBBehaviorContext& Contex
 	{
 		if (WeaponDefinition->AmmoCost > 0.0f)
 		{
-			FGameplayTag AmmoTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Weapon.Ammo"));
+			FGameplayTag AmmoTag = FSBGameplayTags::Get().Attribute_Weapon_Ammo;
 			if (CombatAttributeComponent->GetAttributeValue(AmmoTag) < WeaponDefinition->AmmoCost)
 			{
 				return false;
@@ -58,7 +69,7 @@ bool USBWeaponBehavior::CanEnter_Implementation(const FSBBehaviorContext& Contex
 
 		if (WeaponDefinition->ManaCost > 0.0f)
 		{
-			FGameplayTag ManaTag = FGameplayTag::RequestGameplayTag(TEXT("Attribute.Mana"));
+			FGameplayTag ManaTag = FSBGameplayTags::Get().Attribute_Mana;
 			if (CombatAttributeComponent->GetAttributeValue(ManaTag) < WeaponDefinition->ManaCost)
 			{
 				return false;
@@ -79,6 +90,37 @@ void USBWeaponBehavior::Enter_Implementation(const FSBBehaviorContext& Context)
 	if (CombatComponent)
 	{
 		CombatComponent->SetWeaponVisualActive(GetBehaviorTag(), true);
+	}
+
+	// Consome durabilidade autoritativamente no servidor
+	if (CombatComponent && CombatComponent->GetOwner() && CombatComponent->GetOwner()->HasAuthority() &&
+		EquippedItemInstance.IsValid() && WeaponDefinition.Get() && WeaponDefinition->DurabilityCost > 0.0f)
+	{
+		if (EquippedItemInstance->GetClass()->ImplementsInterface(USBItemDurabilityInterface::StaticClass()))
+		{
+			ISBItemDurabilityInterface::Execute_ConsumeDurability(EquippedItemInstance.Get(), WeaponDefinition->DurabilityCost);
+
+			// Notifica o componente de inventário via reflexão para marcar a replicação da durabilidade
+			AActor* Owner = CombatComponent->GetOwner();
+			if (Owner)
+			{
+				UActorComponent* InvComp = Owner->GetComponentByClass(FindObject<UClass>(nullptr, TEXT("/Script/SandboxInventory.SBInventoryComponent")));
+				if (InvComp)
+				{
+					UFunction* MarkUpdatedFunc = InvComp->GetClass()->FindFunctionByName(TEXT("MarkItemInstanceUpdated"));
+					if (MarkUpdatedFunc)
+					{
+						struct FMarkUpdatedParams
+						{
+							UObject* ItemInstance;
+						};
+						FMarkUpdatedParams Params;
+						Params.ItemInstance = EquippedItemInstance.Get();
+						InvComp->ProcessEvent(MarkUpdatedFunc, &Params);
+					}
+				}
+			}
+		}
 	}
 }
 
