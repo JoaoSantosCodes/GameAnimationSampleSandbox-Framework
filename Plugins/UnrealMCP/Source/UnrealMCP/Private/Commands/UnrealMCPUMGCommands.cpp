@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Components/TextBlock.h"
 #include "WidgetBlueprint.h"
+#include "Blueprint/WidgetBlueprintGeneratedClass.h"
 // We'll create widgets using regular Factory classes
 #include "Factories/Factory.h"
 // Remove problematic includes that don't exist in UE 5.5
@@ -127,22 +128,25 @@ TSharedPtr<FJsonObject> FUnrealMCPUMGCommands::HandleCreateUMGWidgetBlueprint(co
 		return FUnrealMCPCommonUtils::CreateErrorResponse(TEXT("Failed to create package"));
 	}
 
-	// Create Widget Blueprint using KismetEditorUtilities
+	// Widget Blueprint exige as classes proprias de UMG. A versao anterior pedia
+	// UBlueprint/UBlueprintGeneratedClass, entao o objeto criado nunca era um UWidgetBlueprint e
+	// o Cast abaixo falhava sempre — este comando nunca funcionou, nem com os parametros certos.
 	UBlueprint* NewBlueprint = FKismetEditorUtilities::CreateBlueprint(
-		UUserWidget::StaticClass(),  // Parent class
-		Package,                     // Outer package
-		FName(*AssetName),           // Blueprint name
-		BPTYPE_Normal,               // Blueprint type
-		UBlueprint::StaticClass(),   // Blueprint class
-		UBlueprintGeneratedClass::StaticClass(), // Generated class
-		FName("CreateUMGWidget")     // Creation method name
+		UUserWidget::StaticClass(),
+		Package,
+		FName(*AssetName),
+		BPTYPE_Normal,
+		UWidgetBlueprint::StaticClass(),
+		UWidgetBlueprintGeneratedClass::StaticClass(),
+		FName("CreateUMGWidget")
 	);
 
-	// Make sure the Blueprint was created successfully
 	UWidgetBlueprint* WidgetBlueprint = Cast<UWidgetBlueprint>(NewBlueprint);
 	if (!WidgetBlueprint)
 	{
-		return FUnrealMCPCommonUtils::CreateErrorResponse(TEXT("Failed to create Widget Blueprint"));
+		return FUnrealMCPCommonUtils::CreateErrorResponse(FString::Printf(
+			TEXT("Failed to create Widget Blueprint at '%s' (obtido: %s)"),
+			*FullPath, NewBlueprint ? *NewBlueprint->GetClass()->GetName() : TEXT("nullptr")));
 	}
 
 	// Add a default Canvas Panel if one doesn't exist
@@ -159,10 +163,13 @@ TSharedPtr<FJsonObject> FUnrealMCPUMGCommands::HandleCreateUMGWidgetBlueprint(co
 	// Compile the blueprint
 	FKismetEditorUtilities::CompileBlueprint(WidgetBlueprint);
 
+	const bool bSaved = FUnrealMCPCommonUtils::SaveAssetToDisk(WidgetBlueprint);
+
 	// Create success response
 	TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
 	ResultObj->SetStringField(TEXT("name"), BlueprintName);
 	ResultObj->SetStringField(TEXT("path"), FullPath);
+	ResultObj->SetBoolField(TEXT("saved_to_disk"), bSaved);
 	return ResultObj;
 }
 
