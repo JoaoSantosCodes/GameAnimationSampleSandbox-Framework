@@ -10,6 +10,7 @@
 #include "Interfaces/SBComponentInterface.h"
 #include "Interfaces/SBSaveInterface.h"
 #include "Interfaces/SBDebugInterface.h"
+#include "Interfaces/SBInventoryComponentInterface.h"
 #include "Items/SBItemInstance.h"
 #include "Items/SBItemFragment.h"
 #include "Items/SBItemFragment_Equippable.h"
@@ -159,7 +160,7 @@ struct FSBPendingInventoryActivation
 };
 
 UCLASS(BlueprintType, Blueprintable, meta = (BlueprintSpawnableComponent))
-class SANDBOXINVENTORY_API USBInventoryComponent : public UGameFrameworkComponent, public ISBComponentInterface, public ISBSaveInterface, public ISBDebugInterface
+class SANDBOXINVENTORY_API USBInventoryComponent : public UGameFrameworkComponent, public ISBComponentInterface, public ISBSaveInterface, public ISBDebugInterface, public ISBInventoryComponentInterface
 {
 	GENERATED_BODY()
 
@@ -216,6 +217,9 @@ public:
 	/** Sincroniza e marca dirty as alterações de tags ou quantidades de um ItemInstance no servidor */
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Inventory")
 	void MarkItemInstanceUpdated(USBItemInstance* ItemInstance);
+
+	// ISBInventoryComponentInterface — entrada desacoplada para plugins irmãos
+	virtual void NotifyItemInstanceUpdated_Implementation(UObject* ItemInstance) override;
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Inventory")
 	bool ServerTransferItem(USBInventoryComponent* TargetInventory, USBItemInstance* ItemInstance, int32 Quantity);

@@ -1,4 +1,5 @@
 #include "Actors/SBResourceNode.h"
+#include "Interfaces/SBCombatComponentInterface.h"
 #include "Net/UnrealNetwork.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/World.h"
@@ -61,7 +62,7 @@ float ASBResourceNode::TakeDamage(float DamageAmount, struct FDamageEvent const&
 
 	float FinalDamage = DamageAmount;
 
-	// Validação de ferramenta via reflexão para evitar dependências circulares com 06_SandboxCombat
+	// Validação de ferramenta por contrato, sem dependência de compilação com 06_SandboxCombat
 	if (RequiredToolTag.IsValid() && DamageCauser)
 	{
 		bool bCorrectToolEquipped = false;
@@ -72,63 +73,15 @@ float ASBResourceNode::TakeDamage(float DamageAmount, struct FDamageEvent const&
 		}
 		else
 		{
-			// 1. Busca o CombatComponent via reflexão
-		UClass* CombatCompClass = FindObject<UClass>(nullptr, TEXT("/Script/SandboxCombat.SBCombatComponent"));
-		if (CombatCompClass)
-		{
-			UActorComponent* CombatComp = DamageCauser->GetComponentByClass(CombatCompClass);
-			if (CombatComp)
+			// Resolucao por contrato: 08_SandboxInventory e 06_SandboxCombat sao Extensoes de
+			// Gameplay irmas e nao podem se referenciar diretamente (Principio 4). A pergunta
+			// e respondida dentro do proprio modulo de combate, que e onde a semantica de
+			// arma pertence.
+			if (UActorComponent* CombatComp = DamageCauser->FindComponentByInterface(USBCombatComponentInterface::StaticClass()))
 			{
-				// 2. Chama GetActiveWeapons() para obter as armas ativas na pilha
-				UFunction* GetActiveWeaponsFunc = CombatCompClass->FindFunctionByName(TEXT("GetActiveWeapons"));
-				if (GetActiveWeaponsFunc)
-				{
-					struct FGetActiveWeaponsParams
-					{
-						TArray<UObject*> OutActiveWeapons;
-					};
-					FGetActiveWeaponsParams Params;
-					CombatComp->ProcessEvent(GetActiveWeaponsFunc, &Params);
-
-					for (UObject* WeaponObj : Params.OutActiveWeapons)
-					{
-						if (WeaponObj)
-						{
-							// 3. Obtém o Definition da arma
-							UFunction* GetDefinitionFunc = WeaponObj->GetClass()->FindFunctionByName(TEXT("GetDefinition"));
-							if (GetDefinitionFunc)
-							{
-								struct FGetDefinitionParams
-								{
-									UObject* OutDef;
-								};
-								FGetDefinitionParams DefParams;
-								WeaponObj->ProcessEvent(GetDefinitionFunc, &DefParams);
-
-								if (DefParams.OutDef)
-								{
-									// 4. Inspeciona a propriedade BehaviorTag
-									FProperty* TagProp = DefParams.OutDef->GetClass()->FindPropertyByName(TEXT("BehaviorTag"));
-									if (TagProp)
-									{
-										FGameplayTag* TagPtr = TagProp->ContainerPtrToValuePtr<FGameplayTag>(DefParams.OutDef);
-										if (TagPtr && TagPtr->IsValid())
-										{
-											if (TagPtr->MatchesTagExact(RequiredToolTag))
-											{
-												bCorrectToolEquipped = true;
-												break;
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
+				bCorrectToolEquipped = ISBCombatComponentInterface::Execute_HasActiveWeaponWithTag(CombatComp, RequiredToolTag);
 			}
 		}
-	}
 
 		if (!bCorrectToolEquipped)
 		{

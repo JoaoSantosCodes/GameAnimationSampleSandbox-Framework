@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "SBGameplayTags.h"
 #include "Interfaces/SBItemDurabilityInterface.h"
+#include "Interfaces/SBInventoryComponentInterface.h"
 
 USBWeaponBehavior::USBWeaponBehavior()
 {
@@ -100,24 +101,15 @@ void USBWeaponBehavior::Enter_Implementation(const FSBBehaviorContext& Context)
 		{
 			ISBItemDurabilityInterface::Execute_ConsumeDurability(EquippedItemInstance.Get(), WeaponDefinition->DurabilityCost);
 
-			// Notifica o componente de inventário via reflexão para marcar a replicação da durabilidade
+			// Notifica o inventário para que marque a replicação da durabilidade. A resolução é
+			// por contrato: 06_SandboxCombat e 08_SandboxInventory são Extensões de Gameplay
+			// irmãs e não podem se referenciar diretamente (Princípio 4).
 			AActor* Owner = CombatComponent->GetOwner();
 			if (Owner)
 			{
-				UActorComponent* InvComp = Owner->GetComponentByClass(FindObject<UClass>(nullptr, TEXT("/Script/SandboxInventory.SBInventoryComponent")));
-				if (InvComp)
+				if (UActorComponent* InvComp = Owner->FindComponentByInterface(USBInventoryComponentInterface::StaticClass()))
 				{
-					UFunction* MarkUpdatedFunc = InvComp->GetClass()->FindFunctionByName(TEXT("MarkItemInstanceUpdated"));
-					if (MarkUpdatedFunc)
-					{
-						struct FMarkUpdatedParams
-						{
-							UObject* ItemInstance;
-						};
-						FMarkUpdatedParams Params;
-						Params.ItemInstance = EquippedItemInstance.Get();
-						InvComp->ProcessEvent(MarkUpdatedFunc, &Params);
-					}
+					ISBInventoryComponentInterface::Execute_NotifyItemInstanceUpdated(InvComp, EquippedItemInstance.Get());
 				}
 			}
 		}

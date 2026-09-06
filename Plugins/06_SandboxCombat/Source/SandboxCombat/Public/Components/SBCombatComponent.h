@@ -8,6 +8,7 @@
 #include "Components/SBBehaviorStackComponent.h"
 #include "Subsystems/SBRPCRateLimiter.h"
 #include "Interfaces/SBItemDurabilityInterface.h"
+#include "Interfaces/SBCombatComponentInterface.h"
 #include "SBCombatComponent.generated.h"
 
 class USBWeaponBehavior;
@@ -52,7 +53,7 @@ struct FSBSpawnedWeaponEntry
 };
 
 UCLASS(BlueprintType, meta = (BlueprintSpawnableComponent))
-class SANDBOXCOMBAT_API USBCombatComponent : public USBBehaviorStackComponent
+class SANDBOXCOMBAT_API USBCombatComponent : public USBBehaviorStackComponent, public ISBCombatComponentInterface
 {
 	GENERATED_BODY()
 
@@ -116,6 +117,9 @@ public:
 
 	UFUNCTION(Client, Reliable)
 	void ClientRollbackFire(FGameplayTag BehaviorTag, int32 PredictionId);
+
+	// ISBCombatComponentInterface
+	virtual bool HasActiveWeaponWithTag_Implementation(FGameplayTag WeaponTag) const override;
 
 	// Getters de Teste
 	TArray<TObjectPtr<USBWeaponBehavior>> GetActiveWeapons() const;

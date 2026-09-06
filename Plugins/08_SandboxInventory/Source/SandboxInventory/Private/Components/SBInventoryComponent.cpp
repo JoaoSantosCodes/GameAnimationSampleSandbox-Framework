@@ -770,6 +770,11 @@ void USBInventoryComponent::GetDebugDescription_Implementation(TArray<FSBDebugLi
 	}
 }
 
+void USBInventoryComponent::NotifyItemInstanceUpdated_Implementation(UObject* ItemInstance)
+{
+	MarkItemInstanceUpdated(Cast<USBItemInstance>(ItemInstance));
+}
+
 void USBInventoryComponent::MarkItemInstanceUpdated(USBItemInstance* ItemInstance)
 {
 	if (!GetOwner() || !GetOwner()->HasAuthority() || !ItemInstance)

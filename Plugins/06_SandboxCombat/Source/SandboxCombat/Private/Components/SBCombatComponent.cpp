@@ -158,6 +158,31 @@ void USBCombatComponent::OnShutdown_Implementation()
 	LastExecutionTimes.Empty();
 }
 
+bool USBCombatComponent::HasActiveWeaponWithTag_Implementation(FGameplayTag WeaponTag) const
+{
+	if (!WeaponTag.IsValid())
+	{
+		return false;
+	}
+
+	for (const USBGameplayBehavior* Behavior : ActiveBehaviors)
+	{
+		const USBWeaponBehavior* Weapon = Cast<USBWeaponBehavior>(Behavior);
+		if (!Weapon)
+		{
+			continue;
+		}
+
+		const USBWeaponBehaviorDefinition* Definition = Weapon->GetDefinition();
+		if (Definition && Definition->BehaviorTag.MatchesTagExact(WeaponTag))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 TArray<TObjectPtr<USBWeaponBehavior>> USBCombatComponent::GetActiveWeapons() const
 {
 	TArray<TObjectPtr<USBWeaponBehavior>> Results;
