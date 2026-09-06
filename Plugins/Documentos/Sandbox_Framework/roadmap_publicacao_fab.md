@@ -89,6 +89,9 @@ O plugin é derivado do projeto aberto `chongdashu/unreal-mcp`. Não há arquivo
 
 ## 3. Recorte de produto recomendado
 
+> [!INFO] O recorte detalhado está em [[roadmap_produtos_fab]]
+> Esta seção dá a forma geral. O catálogo mede os quinze pacotes um a um, com o estado de cada um e o que falta — e corrige o julgamento que fiz aqui sobre os sistemas industriais.
+
 Onze produtos significam onze páginas, onze conjuntos de documentação, onze filas de suporte e onze revisões a cada versão nova da engine. E como 04–08 arrastam 01, 02 e 03 juntos, vender separado obriga a embutir a fundação em cada um ou a exigir que o comprador compre outro produto antes.
 
 **Três produtos, nesta ordem, com um portão de decisão entre eles:**
