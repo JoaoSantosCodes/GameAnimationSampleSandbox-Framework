@@ -30,6 +30,41 @@ FUnrealMCPUMGCommands::FUnrealMCPUMGCommands()
 {
 }
 
+namespace
+{
+    /**
+     * Desambigua pai e filho entre as duas convencoes de nome que este plugin recebe.
+     *
+     * Esquema Python:  { "widget_name": <blueprint pai>, "text_block_name": <filho> }
+     * Esquema C++:     { "blueprint_name": <blueprint pai>, "widget_name": <filho> }
+     *
+     * `widget_name` significa coisas opostas nos dois. A regra que resolve sem ambiguidade: se
+     * veio um nome de filho especifico, entao `widget_name` e o pai; caso contrario `widget_name`
+     * e o filho e o pai veio em `blueprint_name`.
+     */
+    bool ResolveWidgetTarget(const TSharedPtr<FJsonObject>& Params, FString& OutParent, FString& OutChild)
+    {
+        const TArray<FString> ChildSpecific = {
+            TEXT("text_block_name"), TEXT("button_name"),
+            TEXT("widget_component_name"), TEXT("component_name")
+        };
+
+        const bool bHasSpecificChild = FUnrealMCPCommonUtils::GetStringParam(Params, ChildSpecific, OutChild);
+
+        if (bHasSpecificChild)
+        {
+            return FUnrealMCPCommonUtils::GetStringParam(
+                Params, {TEXT("blueprint_name"), TEXT("widget_name"), TEXT("name")}, OutParent);
+        }
+
+        const bool bHasParent = FUnrealMCPCommonUtils::GetStringParam(
+            Params, {TEXT("blueprint_name"), TEXT("name")}, OutParent);
+        const bool bHasChild = FUnrealMCPCommonUtils::GetStringParam(Params, {TEXT("widget_name")}, OutChild);
+
+        return bHasParent && bHasChild;
+    }
+}
+
 TSharedPtr<FJsonObject> FUnrealMCPUMGCommands::HandleCommand(const FString& CommandName, const TSharedPtr<FJsonObject>& Params)
 {
 	if (CommandName == TEXT("create_umg_widget_blueprint"))
@@ -64,15 +99,20 @@ TSharedPtr<FJsonObject> FUnrealMCPUMGCommands::HandleCreateUMGWidgetBlueprint(co
 {
 	// Get required parameters
 	FString BlueprintName;
-	if (!Params->TryGetStringField(TEXT("name"), BlueprintName))
+	if (!FUnrealMCPCommonUtils::GetStringParam(Params, {TEXT("name"), TEXT("widget_name"), TEXT("blueprint_name")}, BlueprintName))
 	{
-		return FUnrealMCPCommonUtils::CreateErrorResponse(TEXT("Missing 'name' parameter"));
+		return FUnrealMCPCommonUtils::CreateErrorResponse(TEXT("Missing 'name' (ou 'widget_name') parameter"));
 	}
 
-	// Create the full asset path
+	// O parametro `path` existia no schema e era ignorado: o destino era sempre /Game/Widgets.
 	FString PackagePath = TEXT("/Game/Widgets/");
+	Params->TryGetStringField(TEXT("path"), PackagePath);
+	if (!PackagePath.EndsWith(TEXT("/")))
+	{
+		PackagePath += TEXT("/");
+	}
 	FString AssetName = BlueprintName;
-	FString FullPath = PackagePath + AssetName;
+	FString FullPath = BlueprintName.StartsWith(TEXT("/")) ? BlueprintName : PackagePath + AssetName;
 
 	// Check if asset already exists
 	if (UEditorAssetLibrary::DoesAssetExist(FullPath))
@@ -130,19 +170,15 @@ TSharedPtr<FJsonObject> FUnrealMCPUMGCommands::HandleAddTextBlockToWidget(const 
 {
 	// Get required parameters
 	FString BlueprintName;
-	if (!Params->TryGetStringField(TEXT("blueprint_name"), BlueprintName))
-	{
-		return FUnrealMCPCommonUtils::CreateErrorResponse(TEXT("Missing 'blueprint_name' parameter"));
-	}
-
 	FString WidgetName;
-	if (!Params->TryGetStringField(TEXT("widget_name"), WidgetName))
+	if (!ResolveWidgetTarget(Params, BlueprintName, WidgetName) || BlueprintName.IsEmpty() || WidgetName.IsEmpty())
 	{
-		return FUnrealMCPCommonUtils::CreateErrorResponse(TEXT("Missing 'widget_name' parameter"));
+		return FUnrealMCPCommonUtils::CreateErrorResponse(
+			TEXT("Missing widget target. Envie 'widget_name' + 'text_block_name'/'button_name', ou 'blueprint_name' + 'widget_name'."));
 	}
 
 	// Find the Widget Blueprint
-	FString FullPath = TEXT("/Game/Widgets/") + BlueprintName;
+	FString FullPath = FUnrealMCPCommonUtils::ResolveAssetPath(BlueprintName, TEXT("/Game/Widgets/"));
 	UWidgetBlueprint* WidgetBlueprint = Cast<UWidgetBlueprint>(UEditorAssetLibrary::LoadAsset(FullPath));
 	if (!WidgetBlueprint)
 	{
@@ -199,13 +235,13 @@ TSharedPtr<FJsonObject> FUnrealMCPUMGCommands::HandleAddWidgetToViewport(const T
 {
 	// Get required parameters
 	FString BlueprintName;
-	if (!Params->TryGetStringField(TEXT("blueprint_name"), BlueprintName))
+	if (!FUnrealMCPCommonUtils::GetStringParam(Params, {TEXT("blueprint_name"), TEXT("widget_name"), TEXT("name")}, BlueprintName))
 	{
-		return FUnrealMCPCommonUtils::CreateErrorResponse(TEXT("Missing 'blueprint_name' parameter"));
+		return FUnrealMCPCommonUtils::CreateErrorResponse(TEXT("Missing 'widget_name' (ou 'blueprint_name') parameter"));
 	}
 
 	// Find the Widget Blueprint
-	FString FullPath = TEXT("/Game/Widgets/") + BlueprintName;
+	FString FullPath = FUnrealMCPCommonUtils::ResolveAssetPath(BlueprintName, TEXT("/Game/Widgets/"));
 	UWidgetBlueprint* WidgetBlueprint = Cast<UWidgetBlueprint>(UEditorAssetLibrary::LoadAsset(FullPath));
 	if (!WidgetBlueprint)
 	{
@@ -242,17 +278,13 @@ TSharedPtr<FJsonObject> FUnrealMCPUMGCommands::HandleAddButtonToWidget(const TSh
 
 	// Get required parameters
 	FString BlueprintName;
-	if (!Params->TryGetStringField(TEXT("blueprint_name"), BlueprintName))
-	{
-		Response->SetStringField(TEXT("error"), TEXT("Missing blueprint_name parameter"));
-		return Response;
-	}
-
 	FString WidgetName;
-	if (!Params->TryGetStringField(TEXT("widget_name"), WidgetName))
+	if (!ResolveWidgetTarget(Params, BlueprintName, WidgetName) || BlueprintName.IsEmpty() || WidgetName.IsEmpty())
 	{
-		Response->SetStringField(TEXT("error"), TEXT("Missing widget_name parameter"));
-		return Response;
+		// Antes isto devolvia {"status":"success","result":{"error":"..."}} — falha vestida de
+		// sucesso, que um chamador que le so o `status` interpreta como tendo funcionado.
+		return FUnrealMCPCommonUtils::CreateErrorResponse(
+			TEXT("Missing widget target. Envie 'widget_name' + 'text_block_name'/'button_name', ou 'blueprint_name' + 'widget_name'."));
 	}
 
 	FString ButtonText;
@@ -263,7 +295,9 @@ TSharedPtr<FJsonObject> FUnrealMCPUMGCommands::HandleAddButtonToWidget(const TSh
 	}
 
 	// Load the Widget Blueprint
-	const FString BlueprintPath = FString::Printf(TEXT("/Game/Widgets/%s.%s"), *BlueprintName, *BlueprintName);
+	const FString ResolvedPackage = FUnrealMCPCommonUtils::ResolveAssetPath(BlueprintName, TEXT("/Game/Widgets/"));
+	FString ShortName; ResolvedPackage.Split(TEXT("/"), nullptr, &ShortName, ESearchCase::IgnoreCase, ESearchDir::FromEnd);
+	const FString BlueprintPath = FString::Printf(TEXT("%s.%s"), *ResolvedPackage, *ShortName);
 	UWidgetBlueprint* WidgetBlueprint = Cast<UWidgetBlueprint>(UEditorAssetLibrary::LoadAsset(BlueprintPath));
 	if (!WidgetBlueprint)
 	{
@@ -325,17 +359,13 @@ TSharedPtr<FJsonObject> FUnrealMCPUMGCommands::HandleBindWidgetEvent(const TShar
 
 	// Get required parameters
 	FString BlueprintName;
-	if (!Params->TryGetStringField(TEXT("blueprint_name"), BlueprintName))
-	{
-		Response->SetStringField(TEXT("error"), TEXT("Missing blueprint_name parameter"));
-		return Response;
-	}
-
 	FString WidgetName;
-	if (!Params->TryGetStringField(TEXT("widget_name"), WidgetName))
+	if (!ResolveWidgetTarget(Params, BlueprintName, WidgetName) || BlueprintName.IsEmpty() || WidgetName.IsEmpty())
 	{
-		Response->SetStringField(TEXT("error"), TEXT("Missing widget_name parameter"));
-		return Response;
+		// Antes isto devolvia {"status":"success","result":{"error":"..."}} — falha vestida de
+		// sucesso, que um chamador que le so o `status` interpreta como tendo funcionado.
+		return FUnrealMCPCommonUtils::CreateErrorResponse(
+			TEXT("Missing widget target. Envie 'widget_name' + 'text_block_name'/'button_name', ou 'blueprint_name' + 'widget_name'."));
 	}
 
 	FString EventName;
@@ -346,7 +376,9 @@ TSharedPtr<FJsonObject> FUnrealMCPUMGCommands::HandleBindWidgetEvent(const TShar
 	}
 
 	// Load the Widget Blueprint
-	const FString BlueprintPath = FString::Printf(TEXT("/Game/Widgets/%s.%s"), *BlueprintName, *BlueprintName);
+	const FString ResolvedPackage = FUnrealMCPCommonUtils::ResolveAssetPath(BlueprintName, TEXT("/Game/Widgets/"));
+	FString ShortName; ResolvedPackage.Split(TEXT("/"), nullptr, &ShortName, ESearchCase::IgnoreCase, ESearchDir::FromEnd);
+	const FString BlueprintPath = FString::Printf(TEXT("%s.%s"), *ResolvedPackage, *ShortName);
 	UWidgetBlueprint* WidgetBlueprint = Cast<UWidgetBlueprint>(UEditorAssetLibrary::LoadAsset(BlueprintPath));
 	if (!WidgetBlueprint)
 	{
@@ -447,28 +479,26 @@ TSharedPtr<FJsonObject> FUnrealMCPUMGCommands::HandleSetTextBlockBinding(const T
 
 	// Get required parameters
 	FString BlueprintName;
-	if (!Params->TryGetStringField(TEXT("blueprint_name"), BlueprintName))
-	{
-		Response->SetStringField(TEXT("error"), TEXT("Missing blueprint_name parameter"));
-		return Response;
-	}
-
 	FString WidgetName;
-	if (!Params->TryGetStringField(TEXT("widget_name"), WidgetName))
+	if (!ResolveWidgetTarget(Params, BlueprintName, WidgetName) || BlueprintName.IsEmpty() || WidgetName.IsEmpty())
 	{
-		Response->SetStringField(TEXT("error"), TEXT("Missing widget_name parameter"));
-		return Response;
+		// Antes isto devolvia {"status":"success","result":{"error":"..."}} — falha vestida de
+		// sucesso, que um chamador que le so o `status` interpreta como tendo funcionado.
+		return FUnrealMCPCommonUtils::CreateErrorResponse(
+			TEXT("Missing widget target. Envie 'widget_name' + 'text_block_name'/'button_name', ou 'blueprint_name' + 'widget_name'."));
 	}
 
 	FString BindingName;
-	if (!Params->TryGetStringField(TEXT("binding_name"), BindingName))
+	if (!FUnrealMCPCommonUtils::GetStringParam(Params, {TEXT("binding_name"), TEXT("binding_property")}, BindingName))
 	{
 		Response->SetStringField(TEXT("error"), TEXT("Missing binding_name parameter"));
 		return Response;
 	}
 
 	// Load the Widget Blueprint
-	const FString BlueprintPath = FString::Printf(TEXT("/Game/Widgets/%s.%s"), *BlueprintName, *BlueprintName);
+	const FString ResolvedPackage = FUnrealMCPCommonUtils::ResolveAssetPath(BlueprintName, TEXT("/Game/Widgets/"));
+	FString ShortName; ResolvedPackage.Split(TEXT("/"), nullptr, &ShortName, ESearchCase::IgnoreCase, ESearchDir::FromEnd);
+	const FString BlueprintPath = FString::Printf(TEXT("%s.%s"), *ResolvedPackage, *ShortName);
 	UWidgetBlueprint* WidgetBlueprint = Cast<UWidgetBlueprint>(UEditorAssetLibrary::LoadAsset(BlueprintPath));
 	if (!WidgetBlueprint)
 	{

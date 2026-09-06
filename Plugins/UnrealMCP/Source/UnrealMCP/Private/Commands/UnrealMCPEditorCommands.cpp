@@ -417,18 +417,22 @@ TSharedPtr<FJsonObject> FUnrealMCPEditorCommands::HandleSpawnBlueprintActor(cons
         return FUnrealMCPCommonUtils::CreateErrorResponse(TEXT("Blueprint name is empty"));
     }
 
-    FString Root      = TEXT("/Game/Blueprints/");
-    FString AssetPath = Root + BlueprintName;
+    const FString AssetPath = FUnrealMCPCommonUtils::ResolveAssetPath(BlueprintName, TEXT("/Game/Blueprints/"));
 
-    if (!FPackageName::DoesPackageExist(AssetPath))
-    {
-        return FUnrealMCPCommonUtils::CreateErrorResponse(FString::Printf(TEXT("Blueprint '%s' not found – it must reside under /Game/Blueprints"), *BlueprintName));
-    }
-
-    UBlueprint* Blueprint = LoadObject<UBlueprint>(nullptr, *AssetPath);
+    // Procurar primeiro entre os pacotes ja carregados: um Blueprint criado nesta mesma sessao
+    // existe em memoria e ainda nao em disco, e a checagem antiga por DoesPackageExist o
+    // rejeitava — impossibilitando criar e spawnar sem salvamento manual no meio.
+    UBlueprint* Blueprint = FindObject<UBlueprint>(nullptr, *AssetPath);
     if (!Blueprint)
     {
-        return FUnrealMCPCommonUtils::CreateErrorResponse(FString::Printf(TEXT("Blueprint not found: %s"), *BlueprintName));
+        Blueprint = LoadObject<UBlueprint>(nullptr, *AssetPath);
+    }
+
+    if (!Blueprint)
+    {
+        return FUnrealMCPCommonUtils::CreateErrorResponse(FString::Printf(
+            TEXT("Blueprint not found: '%s' (resolved to '%s'). Pass a full path like /Game/MinhaPasta/MeuBP if it lives outside /Game/Blueprints."),
+            *BlueprintName, *AssetPath));
     }
 
     // Get transform parameters

@@ -1,4 +1,9 @@
 #include "Commands/UnrealMCPCommonUtils.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+#include "AssetRegistry/IAssetRegistry.h"
+#include "EditorAssetLibrary.h"
+#include "UObject/SavePackage.h"
+#include "Misc/PackageName.h"
 #include "GameFramework/Actor.h"
 #include "Engine/Blueprint.h"
 #include "EdGraph/EdGraph.h"
@@ -145,6 +150,129 @@ FRotator FUnrealMCPCommonUtils::GetRotatorFromJson(const TSharedPtr<FJsonObject>
     return Result;
 }
 
+// Compatibilidade e resolucao
+bool FUnrealMCPCommonUtils::GetStringParam(const TSharedPtr<FJsonObject>& Params, const TArray<FString>& Aliases, FString& OutValue)
+{
+    if (!Params.IsValid())
+    {
+        return false;
+    }
+
+    for (const FString& Alias : Aliases)
+    {
+        FString Value;
+        if (Params->TryGetStringField(Alias, Value) && !Value.IsEmpty())
+        {
+            OutValue = Value;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+FString FUnrealMCPCommonUtils::ResolveAssetPath(const FString& NameOrPath, const FString& DefaultRoot)
+{
+    // Caminho completo veio pronto; concatenar o root produziria "//" e um LongPackageName invalido.
+    if (NameOrPath.StartsWith(TEXT("/")))
+    {
+        return NameOrPath;
+    }
+
+    FString Root = DefaultRoot;
+    if (!Root.EndsWith(TEXT("/")))
+    {
+        Root += TEXT("/");
+    }
+
+    const FString Candidate = Root + NameOrPath;
+    if (FPackageName::DoesPackageExist(Candidate) || UEditorAssetLibrary::DoesAssetExist(Candidate))
+    {
+        return Candidate;
+    }
+
+    // Nao esta no root padrao: perguntar ao Asset Registry onde o asset realmente vive, para que
+    // conteudo fora de /Game/Blueprints deixe de ser inalcancavel.
+    const FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+    TArray<FAssetData> Found;
+    AssetRegistryModule.Get().GetAssetsByPackageName(*Candidate, Found);
+    if (Found.Num() == 0)
+    {
+        TArray<FAssetData> All;
+        AssetRegistryModule.Get().GetAllAssets(All);
+        for (const FAssetData& Data : All)
+        {
+            if (Data.AssetName.ToString() == NameOrPath)
+            {
+                return Data.PackageName.ToString();
+            }
+        }
+    }
+
+    return Candidate;
+}
+
+UClass* FUnrealMCPCommonUtils::FindClassByNameOrPath(const FString& NameOrPath)
+{
+    if (NameOrPath.IsEmpty())
+    {
+        return nullptr;
+    }
+
+    // Caminho completo: /Script/Modulo.Classe
+    if (NameOrPath.Contains(TEXT(".")))
+    {
+        if (UClass* Direct = FindObject<UClass>(nullptr, *NameOrPath))
+        {
+            return Direct;
+        }
+        if (UClass* Loaded = LoadObject<UClass>(nullptr, *NameOrPath))
+        {
+            return Loaded;
+        }
+    }
+
+    // Nome curto. FindObject com outer nulo nao resolve nomes curtos desde que ANY_PACKAGE saiu
+    // na UE5, entao a busca por nome precisa ser explicita.
+    const TArray<FString> Variants = {
+        NameOrPath,
+        NameOrPath.EndsWith(TEXT("Component")) ? NameOrPath : NameOrPath + TEXT("Component"),
+        NameOrPath.StartsWith(TEXT("U")) || NameOrPath.StartsWith(TEXT("A")) ? NameOrPath.RightChop(1) : NameOrPath
+    };
+
+    for (const FString& Variant : Variants)
+    {
+        if (Variant.IsEmpty())
+        {
+            continue;
+        }
+
+        if (UClass* Found = UClass::TryFindTypeSlow<UClass>(Variant, EFindFirstObjectOptions::None))
+        {
+            return Found;
+        }
+    }
+
+    return nullptr;
+}
+
+bool FUnrealMCPCommonUtils::SaveAssetToDisk(UObject* Object)
+{
+    if (!Object)
+    {
+        return false;
+    }
+
+    UPackage* Package = Object->GetOutermost();
+    if (!Package)
+    {
+        return false;
+    }
+
+    Package->MarkPackageDirty();
+    return UEditorAssetLibrary::SaveLoadedAsset(Object, /*bOnlyIfIsDirty=*/false);
+}
+
 // Blueprint Utilities
 UBlueprint* FUnrealMCPCommonUtils::FindBlueprint(const FString& BlueprintName)
 {
@@ -153,7 +281,7 @@ UBlueprint* FUnrealMCPCommonUtils::FindBlueprint(const FString& BlueprintName)
 
 UBlueprint* FUnrealMCPCommonUtils::FindBlueprintByName(const FString& BlueprintName)
 {
-    FString AssetPath = TEXT("/Game/Blueprints/") + BlueprintName;
+    const FString AssetPath = ResolveAssetPath(BlueprintName, TEXT("/Game/Blueprints/"));
     return LoadObject<UBlueprint>(nullptr, *AssetPath);
 }
 
@@ -484,7 +612,27 @@ TSharedPtr<FJsonObject> FUnrealMCPCommonUtils::ActorToJsonObject(AActor* Actor, 
     ScaleArray.Add(MakeShared<FJsonValueNumber>(Scale.Y));
     ScaleArray.Add(MakeShared<FJsonValueNumber>(Scale.Z));
     ActorObject->SetArrayField(TEXT("scale"), ScaleArray);
-    
+
+    // Lista de componentes. Sem isto nao havia como verificar, pelo MCP, se um componente
+    // realmente entrou num ator — a unica evidencia disponivel era a resposta da chamada que o
+    // adicionou, e resposta de sucesso nao prova estado.
+    TArray<TSharedPtr<FJsonValue>> ComponentsArray;
+    for (UActorComponent* Component : Actor->GetComponents())
+    {
+        if (!Component)
+        {
+            continue;
+        }
+
+        TSharedPtr<FJsonObject> ComponentObject = MakeShared<FJsonObject>();
+        ComponentObject->SetStringField(TEXT("name"), Component->GetName());
+        ComponentObject->SetStringField(TEXT("class"), Component->GetClass()->GetName());
+        ComponentObject->SetStringField(TEXT("class_path"), Component->GetClass()->GetPathName());
+        ComponentsArray.Add(MakeShared<FJsonValueObject>(ComponentObject));
+    }
+    ActorObject->SetArrayField(TEXT("components"), ComponentsArray);
+    ActorObject->SetNumberField(TEXT("component_count"), ComponentsArray.Num());
+
     return ActorObject;
 }
 

@@ -23,6 +23,32 @@ class UFunction;
 class UNREALMCP_API FUnrealMCPCommonUtils
 {
 public:
+    /**
+     * Le um parametro string aceitando varios nomes alternativos.
+     *
+     * A camada Python e o C++ deste plugin divergiam nos nomes: o schema expunha `widget_name`
+     * onde o C++ lia `name`, `text_block_name` onde o C++ lia `widget_name`, e assim por diante.
+     * Em vez de escolher um lado e quebrar o outro, aceitamos os dois — o cliente antigo e o
+     * novo funcionam sem coordenacao de versao.
+     */
+    static bool GetStringParam(const TSharedPtr<FJsonObject>& Params, const TArray<FString>& Aliases, FString& OutValue);
+
+    /**
+     * Resolve um nome de asset em caminho completo.
+     *
+     * Aceita tanto `MeuBlueprint` quanto `/Game/Qualquer/Pasta/MeuBlueprint`. Antes o plugin
+     * concatenava `/Game/Blueprints/` cegamente, o que tornava inalcancavel qualquer asset fora
+     * dessa pasta e produzia caminhos invalidos com `//` quando o chamador passava caminho
+     * completo.
+     */
+    static FString ResolveAssetPath(const FString& NameOrPath, const FString& DefaultRoot);
+
+    /** Localiza uma UClass por nome curto (`StaticMeshComponent`) ou caminho (`/Script/Engine.StaticMeshComponent`). */
+    static UClass* FindClassByNameOrPath(const FString& NameOrPath);
+
+    /** Grava o pacote do objeto em disco. Sem isto, um asset criado so existe em memoria. */
+    static bool SaveAssetToDisk(UObject* Object);
+
     // JSON utilities
     static TSharedPtr<FJsonObject> CreateErrorResponse(const FString& Message);
     static TSharedPtr<FJsonObject> CreateSuccessResponse(const TSharedPtr<FJsonObject>& Data = nullptr);

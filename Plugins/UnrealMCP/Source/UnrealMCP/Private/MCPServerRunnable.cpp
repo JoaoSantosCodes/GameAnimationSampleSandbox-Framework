@@ -88,15 +88,35 @@ uint32 FMCPServerRunnable::Run()
                                 
                                 // Log response for debugging
                                 UE_LOG(LogTemp, Display, TEXT("MCPServerRunnable: Sending response: %s"), *Response);
-                                
-                                // Send response
+
+                                // Dois defeitos foram corrigidos aqui, e juntos explicavam os
+                                // "Timeout receiving Unreal response" que na verdade eram erros
+                                // reais do servidor que nunca chegavam ao cliente:
+                                //
+                                // 1. O comprimento passado era Response.Len(), que conta TCHARs,
+                                //    enquanto o buffer e UTF-8. Qualquer caractere fora de ASCII
+                                //    ocupa mais de um byte, entao a mensagem saia truncada e o
+                                //    JSON chegava impossivel de parsear. Uma das mensagens de erro
+                                //    do proprio plugin contem um travessao, o que garantia
+                                //    truncamento justamente ao relatar erro.
+                                //
+                                // 2. Faltava o terminador de linha que o outro caminho de envio
+                                //    ja usava. Cliente que le ate a nova linha ficava esperando
+                                //    para sempre.
+                                FString Framed = Response;
+                                if (!Framed.EndsWith(TEXT("\n")))
+                                {
+                                    Framed += TEXT("\n");
+                                }
+
+                                const FTCHARToUTF8 Utf8Response(*Framed);
                                 int32 BytesSent = 0;
-                                if (!ClientSocket->Send((uint8*)TCHAR_TO_UTF8(*Response), Response.Len(), BytesSent))
+                                if (!ClientSocket->Send((const uint8*)Utf8Response.Get(), Utf8Response.Length(), BytesSent))
                                 {
                                     UE_LOG(LogTemp, Warning, TEXT("MCPServerRunnable: Failed to send response"));
                                 }
                                 else {
-                                    UE_LOG(LogTemp, Display, TEXT("MCPServerRunnable: Response sent successfully, bytes: %d"), BytesSent);
+                                    UE_LOG(LogTemp, Display, TEXT("MCPServerRunnable: Response sent successfully, bytes: %d de %d"), BytesSent, Utf8Response.Length());
                                 }
                             }
                             else
@@ -314,7 +334,9 @@ void FMCPServerRunnable::ProcessMessage(TSharedPtr<FSocket> Client, const FStrin
     
     UE_LOG(LogTemp, Display, TEXT("MCPServerRunnable: Sending response: %s"), *Response);
     
-    if (!Client->Send((uint8*)TCHAR_TO_UTF8(*Response), Response.Len(), BytesSent))
+    // Mesmo defeito de contagem do outro caminho: comprimento em TCHAR sobre buffer UTF-8.
+    const FTCHARToUTF8 Utf8Response(*Response);
+    if (!Client->Send((const uint8*)Utf8Response.Get(), Utf8Response.Length(), BytesSent))
     {
         UE_LOG(LogTemp, Error, TEXT("MCPServerRunnable: Failed to send response"));
     }

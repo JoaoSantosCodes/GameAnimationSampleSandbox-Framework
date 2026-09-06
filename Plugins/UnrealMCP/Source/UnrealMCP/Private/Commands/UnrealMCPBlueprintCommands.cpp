@@ -153,9 +153,15 @@ TSharedPtr<FJsonObject> FUnrealMCPBlueprintCommands::HandleCreateBlueprint(const
         // Mark the package dirty
         Package->MarkPackageDirty();
 
+        // Gravar em disco. Sem isto o asset so existia em memoria, e qualquer comando que
+        // resolva por caminho de pacote (spawn_blueprint_actor, por exemplo) nao o encontrava —
+        // obrigando o usuario a salvar a mao no meio de um fluxo automatizado.
+        const bool bSaved = FUnrealMCPCommonUtils::SaveAssetToDisk(NewBlueprint);
+
         TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
         ResultObj->SetStringField(TEXT("name"), AssetName);
         ResultObj->SetStringField(TEXT("path"), PackagePath + AssetName);
+        ResultObj->SetBoolField(TEXT("saved_to_disk"), bSaved);
         return ResultObj;
     }
 
@@ -193,29 +199,11 @@ TSharedPtr<FJsonObject> FUnrealMCPBlueprintCommands::HandleAddComponentToBluepri
     // Create the component - dynamically find the component class by name
     UClass* ComponentClass = nullptr;
 
-    // Try to find the class with exact name first
-    ComponentClass = FindObject<UClass>(nullptr, *ComponentType);
-    
-    // If not found, try with "Component" suffix
-    if (!ComponentClass && !ComponentType.EndsWith(TEXT("Component")))
-    {
-        FString ComponentTypeWithSuffix = ComponentType + TEXT("Component");
-        ComponentClass = FindObject<UClass>(nullptr, *ComponentTypeWithSuffix);
-    }
-    
-    // If still not found, try with "U" prefix
-    if (!ComponentClass && !ComponentType.StartsWith(TEXT("U")))
-    {
-        FString ComponentTypeWithPrefix = TEXT("U") + ComponentType;
-        ComponentClass = FindObject<UClass>(nullptr, *ComponentTypeWithPrefix);
-        
-        // Try with both prefix and suffix
-        if (!ComponentClass && !ComponentType.EndsWith(TEXT("Component")))
-        {
-            FString ComponentTypeWithBoth = TEXT("U") + ComponentType + TEXT("Component");
-            ComponentClass = FindObject<UClass>(nullptr, *ComponentTypeWithBoth);
-        }
-    }
+    // Resolucao unificada: aceita nome curto (`StaticMeshComponent`) e caminho completo
+    // (`/Script/Engine.StaticMeshComponent`). A versao anterior usava FindObject com outer nulo,
+    // que nao resolve nomes curtos desde que ANY_PACKAGE saiu na UE5 — entao a docstring da
+    // ferramenta, que prometia aceitar nome sem prefixo, estava errada na pratica.
+    ComponentClass = FUnrealMCPCommonUtils::FindClassByNameOrPath(ComponentType);
     
     // Verify that the class is a valid component type
     if (!ComponentClass || !ComponentClass->IsChildOf(UActorComponent::StaticClass()))
