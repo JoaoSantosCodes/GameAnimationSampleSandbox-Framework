@@ -2,8 +2,9 @@
 
 **Para**: uma sessão do Claude com o servidor `unrealMCP` conectado e o Unreal Editor **aberto**
 no projeto `D:\Unreal\GameAnimationSample`.
-**Validado em**: 06/09/2026, **executando** cada ferramenta contra o editor aberto e lendo o
-código-fonte do plugin em `Plugins/UnrealMCP/Source/`.
+**Validado em**: 06/09/2026, **executando as 21 ferramentas expostas** contra o editor aberto e
+lendo o código-fonte do plugin em `Plugins/UnrealMCP/Source/`. Nenhuma linha deste documento é
+suposição: cada veredito tem chamada real por trás.
 
 > [!DANGER] Este plugin MCP é muito mais limitado do que os schemas sugerem
 > A primeira versão deste playbook foi escrita a partir dos schemas das ferramentas. A execução
@@ -29,27 +30,53 @@ código-fonte do plugin em `Plugins/UnrealMCP/Source/`.
 
 Cada linha foi **executada** em 06/09/2026 contra o editor aberto.
 
-### 2.1 ✅ Funciona
+### 2.1 ✅ Funciona — 15 de 21, todas executadas
 
-| Ferramenta | Parâmetros | Observação da execução |
-| :--- | :--- | :--- |
-| `get_actors_in_level` | *(nenhum)* | Devolveu os 17 atores do nível |
-| `find_actors_by_name` | `pattern` | Sem resultado devolve **saída vazia**, não erro |
-| `spawn_actor` | `name`, `type`, `location`, `rotation` | `type` é classe nativa: `PointLight`, `StaticMeshActor` |
-| `delete_actor` | `name` | Confirmado |
-| `create_blueprint` | `name`, `parent_class` | Cria **sempre** em `/Game/Blueprints/`, **em memória** |
-| `add_component_to_blueprint` | `blueprint_name`, `component_type`, `component_name`, … | ⚠️ `component_type` exige **caminho completo** — ver §2.3 |
-| `set_static_mesh_properties` | `blueprint_name`, `component_name`, `static_mesh` | `/Engine/BasicShapes/Cube.Cube` funciona |
-| `set_physics_properties` | `blueprint_name`, `component_name`, `simulate_physics`, `mass`, … | Confirmado |
-| `compile_blueprint` | `blueprint_name` | Devolveu `compiled: true` |
+| Ferramenta | Observação da execução |
+| :--- | :--- |
+| `get_actors_in_level` | Devolveu os 17 atores do nível |
+| `find_actors_by_name` | Sem resultado devolve **saída vazia**, não erro |
+| `get_actor_properties` | ⚠️ Devolve **só** `name`, `class`, `location`, `rotation`, `scale`. **Não lista componentes** — ver §5 |
+| `spawn_actor` | `type` é classe nativa: `PointLight`, `StaticMeshActor` |
+| `set_actor_transform` | Aceita `location`/`rotation`/`scale` parciais |
+| `set_actor_property` | `bHidden=true` aplicado e confirmado |
+| `delete_actor` | Confirmado |
+| `create_blueprint` | Cria **sempre** em `/Game/Blueprints/`, **em memória** |
+| `add_component_to_blueprint` | ⚠️ `component_type` exige **caminho completo** — §2.3 |
+| `set_component_property` | `bVisible` aplicado no componente |
+| `set_static_mesh_properties` | `/Engine/BasicShapes/Cube.Cube` funciona |
+| `set_physics_properties` | Confirmado |
+| `set_blueprint_property` | ⚠️ Só encontra a variável **após `compile_blueprint`** — §2.6 |
+| `add_blueprint_variable` | `TestHealth`/`Float` criada |
+| `compile_blueprint` | Devolveu `compiled: true` |
+
+### 2.1b ✅ Grafo de Blueprint — funciona
+
+| Ferramenta | Observação da execução |
+| :--- | :--- |
+| `add_blueprint_event_node` | `ReceiveBeginPlay` → devolveu `node_id` |
+| `add_blueprint_function_node` | Só funções que o `target` **realmente possui**: `PrintString` em `self` falha (é estática de `UKismetSystemLibrary`); `SetActorHiddenInGame` funciona |
+| `add_blueprint_input_action_node` | Funcionou após `create_input_mapping` |
+| `add_blueprint_self_reference` | Devolveu `node_id` |
+| `add_blueprint_get_self_component_reference` | Devolveu `node_id` |
+| `connect_blueprint_nodes` | Pinos `then` → `execute` conectados |
+| `create_input_mapping` | `MCPTest_Jump`/`SpaceBar` criado |
 
 ### 2.2 ❌ Quebrado ou inalcançável
 
 | Ferramenta | Problema | Evidência |
 | :--- | :--- | :--- |
-| **Toda a família UMG** | Os nomes de parâmetro do schema Python **não batem** com os que o C++ lê. Nada traduz entre as camadas | `create_umg_widget_blueprint(widget_name=…)` → `{"error": "Missing 'name' parameter"}` |
+| **Toda a família UMG** (6 ferramentas) | Os nomes de parâmetro do schema Python **não batem** com os que o C++ lê. Nada traduz entre as camadas | `create_umg_widget_blueprint(widget_name=…)` → `{"error": "Missing 'name' parameter"}` |
 | `spawn_blueprint_actor` | Só encontra Blueprints **salvos em disco** sob `/Game/Blueprints/` | `BP_SBCharacter_Hero` (em `/Game/SandboxFramework/Blueprints/`) → *"not found – it must reside under /Game/Blueprints"* |
 | `spawn_blueprint_actor` de BP recém-criado | `FPackageName::DoesPackageExist` checa o **disco**; `create_blueprint` não salva | `BP_MCPProbe_Cube` criado com sucesso e depois *"not found"* no spawn |
+| `find_blueprint_nodes` | O schema expõe `event_type`; o C++ exige **`event_name`**, que não é exposto | `node_type="Event"` com e sem `event_type` → *"Missing 'event_name' parameter for Event node search"* |
+
+> [!CAUTION] Quatro ferramentas devolvem `"status": "success"` embrulhando um erro
+> `add_button_to_widget`, `bind_widget_event` e `set_text_block_binding` respondem
+> `{"status": "success", "result": {"error": "Missing blueprint_name parameter"}}`.
+>
+> Um chamador que olhe só o `status` conclui que funcionou. **Sempre inspecione o `result`**, não
+> apenas o campo `status`.
 
 #### A família UMG, em detalhe
 
@@ -66,6 +93,20 @@ O C++ (`UnrealMCPUMGCommands.cpp`) lê nomes diferentes dos que o schema expõe:
 **Consequência**: não é possível criar nem editar widget por MCP. Como
 `create_umg_widget_blueprint` é a porta de entrada e ela falha sempre, o resto da família fica
 inacessível mesmo que os parâmetros dos outros comandos batessem.
+
+### 2.6 Ordem obrigatória: variável antes de propriedade
+
+`add_blueprint_variable` devolve sucesso, mas a propriedade **não existe no CDO** até recompilar.
+Verificado por execução:
+
+```
+add_blueprint_variable(variable_name="TestHealth", variable_type="Float")  -> success
+set_blueprint_property(property_name="TestHealth", property_value="75.0")  -> "Property not found: TestHealth"
+compile_blueprint(...)                                                     -> compiled: true
+set_blueprint_property(property_name="TestHealth", property_value="75.0")  -> success
+```
+
+É a evidência concreta da regra "compile após toda mudança estrutural".
 
 ### 2.3 `component_type` exige caminho completo
 
@@ -102,6 +143,21 @@ Nenhum Blueprint do framework pode ser spawnado, e nenhum widget existente pode 
   ser spawnado **depois** que o usuário salvar manualmente.
 - **Desfazer.**
 - **Rodar a suíte de testes** — é linha de comando, ver §8.
+
+> [!IMPORTANT] Criar Data Asset é impossível, e isso é definitivo
+> Não é limitação do schema exposto: o dispatch do plugin aceita **36 comandos**, enumerados em
+> `Plugins/UnrealMCP/Source/UnrealMCP/Private/`, e **nenhum** cria asset que não seja Blueprint
+> ou Widget. Não há `create_data_asset`, `create_asset` nem `save_asset`.
+>
+> Consequência para este projeto: `PawnData`, `ComponentSet`, `DA_MovementConfig`,
+> `DA_AbilitySet` e similares **só podem ser criados à mão no editor**. Como a composição de
+> personagem deste framework passa inteiramente por eles (§6.1), montar um personagem novo por
+> MCP é impossível de ponta a ponta.
+>
+> Seis comandos existem no C++ mas **não estão expostos** como ferramenta: `ping`,
+> `focus_viewport`, `take_screenshot`, `create_actor`, `set_pawn_properties` e
+> `add_blueprint_get_component_node`. `take_screenshot` seria o mais útil — daria verificação
+> visual, que hoje não existe.
 
 ---
 
@@ -156,12 +212,22 @@ que se descobriu a restrição de `/Game/Blueprints`, que nenhuma mensagem do cl
 | O que você fez | Como verificar | Sinal de falha |
 | :--- | :--- | :--- |
 | `spawn_actor` | `find_actors_by_name(pattern=<name>)` | Saída vazia |
-| `spawn_blueprint_actor` | `get_actor_properties(name=<actor_name>)` | Ator ausente ou sem componentes |
+| `spawn_blueprint_actor` | `find_actors_by_name` | Saída vazia |
 | `delete_actor` | `find_actors_by_name` com o mesmo padrão | Ainda presente |
 | `create_blueprint` | `compile_blueprint` no mesmo nome | Erro ou nome não encontrado |
 | `add_component_to_blueprint` | `compile_blueprint` | `Unknown component type` → §2.3 |
-| `set_actor_property` | `get_actor_properties` e conferir o valor | Valor inalterado |
+| `add_blueprint_variable` | `compile_blueprint`, depois `set_blueprint_property` na variável | `Property not found` antes de compilar — §2.6 |
+| `set_actor_property` / `set_actor_transform` | `get_actor_properties` | Valor inalterado |
+| Qualquer resposta | Ler o **`result`**, não só o `status` | `status: success` com `result.error` — §2.2 |
 | Qualquer timeout | Ler o log (§4) | — |
+
+> [!WARNING] Não existe verificação de componente
+> `get_actor_properties` devolve apenas `name`, `class`, `location`, `rotation` e `scale` —
+> **nunca a lista de componentes**. Verificado por execução.
+>
+> Ou seja: **não há como confirmar por MCP que um componente foi realmente adicionado a um ator
+> spawnado.** `compile_blueprint` sem erro é a evidência mais forte disponível, e ela é fraca.
+> Para confirmação real, peça ao usuário para olhar o painel de componentes no editor.
 
 ---
 
