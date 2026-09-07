@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Subsystems/SBSandboxFeatureSubsystem.h"
 #include "Subsystems/SBEventSubsystem.h"
 #include "SBGameplayTags.h"

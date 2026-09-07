@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Movement/Behaviors/SBMovementBehaviorCrouch.h"
 #include "Components/SBStateComponent.h"
 #include "Components/SBMovementComponent.h"

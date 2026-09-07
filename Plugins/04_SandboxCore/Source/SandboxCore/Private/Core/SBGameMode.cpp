@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Core/SBGameMode.h"
 #include "Core/SBGameState.h"
 #include "Core/SBPlayerController.h"

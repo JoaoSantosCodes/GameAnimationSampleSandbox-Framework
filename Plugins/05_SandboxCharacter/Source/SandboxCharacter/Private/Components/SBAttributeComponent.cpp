@@ -1,4 +1,5 @@
-﻿#include "Components/SBAttributeComponent.h"
+﻿// Copyright 2026 João Santos. All Rights Reserved.
+#include "Components/SBAttributeComponent.h"
 #include "Utilities/SBLogCategories.h"
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/Pawn.h"

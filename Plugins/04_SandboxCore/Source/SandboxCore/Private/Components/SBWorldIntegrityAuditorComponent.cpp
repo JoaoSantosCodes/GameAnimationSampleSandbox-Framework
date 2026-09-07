@@ -1,4 +1,5 @@
-﻿#include "Components/SBWorldIntegrityAuditorComponent.h"
+﻿// Copyright 2026 João Santos. All Rights Reserved.
+#include "Components/SBWorldIntegrityAuditorComponent.h"
 #include "Subsystems/SBWorldIntegritySubsystem.h"
 #include "Interfaces/SBStateComponentInterface.h"
 #include "SBGameplayTags.h"

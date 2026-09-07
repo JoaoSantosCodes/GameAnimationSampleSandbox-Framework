@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "SandboxCombat.h"
 
 #define LOCTEXT_NAMESPACE "FSandboxCombatModule"

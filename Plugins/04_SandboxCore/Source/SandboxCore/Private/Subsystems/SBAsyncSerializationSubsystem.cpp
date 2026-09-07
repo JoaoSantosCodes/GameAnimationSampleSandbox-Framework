@@ -1,4 +1,5 @@
-﻿#include "Subsystems/SBAsyncSerializationSubsystem.h"
+﻿// Copyright 2026 João Santos. All Rights Reserved.
+#include "Subsystems/SBAsyncSerializationSubsystem.h"
 #include "Misc/SecureHash.h"
 #include "Misc/DateTime.h"
 

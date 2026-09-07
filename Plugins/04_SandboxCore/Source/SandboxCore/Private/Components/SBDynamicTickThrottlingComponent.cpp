@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Components/SBDynamicTickThrottlingComponent.h"
 #include "Interfaces/SBStateComponentInterface.h"
 #include "Subsystems/SBDynamicTickManagerSubsystem.h"

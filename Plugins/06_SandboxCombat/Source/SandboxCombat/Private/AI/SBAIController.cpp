@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "AI/SBAIController.h"
 #include "Components/SBCombatComponent.h"
 #include "Components/SBStateComponent.h"

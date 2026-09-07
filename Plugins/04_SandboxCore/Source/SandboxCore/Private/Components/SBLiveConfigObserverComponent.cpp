@@ -1,4 +1,5 @@
-﻿#include "Components/SBLiveConfigObserverComponent.h"
+﻿// Copyright 2026 João Santos. All Rights Reserved.
+#include "Components/SBLiveConfigObserverComponent.h"
 #include "Subsystems/SBLiveConfigSubsystem.h"
 #include "Interfaces/SBStateComponentInterface.h"
 #include "SBGameplayTags.h"

@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Subsystems/SBSandboxPersistenceSubsystem.h"
 #include "Subsystems/SBSaveSubsystemConcrete.h"
 #include "Components/SBPersistenceComponent.h"

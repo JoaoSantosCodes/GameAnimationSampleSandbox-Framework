@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Actors/SBPortalActor.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"

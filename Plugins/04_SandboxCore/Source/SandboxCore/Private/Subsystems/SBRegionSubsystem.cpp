@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Subsystems/SBRegionSubsystem.h"
 #include "SBGameplayTags.h"
 #include "Interfaces/SBCharacterInterface.h"

@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Subsystems/SBSaveSubsystemConcrete.h"
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"

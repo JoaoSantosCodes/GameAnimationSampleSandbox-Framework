@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Components/SBCraftingComponent.h"
 #include "Components/SBInventoryComponent.h"
 #include "Components/SBStateComponent.h"

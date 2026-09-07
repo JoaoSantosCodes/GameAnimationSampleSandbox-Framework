@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Weapons/SBWeaponBehaviorHitscan.h"
 #include "DataAssets/SBWeaponBehaviorDefinition.h"
 #include "Components/SBAttributeComponent.h"

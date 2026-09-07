@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Widgets/SBInventoryGridWidget.h"
 #include "Subsystems/SBEventPayloads.h"
 #include "SBGameplayTags.h"

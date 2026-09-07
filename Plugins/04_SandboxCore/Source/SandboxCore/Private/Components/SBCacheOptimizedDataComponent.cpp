@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Components/SBCacheOptimizedDataComponent.h"
 #include "Interfaces/SBStateComponentInterface.h"
 #include "Subsystems/SBCacheOptimizedBufferSubsystem.h"

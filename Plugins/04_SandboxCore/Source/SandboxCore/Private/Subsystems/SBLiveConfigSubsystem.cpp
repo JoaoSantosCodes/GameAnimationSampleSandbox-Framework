@@ -1,4 +1,5 @@
-﻿#include "Subsystems/SBLiveConfigSubsystem.h"
+﻿// Copyright 2026 João Santos. All Rights Reserved.
+#include "Subsystems/SBLiveConfigSubsystem.h"
 #include "Misc/DateTime.h"
 
 USBLiveConfigSubsystem::USBLiveConfigSubsystem()

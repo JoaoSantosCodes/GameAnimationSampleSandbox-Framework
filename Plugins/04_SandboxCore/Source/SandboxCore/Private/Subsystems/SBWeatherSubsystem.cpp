@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Subsystems/SBWeatherSubsystem.h"
 #include "Subsystems/SBSaveSubsystemConcrete.h"
 #include "SBGameplayTags.h"

@@ -1,4 +1,5 @@
-﻿#include "Components/SBAsyncSerializableComponent.h"
+﻿// Copyright 2026 João Santos. All Rights Reserved.
+#include "Components/SBAsyncSerializableComponent.h"
 #include "Subsystems/SBAsyncSerializationSubsystem.h"
 #include "Interfaces/SBStateComponentInterface.h"
 #include "SBGameplayTags.h"

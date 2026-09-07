@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 using UnrealBuildTool;
 
 // Modulo de testes: tipo UncookedOnly — nunca entra em build cozinhado, logo nunca vai

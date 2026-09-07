@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "SandboxInterfacesModule.h"
 
 #define LOCTEXT_NAMESPACE "FSandboxInterfacesModule"

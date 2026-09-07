@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Items/SBItemDefinition.h"
 #include "Items/SBItemFragment.h"
 

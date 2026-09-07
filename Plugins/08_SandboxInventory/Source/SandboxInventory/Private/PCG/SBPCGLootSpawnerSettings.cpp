@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "PCG/SBPCGLootSpawnerSettings.h"
 #include "PCGContext.h"
 #include "PCGPin.h"

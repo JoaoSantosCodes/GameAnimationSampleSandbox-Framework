@@ -1,4 +1,5 @@
-﻿#include "Subsystems/SBSandboxRuleSubsystem.h"
+﻿// Copyright 2026 João Santos. All Rights Reserved.
+#include "Subsystems/SBSandboxRuleSubsystem.h"
 #include "Interfaces/SBCharacterInterface.h"
 #include "Interfaces/SBStateComponentInterface.h"
 #include "Interfaces/SBAttributeComponentInterface.h"

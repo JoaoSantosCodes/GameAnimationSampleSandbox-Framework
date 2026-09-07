@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "DataAssets/SBSurfaceEffectsDataAsset.h"
 #include "Sound/SoundBase.h"
 

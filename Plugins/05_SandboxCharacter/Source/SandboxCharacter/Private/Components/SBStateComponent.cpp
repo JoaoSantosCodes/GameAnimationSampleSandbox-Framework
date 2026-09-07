@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Components/SBStateComponent.h"
 #include "Utilities/SBLogCategories.h"
 #include "Net/UnrealNetwork.h"

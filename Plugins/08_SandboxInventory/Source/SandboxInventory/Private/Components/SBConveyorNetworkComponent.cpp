@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Components/SBConveyorNetworkComponent.h"
 #include "Components/SBStateComponent.h"
 #include "SBGameplayTags.h"

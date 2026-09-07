@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Widgets/SBStatusHUDWidget.h"
 #include "Components/ProgressBar.h"
 #include "Interfaces/SBAttributeComponentInterface.h"

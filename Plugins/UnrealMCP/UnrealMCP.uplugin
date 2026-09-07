@@ -5,11 +5,11 @@
 	"FriendlyName": "UnrealMCP",
 	"Description": "Model Context Protocol implementation for Unreal Engine",
 	"Category": "Editor",
-	"CreatedBy": "Your Name",
-	"CreatedByURL": "",
-	"DocsURL": "",
+	"CreatedBy": "Jo\u00e3o Santos",
+	"CreatedByURL": "https://github.com/JoaoSantosCodes",
+	"DocsURL": "https://github.com/JoaoSantosCodes/GameAnimationSampleSandbox-Framework",
 	"MarketplaceURL": "",
-	"SupportURL": "",
+	"SupportURL": "https://github.com/JoaoSantosCodes/GameAnimationSampleSandbox-Framework/issues",
 	"CanContainContent": true,
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
@@ -19,7 +19,7 @@
 			"Name": "UnrealMCP",
 			"Type": "Editor",
 			"LoadingPhase": "Default",
-			"WhitelistPlatforms": [
+			"PlatformAllowList": [
 				"Win64",
 				"Mac",
 				"Linux"
@@ -32,4 +32,4 @@
 			"Enabled": true
 		}
 	]
-} 
+}

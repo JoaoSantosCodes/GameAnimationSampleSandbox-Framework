@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Actors/SBResourceNode.h"
 #include "Interfaces/SBCombatComponentInterface.h"
 #include "Net/UnrealNetwork.h"

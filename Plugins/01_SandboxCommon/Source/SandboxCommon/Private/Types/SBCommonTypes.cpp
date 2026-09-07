@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Types/SBCommonTypes.h"
 
 UObject* USBBehaviorRegistry::GetOrInstantiateBehavior(FGameplayTag BehaviorTag, TSubclassOf<UObject> BehaviorClass)

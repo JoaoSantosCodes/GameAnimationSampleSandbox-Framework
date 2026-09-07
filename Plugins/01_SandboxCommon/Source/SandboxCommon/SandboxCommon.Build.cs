@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 using UnrealBuildTool;
 
 public class SandboxCommon : ModuleRules

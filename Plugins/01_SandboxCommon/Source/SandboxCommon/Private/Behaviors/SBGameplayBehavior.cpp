@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Behaviors/SBGameplayBehavior.h"
 #include "Behaviors/SBGameplayBehaviorDefinition.h"
 #include "Interfaces/SBCharacterInterface.h"

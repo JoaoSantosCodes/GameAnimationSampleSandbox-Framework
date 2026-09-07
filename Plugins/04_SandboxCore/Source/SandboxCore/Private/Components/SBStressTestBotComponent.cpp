@@ -1,4 +1,5 @@
-﻿#include "Components/SBStressTestBotComponent.h"
+﻿// Copyright 2026 João Santos. All Rights Reserved.
+#include "Components/SBStressTestBotComponent.h"
 #include "Subsystems/SBStressTestSubsystem.h"
 #include "Interfaces/SBStateComponentInterface.h"
 #include "SBGameplayTags.h"

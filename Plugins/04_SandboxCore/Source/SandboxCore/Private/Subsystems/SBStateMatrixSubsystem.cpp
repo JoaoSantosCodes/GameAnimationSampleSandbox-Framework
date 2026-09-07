@@ -1,4 +1,5 @@
-﻿#include "Subsystems/SBStateMatrixSubsystem.h"
+﻿// Copyright 2026 João Santos. All Rights Reserved.
+#include "Subsystems/SBStateMatrixSubsystem.h"
 #include "SBGameplayTags.h"
 
 USBStateMatrixSubsystem::USBStateMatrixSubsystem()

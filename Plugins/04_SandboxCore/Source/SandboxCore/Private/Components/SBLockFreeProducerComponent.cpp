@@ -1,4 +1,5 @@
-﻿#include "Components/SBLockFreeProducerComponent.h"
+﻿// Copyright 2026 João Santos. All Rights Reserved.
+#include "Components/SBLockFreeProducerComponent.h"
 #include "Subsystems/SBLockFreeEventSubsystem.h"
 #include "SBGameplayTags.h"
 #include "Interfaces/SBStateComponentInterface.h"

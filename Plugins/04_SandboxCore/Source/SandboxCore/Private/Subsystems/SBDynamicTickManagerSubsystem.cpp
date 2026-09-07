@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Subsystems/SBDynamicTickManagerSubsystem.h"
 #include "Components/SBDynamicTickThrottlingComponent.h"
 #include "GameFramework/Actor.h"

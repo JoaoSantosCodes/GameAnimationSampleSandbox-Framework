@@ -1,1 +1,2 @@
-﻿#include "Types/SBVisualDebuggerTypes.h"
+﻿// Copyright 2026 João Santos. All Rights Reserved.
+#include "Types/SBVisualDebuggerTypes.h"

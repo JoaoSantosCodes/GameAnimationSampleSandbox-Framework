@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Components/SBAbilityComponent.h"
 #include "Abilities/SBAbility.h"
 #include "Components/SBAttributeComponent.h"

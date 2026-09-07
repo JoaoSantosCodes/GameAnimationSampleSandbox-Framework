@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Actors/SBBuildingPiece.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"

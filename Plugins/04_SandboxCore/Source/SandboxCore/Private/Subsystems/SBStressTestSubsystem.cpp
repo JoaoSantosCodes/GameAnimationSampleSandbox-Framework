@@ -1,4 +1,5 @@
-﻿#include "Subsystems/SBStressTestSubsystem.h"
+﻿// Copyright 2026 João Santos. All Rights Reserved.
+#include "Subsystems/SBStressTestSubsystem.h"
 
 USBStressTestSubsystem::USBStressTestSubsystem()
 {

@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "SandboxUIModule.h"
 
 #define LOCTEXT_NAMESPACE "FSandboxUIModule"

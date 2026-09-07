@@ -1,4 +1,5 @@
-﻿#include "Subsystems/SBWorldIntegritySubsystem.h"
+﻿// Copyright 2026 João Santos. All Rights Reserved.
+#include "Subsystems/SBWorldIntegritySubsystem.h"
 
 USBWorldIntegritySubsystem::USBWorldIntegritySubsystem()
 {

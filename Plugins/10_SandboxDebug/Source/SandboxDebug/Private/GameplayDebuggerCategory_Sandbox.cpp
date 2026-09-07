@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #if WITH_GAMEPLAY_DEBUGGER
 #include "GameplayDebuggerCategory_Sandbox.h"
 #include "Interfaces/SBDebugInterface.h"

@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Input/SBInputConfig.h"
 
 const UInputAction* USBInputConfig::FindInputActionForTag(const FGameplayTag& InputTag) const

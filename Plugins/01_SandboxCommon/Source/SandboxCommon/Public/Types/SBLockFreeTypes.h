@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// Copyright 2026 João Santos. All Rights Reserved.
+#pragma once
 
 #include "CoreMinimal.h"
 #include "SBLockFreeTypes.generated.h"

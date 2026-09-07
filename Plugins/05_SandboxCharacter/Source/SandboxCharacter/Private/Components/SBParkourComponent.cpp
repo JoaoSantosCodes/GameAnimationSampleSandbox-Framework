@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Components/SBParkourComponent.h"
 #include "Components/SBStateComponent.h"
 #include "SBGameplayTags.h"

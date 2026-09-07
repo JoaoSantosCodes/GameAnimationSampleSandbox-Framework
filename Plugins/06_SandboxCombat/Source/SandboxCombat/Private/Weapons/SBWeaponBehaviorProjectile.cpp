@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Weapons/SBWeaponBehaviorProjectile.h"
 #include "Weapons/SBPhysicalProjectile.h"
 #include "DataAssets/SBWeaponBehaviorDefinition.h"

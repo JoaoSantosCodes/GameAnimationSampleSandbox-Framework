@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "Tests/AutomationCommon.h"

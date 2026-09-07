@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Components/SBGameplayEffectComponent.h"
 #include "Components/SBAttributeComponent.h"
 #include "Components/SBStateComponent.h"

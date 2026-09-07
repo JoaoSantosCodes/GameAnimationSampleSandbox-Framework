@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Actors/SBRegionZoneVolume.h"
 #include "Components/BoxComponent.h"
 #include "Subsystems/SBRegionSubsystem.h"

@@ -1,4 +1,5 @@
-﻿#include "Subsystems/SBFaultToleranceSubsystem.h"
+﻿// Copyright 2026 João Santos. All Rights Reserved.
+#include "Subsystems/SBFaultToleranceSubsystem.h"
 
 USBFaultToleranceSubsystem::USBFaultToleranceSubsystem()
 {

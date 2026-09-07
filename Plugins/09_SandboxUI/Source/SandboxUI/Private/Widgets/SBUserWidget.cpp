@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Widgets/SBUserWidget.h"
 #include "Engine/World.h"
 #include "Engine/GameInstance.h"

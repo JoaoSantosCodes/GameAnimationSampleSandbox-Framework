@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Character/SBCharacter.h"
 #include "DataAssets/SBPawnDataAsset.h"
 #include "Components/SBComponentFactory.h"

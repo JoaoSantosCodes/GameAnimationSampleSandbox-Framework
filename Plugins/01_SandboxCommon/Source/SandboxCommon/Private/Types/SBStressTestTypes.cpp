@@ -1,1 +1,2 @@
-﻿#include "Types/SBStressTestTypes.h"
+﻿// Copyright 2026 João Santos. All Rights Reserved.
+#include "Types/SBStressTestTypes.h"

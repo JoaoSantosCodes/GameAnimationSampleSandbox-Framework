@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Widgets/SBAbilityBarWidget.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"

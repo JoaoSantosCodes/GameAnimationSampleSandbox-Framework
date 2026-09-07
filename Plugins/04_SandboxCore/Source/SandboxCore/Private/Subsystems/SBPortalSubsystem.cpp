@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Subsystems/SBPortalSubsystem.h"
 #include "Actors/SBPortalActor.h"
 #include "Kismet/GameplayStatics.h"

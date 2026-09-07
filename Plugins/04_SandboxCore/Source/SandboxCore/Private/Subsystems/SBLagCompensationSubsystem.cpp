@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Subsystems/SBLagCompensationSubsystem.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"

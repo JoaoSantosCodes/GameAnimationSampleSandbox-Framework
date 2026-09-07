@@ -69,15 +69,19 @@ Confirmei na `AutomationTest.h` da 5.8 que as macros têm definição nos dois l
 
 *O que a mudança revelou de brinde:* duas classes que só existem para teste moravam no produto — `USBTestMovementComponent`, declarada **dentro do header público** `SBMovementComponent.h` e implementada no `.cpp` do produto, e `USBUITestMockWidget`, na pasta `Public/Tests/` do `09_SandboxUI`. Cada uma usada por um único teste. Foram para os módulos de teste.
 
-### B3 — Metadados de vitrine são de rascunho
+### B3 — Metadados de vitrine são de rascunho — ✅ RESOLVIDO em 06/09/2026
 
 Todo `.uplugin` diz `"CreatedBy": "Antigravity"` — e o do `UnrealMCP` diz literalmente `"Your Name"`. `DocsURL`, `SupportURL` e `CreatedByURL` estão vazios nos doze. Todos são `VersionName: 1.0.0`. O `UnrealMCP` ainda usa `WhitelistPlatforms`, campo renomeado para `PlatformAllowList` nas versões atuais.
 
 Autoria, URL de documentação e canal de suporte são campos que a loja exige preenchidos e que o comprador usa para decidir se confia.
 
-### B4 — Nenhum arquivo tem cabeçalho de copyright
+**Resolvido:** os doze `.uplugin` agora declaram `CreatedBy: João Santos`, `CreatedByURL`, `DocsURL` no repositório e `SupportURL` nas issues dele; o `WhitelistPlatforms` do `UnrealMCP` virou `PlatformAllowList`. `VersionName` continua `1.0.0` em todos — versionar de verdade só faz sentido quando cada produto tiver ciclo próprio.
+
+### B4 — Nenhum arquivo tem cabeçalho de copyright — ✅ RESOLVIDO em 06/09/2026
 
 ~275 arquivos começam direto em `#pragma once`. Nenhuma linha de copyright em nenhum. É exigência de praxe da revisão e é a única defesa se o código aparecer republicado. Correção mecânica, script de um parágrafo. **Não depende da decisão de marca** (§4), ao contrário do que este documento afirmava: o detentor do copyright é a pessoa ou empresa, não o nome do produto.
+
+**Resolvido:** `// Copyright 2026 João Santos. All Rights Reserved.` em **598 arquivos** — não os ~275 estimados aqui, porque aquele número contava só os `.h` e o cabeçalho vai também nos `.cpp` e nos `.Build.cs`. A fórmula ficou em inglês, que é a convenção da loja e da própria engine, apesar dos comentários do código estarem em português.
 
 ### B5 — Os plugins não têm conteúdo nenhum
 
@@ -162,8 +166,8 @@ Cada fase tem um portão verificável. Sem o portão fechado, a fase seguinte n�
 
 1. ~~B1: reimplementar as classes-base e remover `ModularGameplayActors` dos cinco `.Build.cs`.~~ ✅ 06/09/2026 — `SBModularActors.h/.cpp` em `04_SandboxCore`; build verde e 446 specs verdes depois da troca.
 2. ~~B2: extrair os testes para módulos próprios por plugin.~~ ✅ 06/09/2026 — 117 arquivos em sete módulos `UncookedOnly`.
-3. B3: preencher os doze `.uplugin`; trocar `WhitelistPlatforms` por `PlatformAllowList`.
-4. B4: cabeçalho de copyright nos ~275 arquivos.
+3. ~~B3: preencher os doze `.uplugin`; trocar `WhitelistPlatforms` por `PlatformAllowList`.~~ ✅ 06/09/2026
+4. ~~B4: cabeçalho de copyright.~~ ✅ 06/09/2026 — 598 arquivos.
 5. Definir a matriz de versões da engine a suportar — cada versão a mais multiplica build, teste e revisão; comece por **uma**.
 
 **Portão B:** um projeto **novo e vazio** recebe os plugins candidatos, compila em Development **e** Shipping, e a suíte roda verde — tudo isso **sem nada do resto deste repositório**. Enquanto esse teste não for feito de verdade, "é autocontido" é hipótese, não fato.

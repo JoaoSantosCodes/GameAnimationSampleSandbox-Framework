@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Components/SBPersistenceComponent.h"
 #include "GameFramework/Actor.h"
 

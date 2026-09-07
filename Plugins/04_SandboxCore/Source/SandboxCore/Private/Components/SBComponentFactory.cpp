@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Components/SBComponentFactory.h"
 #include "DataAssets/SBComponentSetDataAsset.h"
 #include "Interfaces/SBComponentInterface.h"

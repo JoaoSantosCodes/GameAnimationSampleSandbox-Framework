@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "SandboxCommonModule.h"
 #include "SBGameplayTags.h"
 

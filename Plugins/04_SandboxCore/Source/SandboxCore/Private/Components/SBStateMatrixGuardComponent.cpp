@@ -1,4 +1,5 @@
-﻿#include "Components/SBStateMatrixGuardComponent.h"
+﻿// Copyright 2026 João Santos. All Rights Reserved.
+#include "Components/SBStateMatrixGuardComponent.h"
 #include "Subsystems/SBStateMatrixSubsystem.h"
 #include "Interfaces/SBStateComponentInterface.h"
 #include "SBGameplayTags.h"

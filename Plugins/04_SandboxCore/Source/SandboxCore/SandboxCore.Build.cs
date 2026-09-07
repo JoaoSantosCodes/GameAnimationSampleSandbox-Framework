@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 // Build Touch for SBSaveTests
 using UnrealBuildTool;
 

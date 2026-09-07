@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Components/SBHitTraceComponent.h"
 #include "Components/SBStateComponent.h"
 #include "Components/SceneComponent.h"

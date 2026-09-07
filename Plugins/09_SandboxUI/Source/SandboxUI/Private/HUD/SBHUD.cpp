@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "HUD/SBHUD.h"
 #include "Subsystems/SBUIManager.h"
 #include "Interfaces/SBCharacterInterface.h"

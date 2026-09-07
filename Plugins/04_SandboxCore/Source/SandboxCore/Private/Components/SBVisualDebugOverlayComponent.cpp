@@ -1,4 +1,5 @@
-﻿#include "Components/SBVisualDebugOverlayComponent.h"
+﻿// Copyright 2026 João Santos. All Rights Reserved.
+#include "Components/SBVisualDebugOverlayComponent.h"
 #include "Subsystems/SBVisualDebuggerSubsystem.h"
 #include "Interfaces/SBStateComponentInterface.h"
 #include "SBGameplayTags.h"

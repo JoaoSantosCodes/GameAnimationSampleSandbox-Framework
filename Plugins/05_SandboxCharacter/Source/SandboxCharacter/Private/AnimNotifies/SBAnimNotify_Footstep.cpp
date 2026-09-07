@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "AnimNotifies/SBAnimNotify_Footstep.h"
 #include "DataAssets/SBSurfaceEffectsDataAsset.h"
 #include "Subsystems/SBCosmeticSaturationSubsystem.h"

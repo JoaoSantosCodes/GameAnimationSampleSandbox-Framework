@@ -1,1 +1,2 @@
-﻿#include "Types/SBFaultToleranceTypes.h"
+﻿// Copyright 2026 João Santos. All Rights Reserved.
+#include "Types/SBFaultToleranceTypes.h"

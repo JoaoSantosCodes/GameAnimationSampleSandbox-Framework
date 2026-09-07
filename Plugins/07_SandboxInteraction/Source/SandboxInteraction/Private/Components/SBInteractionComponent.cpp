@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Components/SBInteractionComponent.h"
 #include "Components/SBStateComponent.h"
 #include "Interfaces/SBInteractableInterface.h"

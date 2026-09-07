@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Widgets/SBInteractionPromptWidget.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"

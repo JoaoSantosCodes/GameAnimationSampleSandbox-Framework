@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Components/SBInventoryComponent.h"
 #include "Items/SBItemInstance.h"
 #include "Items/SBItemDefinition.h"

@@ -1,4 +1,5 @@
-﻿#include "Misc/AutomationTest.h"
+﻿// Copyright 2026 João Santos. All Rights Reserved.
+#include "Misc/AutomationTest.h"
 #include "Engine/World.h"
 #include "Subsystems/SBFaultToleranceSubsystem.h"
 #include "Components/SBFaultResilientComponent.h"

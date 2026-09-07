@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Subsystems/SBUIManager.h"
 #include "Utilities/SBLogCategories.h"
 #include "Blueprint/UserWidget.h"

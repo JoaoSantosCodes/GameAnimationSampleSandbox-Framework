@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Subsystems/SBSpatialPartitionSubsystem.h"
 
 void USBSpatialPartitionSubsystem::Initialize(FSubsystemCollectionBase& Collection)

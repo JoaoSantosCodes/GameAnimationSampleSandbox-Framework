@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Subsystems/SBEventSubsystem.h"
 #include "Utilities/SBLogCategories.h"
 

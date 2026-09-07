@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Components/SBQuestComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Subsystems/SBEventSubsystem.h"

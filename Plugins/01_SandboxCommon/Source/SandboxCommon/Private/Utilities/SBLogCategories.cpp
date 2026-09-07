@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Utilities/SBLogCategories.h"
 
 DEFINE_LOG_CATEGORY(LogSandbox);

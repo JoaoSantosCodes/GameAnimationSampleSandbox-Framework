@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Abilities/SBAbility.h"
 #include "Components/SBStateComponent.h"
 #include "Utilities/SBLogCategories.h"

@@ -1,4 +1,5 @@
-﻿#include "Components/SBPerformanceInstrumentComponent.h"
+﻿// Copyright 2026 João Santos. All Rights Reserved.
+#include "Components/SBPerformanceInstrumentComponent.h"
 #include "Subsystems/SBPerformanceProfilerSubsystem.h"
 #include "Interfaces/SBStateComponentInterface.h"
 #include "SBGameplayTags.h"

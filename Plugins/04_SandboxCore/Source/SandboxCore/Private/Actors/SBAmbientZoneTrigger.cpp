@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Actors/SBAmbientZoneTrigger.h"
 #include "Components/BoxComponent.h"
 #include "Components/AudioComponent.h"

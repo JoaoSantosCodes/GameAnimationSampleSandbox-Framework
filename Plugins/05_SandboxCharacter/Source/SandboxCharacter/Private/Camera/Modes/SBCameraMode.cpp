@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Camera/Modes/SBCameraMode.h"
 #include "Camera/DataAssets/SBCameraModeDefinition.h"
 

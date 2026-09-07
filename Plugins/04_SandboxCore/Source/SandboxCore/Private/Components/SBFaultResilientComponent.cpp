@@ -1,4 +1,5 @@
-﻿#include "Components/SBFaultResilientComponent.h"
+﻿// Copyright 2026 João Santos. All Rights Reserved.
+#include "Components/SBFaultResilientComponent.h"
 #include "Subsystems/SBFaultToleranceSubsystem.h"
 #include "Interfaces/SBStateComponentInterface.h"
 #include "SBGameplayTags.h"

@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Components/SBExecutionComponent.h"
 #include "Components/SBStateComponent.h"
 #include "Components/SBAttributeComponent.h"

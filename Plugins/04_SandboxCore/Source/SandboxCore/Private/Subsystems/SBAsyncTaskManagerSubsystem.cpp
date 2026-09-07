@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Subsystems/SBAsyncTaskManagerSubsystem.h"
 #include "Async/ParallelFor.h"
 #include "Async/Async.h"

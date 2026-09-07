@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Components/SBGrappleComponent.h"
 #include "Components/SBStateComponent.h"
 #include "SBGameplayTags.h"

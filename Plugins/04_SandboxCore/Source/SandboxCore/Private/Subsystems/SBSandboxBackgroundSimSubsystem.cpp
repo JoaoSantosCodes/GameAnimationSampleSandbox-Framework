@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Subsystems/SBSandboxBackgroundSimSubsystem.h"
 #include "Subsystems/SBSaveSubsystemConcrete.h"
 #include "Misc/DateTime.h"

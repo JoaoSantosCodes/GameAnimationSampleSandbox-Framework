@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Components/SBMovementComponent.h"
 #include "Movement/Behaviors/SBMovementBehavior.h"
 #include "Movement/DataAssets/SBMovementBehaviorDefinition.h"

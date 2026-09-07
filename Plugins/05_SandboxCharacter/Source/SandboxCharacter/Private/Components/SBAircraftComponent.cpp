@@ -1,3 +1,4 @@
+// Copyright 2026 João Santos. All Rights Reserved.
 #include "Components/SBAircraftComponent.h"
 #include "Components/SBStateComponent.h"
 #include "SBGameplayTags.h"
