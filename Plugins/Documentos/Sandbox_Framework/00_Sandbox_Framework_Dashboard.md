@@ -9,11 +9,15 @@ Bem-vindo ao painel central do **Sandbox Framework** no seu Obsidian. Este espa�
 - **Projeto Único**: `D:\Unreal\GameAnimationSample` (Game Animation Sample com o Sandbox Framework em C++)
 - **Repositório GitHub**: [GameAnimationSampleSandbox-Framework](https://github.com/JoaoSantosCodes/GameAnimationSampleSandbox-Framework)
 - **Fase Atual**: `Fase 102 Concluída` — **Power Grid, Generators, Batteries, Circuit Wiring & Electric Consumers Framework (v1.87.0)**
-- **Suíte de Testes**: **444 de 444 specs verdes — EXIT CODE: 0** (medido em `D:\Unreal\GameAnimationSample` em 06/09/2026 via `Automation RunTest Sandbox`)
+- **Suíte de Testes**: **416 specs do framework, todas verdes** — medido em 06/09/2026, contando `Result={Success}` sob o prefixo `Path={Sandbox.`, no projeto principal **e** num projeto vazio (Portão B). Character 108, Inventory 101, Combat 57, Core 53, e a cauda.
 - **Versão de Lançamento**: `v1.87.0` (Redes elétricas, balanço de geração vs consumo, baterias acumuladoras, proteção contra sobrecarga/blackout, integridade estrutural e colapso físico, maquinário pesado hidráulico, mechas bípedes, espaçonaves 6-DOF orbitais, aeronaves atmosféricas, embarcações náuticas, veículos terrestres, parkour e combate avançado)
 
-> [!WARNING] O número 322 declarado aqui até 06/09/2026 nunca foi medido
-> A auditoria de 05/09/2026 encontrou quatro números divergentes na documentação (322, 322, 394 e 450), nenhum deles obtido rodando a suíte. O valor acima é o único medido.
+> [!WARNING] Os números de spec desta documentação vinham inflados por testes da engine
+> A auditoria de 05/09/2026 encontrou quatro números divergentes (322, 322, 394 e 450), nenhum obtido rodando a suíte. O 444 que os substituiu **foi** medido, mas medido errado: `Automation RunTest Sandbox` casa por **substring**, então a corrida arrastava junto 30 testes da própria engine que só têm a palavra "Sandbox" no caminho — 21 de `Plugins.FileSandboxCore.*` (plugin de engine em `Engine/Plugins/Developer/Sandbox/FileSandbox`) e 9 de `AI.ToolsetRegistry.Sandbox.*`, dos plugins `EditorToolset` e `ModelContextProtocol`.
+>
+> O framework tem **416 specs**. Descoberto em 06/09/2026 ao rodar a suíte num projeto vazio e comparar as listas: o projeto vazio fechou 437 e o principal 446, e a diferença não era do framework.
+>
+> **Nunca contar pelo `EXIT CODE`**: ele é 0 até com suíte vazia.
 >
 > **O workspace `D:\Unreal\V1` foi excluído pelo usuário e não existe mais.** Menções a ele em documentos históricos (`walkthrough.md`, `task.md`, relatório de auditoria) são registro de um estado passado e ficaram preservadas como tal; não há projeto secundário a sincronizar nem a homologar.
 

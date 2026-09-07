@@ -30,7 +30,7 @@ Medi, componente a componente, quantas vezes cada um toca o mundo do jogo — tr
 
 ## 2. Tabela-resumo dos quinze pacotes
 
-`impl` = linhas de implementação · `test` = linhas de teste · `specs` = casos de teste · `BP` = funções expostas a Blueprint · `rede` = arquivos com replicação · `mundo` = toques no mundo
+`impl` = linhas de implementação · `test` = linhas de teste · `specs` = casos de teste (contagem por bucket; o total do framework é 416) · `BP` = funções expostas a Blueprint · `rede` = arquivos com replicação · `mundo` = toques no mundo
 
 | # | Pacote | impl | test | specs | BP | rede | mundo | Veredito |
 |---|---|---|---|---|---|---|---|---|

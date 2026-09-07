@@ -29,7 +29,9 @@ A loja da Epic hoje é a **Fab** (a Unreal Marketplace foi absorvida por ela em 
 | `11_SandboxEditor` | 1 | 26 | — | 01–08 |
 | `UnrealMCP` | 1 | 5.697 | — | EditorScriptingUtilities |
 
-**Total: ~69.000 LOC, 444 specs verdes, 1.894 asserções, 476 funções `BlueprintCallable`, 34 classes com replicação.**
+**Total: ~69.000 LOC, 416 specs verdes, 1.894 asserções, 476 funções `BlueprintCallable`, 34 classes com replicação.**
+
+> O número de specs foi corrigido de 444 para 416 em 06/09/2026: o filtro da suíte arrastava 30 testes da engine. Ver o registro do Portão B, na Fase B.
 
 O que já está certo e não custa nada:
 
@@ -164,13 +166,62 @@ Cada fase tem um portão verificável. Sem o portão fechado, a fase seguinte n�
 
 ### Fase B — Higiene de distribuição *(aplica-se a todos os produtos)*
 
-1. ~~B1: reimplementar as classes-base e remover `ModularGameplayActors` dos cinco `.Build.cs`.~~ ✅ 06/09/2026 — `SBModularActors.h/.cpp` em `04_SandboxCore`; build verde e 446 specs verdes depois da troca.
+1. ~~B1: reimplementar as classes-base e remover `ModularGameplayActors` dos cinco `.Build.cs`.~~ ✅ 06/09/2026 — `SBModularActors.h/.cpp` em `04_SandboxCore`; build verde e suíte verde depois da troca (446 no log bruto, 416 do framework).
 2. ~~B2: extrair os testes para módulos próprios por plugin.~~ ✅ 06/09/2026 — 117 arquivos em sete módulos `UncookedOnly`.
 3. ~~B3: preencher os doze `.uplugin`; trocar `WhitelistPlatforms` por `PlatformAllowList`.~~ ✅ 06/09/2026
 4. ~~B4: cabeçalho de copyright.~~ ✅ 06/09/2026 — 598 arquivos.
 5. Definir a matriz de versões da engine a suportar — cada versão a mais multiplica build, teste e revisão; comece por **uma**.
 
-**Portão B:** um projeto **novo e vazio** recebe os plugins candidatos, compila em Development **e** Shipping, e a suíte roda verde — tudo isso **sem nada do resto deste repositório**. Enquanto esse teste não for feito de verdade, "é autocontido" é hipótese, não fato.
+**Portão B:** ~~um projeto novo e vazio recebe os plugins candidatos, compila em Development **e** Shipping, e a suíte roda verde, sem nada do resto deste repositório.~~ ✅ **fechado em 06/09/2026** — o registro completo está logo abaixo.
+
+### Portão B — executado em 06/09/2026 ✅
+
+Montei um projeto C++ vazio (`D:\Unreal\PortaoB`): um módulo de jogo de quatro linhas, dois `Target.cs`, um `Config` de duas linhas, os onze plugins copiados **sem `Intermediate` nem `Binaries`**, e os sete plugins de engine que os próprios `.uplugin` declaram. Nada mais — nenhum asset, nenhum `DefaultGameplayTags.ini`, nenhum `DefaultEngine.ini` do projeto original.
+
+| Prova | Resultado |
+|---|---|
+| Editor Win64 Development | ✅ `exit code 0` — 382 ações, compilado do zero (o UBT criou o makefile sem cache algum) |
+| Jogo Win64 **Shipping** | ✅ `exit code 0` — `PortaoB-Win64-Shipping.exe`, 163 MB, monolítico |
+| Suíte dentro do projeto vazio | ✅ `TEST COMPLETE. EXIT CODE: 0` — **437 sucessos, 0 falhas** |
+| Acoplamento com o projeto original | ✅ nenhuma referência em código; os únicos casamentos com "GameAnimationSample" eram as URLs que acabaram de ser gravadas nos `.uplugin` |
+
+**O framework é autocontido.** Deixa de ser hipótese e passa a ser fato medido.
+
+**O Shipping provou o B2 por execução:** 202 ações contra as 382 do Editor, e **zero** arquivo `*Tests.cpp` ou módulo `*Tests` no build. A regra está no próprio UBT (`ModuleDescriptor.cs:792`): `UncookedOnly` só compila quando o alvo não exige dado cozinhado, enquanto `DeveloperTool` responde a `bBuildDeveloperTools` e entraria num Development de jogo.
+
+#### O que a diferença de contagem revelou — e é a descoberta que mais importa
+
+O projeto principal fecha 446 specs; o projeto vazio fechou 437. Os nove que faltavam **não são do framework**:
+
+```
+AI.ToolsetRegistry.Sandbox.Library.*        (8)
+AI.Toolsets.EditorToolset.*                 (1)
+```
+
+São testes dos plugins de engine `EditorToolset` e `ModelContextProtocol`, habilitados no `GameAnimationSample` e não no projeto vazio. Entram na contagem porque o comando `Automation RunTest Sandbox` casa por **substring**, e a palavra "Sandbox" aparece no caminho deles.
+
+Puxando o fio, há mais 21 no mesmo caso — e esses rodam nos dois projetos:
+
+```
+Plugins.FileSandboxCore.*                   (21)
+```
+
+`FileSandboxCore` é plugin **da engine**, em `Engine/Plugins/Developer/Sandbox/FileSandbox`. Nada a ver com este framework.
+
+> [!IMPORTANT] A suíte do framework tem **416 specs**, não 444 nem 446
+> Os números que circularam na documentação vinham inflados por **30 testes da engine** que o filtro captura só porque contêm a palavra "Sandbox". A contagem honesta é a dos testes sob o prefixo `Sandbox.`: **416, todos verdes** — Character (108), Inventory (101), Combat (57), Core (53) e a cauda.
+>
+> Ao medir, contar `Result={Success}` **filtrando por `Path={Sandbox.`** — nunca o total do log, e nunca o `EXIT CODE`, que é 0 até com suíte vazia.
+
+#### Nota de instalação que saiu do primeiro erro
+
+A primeira tentativa abortou com `The following action paths are longer than 260 characters`, antes de qualquer problema de código — o projeto estava num caminho fundo demais. Vale como nota na página do produto: **instalar em caminho curto**. Quem puser o projeto em `C:\Users\...\Documents\Unreal Projects\...` bate no mesmo limite do Windows, e a mensagem não deixa óbvio que a causa é o caminho.
+
+#### O que este portão **não** provou
+
+Compila e os testes passam — não que alguém consiga *usar*. Não há mapa, nem Blueprint de exemplo, nem um asset sequer: o projeto inteiro copiado tem **3,5 MB e zero `.uasset`**. É o B5 intacto, e é o próximo gargalo real.
+
+---
 
 ### Fase C — Piloto P0 ponta a ponta
 
