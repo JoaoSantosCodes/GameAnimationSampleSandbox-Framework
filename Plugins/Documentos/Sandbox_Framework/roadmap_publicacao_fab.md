@@ -101,7 +101,13 @@ O MCP não cria nem salva nível, então o mapa é montado por commandlet Python
 
 **A UI entrou em 07/09/2026.** `WBP_InventoryPanel` herda do `SBInventoryGridWidget` e mostra o conteúdo do inventário sem um único nó de Blueprint: a classe C++ passou a ler o inventário pelo contrato `ISBInventoryComponentInterface` (que ganhou `GetInventoryDisplayLines`, devolvendo texto pronto em vez do item) e escreve num Text Block ligado por nome. `BP_DemoHUD` aponta para o painel, `BP_DemoGameMode` aponta para o HUD, e o World Settings do mapa aponta para o GameMode — abrir e dar Play mostra o painel.
 
-*O que ainda falta no B5:* um passo a passo de primeiro uso escrito, e a régua do Portão D — alguém que nunca viu o framework instalando e tendo inventário funcionando em dez minutos, sem perguntar nada.
+**A grade visual entrou em 07/09/2026.** O painel deixou de ser lista de texto: `SBItemDefinition` ganhou `Icon` (soft pointer), o `SBInventorySlotWidget` desenha ícone, nome e quantidade, e item sem arte cai num quadrado com a cor da raridade em vez de deixar buraco na grade — o que importa num pacote que não traz arte nenhuma. Slot e grade montam a própria árvore em C++, então o comprador não precisa autorar UMG.
+
+A demo também expôs uma lacuna do produto e ela foi fechada: não havia como dar itens a um personagem sem escrever grafo de Blueprint. O componente agora tem `StartingItems`, concedido no servidor.
+
+**Provado por execução, no projeto vazio:** `Pushed widget WBP_InventoryPanel_C` seguido de `Grade de inventario: 1 → 2 → 3 → 4 slot(s)`, sem aviso e sem erro. O guia de primeiro uso está em `Plugins/08_SandboxInventory/LEIAME_PRIMEIRO_USO.md`.
+
+*O que ainda falta no B5:* arrastar-e-soltar entre slots, e a metade humana do Portão D — uma pessoa que nunca viu o framework fazendo o percurso em dez minutos sem perguntar nada.
 
 ### Fora da lista, mas a decidir: a origem do `UnrealMCP`
 

@@ -86,13 +86,17 @@ Compare com os quatro prontos em `Demo/`: `DA_Item_Scrap` (material simples),
 
 ## 4. Colocar no jogo
 
-- **Inventário no personagem** — adicione `SBInventoryComponent` ao seu Pawn.
+- **Inventário no personagem** — adicione `SBInventoryComponent` ao seu Pawn. Para começar o jogo com
+  itens, preencha `StartingItems` no componente: são concedidos no servidor ao entrar em jogo
+  (veja `BP_DemoCharacter`).
 - **Receitas** — `SBCraftingRecipeDataAsset` com os ingredientes, e a estação recebe a receita
   em `SupportedRecipes` (veja `BP_Forge`).
 - **Loot** — `SBLootTableDataAsset` com entradas ponderadas, atribuída ao nó ou ao baú.
-- **UI** — herde de `SBInventoryGridWidget` e dê a um Text Block o nome exato **`ContentsText`**:
-  a classe C++ o encontra por nome e escreve o conteúdo do inventário nele, sem nenhum nó de
-  Blueprint. `WBP_InventoryPanel` é esse exemplo.
+- **UI** — herde de `SBInventoryGridWidget`. A grade de slots é montada em C++ e aparece sozinha;
+  não é preciso criar widget nenhum. Se quiser controlar o lugar dela, ponha um `UniformGridPanel`
+  chamado **`SlotGrid`** no seu Widget Blueprint que a classe o encontra por nome. Um Text Block
+  chamado **`ContentsText`** recebe o aviso de inventário vazio. Para trocar a aparência do slot,
+  herde de `SBInventorySlotWidget` e aponte `SlotWidgetClass`. `WBP_InventoryPanel` é o exemplo.
 
 ---
 
@@ -100,8 +104,8 @@ Compare com os quatro prontos em `Demo/`: `DA_Item_Scrap` (material simples),
 
 Dito aqui para você não descobrir depois:
 
-- **A UI é uma lista de texto**, não uma grade com ícone e arrastar-e-soltar. `SBItemDefinition`
-  não tem campo de ícone.
+- **A grade não tem arrastar-e-soltar** entre slots, nem menu de contexto. Ela mostra ícone, nome e
+  quantidade, e reage a mudanças no inventário; mover item entre slots é código seu.
 - **Não há arte**: nenhum mesh, ícone, som ou animação. Os atores da demo usam formas básicas
   da engine.
 - **O vocabulário de tags de item é mínimo** — há uma única tag `Item.*` registrada. Espere

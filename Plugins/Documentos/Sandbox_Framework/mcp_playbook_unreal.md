@@ -386,6 +386,7 @@ correção só tornava a seguinte alcançável.
 | 15 | `set_blueprint_property` e `compile_blueprint` marcavam como modificado e **nao gravavam** | `BlueprintCommands.cpp` |
 | 16 | `create_umg_widget_blueprint` **ignorava `parent_class`**: todo widget nascia `UUserWidget` puro | `UMGCommands.cpp` |
 | 17 | `compile_blueprint` dizia `compiled: true` sobre Blueprint reprovado pelo compilador | `BlueprintCommands.cpp` |
+| 18 | `add_component_to_blueprint` e `set_component_property` respondiam `success` **sem gravar**; montar personagem por comando era impossivel e parecia funcionar | `BlueprintCommands.cpp` |
 
 ### O que isso ensina
 
