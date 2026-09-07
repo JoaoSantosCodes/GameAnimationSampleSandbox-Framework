@@ -104,6 +104,13 @@ Antes isso era impossivel: o spawn nao achava o asset recem-criado porque nada g
 
 ### 2.5 O que continua nao existindo
 
+> [!IMPORTANT] Nivel nao se cria nem se salva por MCP
+> Nao ha comando para criar, abrir ou salvar mapa. O caminho usado em 06/09/2026 foi um commandlet Python (`PythonScriptPlugin`, habilitado so para o alvo Editor), com o script versionado em `Plugins/Documentos/Sandbox_Framework/scripts/montar_nivel_demo.py`.
+>
+> Duas armadilhas que esse script teve que aprender:
+> 1. **O Asset Registry nao varre conteudo de plugin sozinho no commandlet.** Sem `scan_paths_synchronous([pasta], force_rescan=True)`, o `load_asset` falha com *could not be found in the Asset Registry* mesmo com o arquivo em disco.
+> 2. **Blueprint se instancia pela classe gerada.** `spawn_actor_from_object(bp, ...)` devolve `None`; use `load_blueprint_class(caminho)` e `spawn_actor_from_class`.
+
 - **Progress Bar.** O UMG do plugin cria apenas Text Block e Button.
 - **Criar ou editar Data Asset.** O dispatch aceita 36 comandos e nenhum cria asset que nao seja
   Blueprint ou Widget. `PawnData`, `ComponentSet` e configs sao trabalho manual no editor.
@@ -369,6 +376,8 @@ correção só tornava a seguinte alcançável.
 | 11 | `bind_widget_event` passava `nullptr` como propriedade; widgets sem `bIsVariable` | `UMGCommands.cpp` |
 | 12 | `SetObjectProperty` só escrevia bool/int/float/string/enum — nem `FText` passava | `CommonUtils.cpp` |
 | 13 | Pacote novo nascia parcialmente carregado: fora de `/Game` o save era recusado e o comando ainda dizia `success` | `DataAssetCommands.cpp` |
+| 14 | `create_blueprint` procurava a classe pai so em `/Script/Engine` e `/Script/Game`; ao falhar, caia em `AActor` **em silencio** | `BlueprintCommands.cpp` |
+| 15 | `set_blueprint_property` e `compile_blueprint` marcavam como modificado e **nao gravavam** | `BlueprintCommands.cpp` |
 
 ### O que isso ensina
 

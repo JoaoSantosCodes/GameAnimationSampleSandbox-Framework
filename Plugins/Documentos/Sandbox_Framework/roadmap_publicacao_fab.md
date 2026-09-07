@@ -95,7 +95,11 @@ Plugin de código pode ser vendido sem conteúdo, mas *este* não pode: são 476
 
 *Achado ao autorar:* o vocabulário de tags de item é praticamente vazio — **uma** tag `Item.*` registrada (`Item.Type.Material`) contra onze tipos de fragmento. Um produto de inventário precisa entregar um conjunto inicial de tags que faça sentido; hoje o comprador começa do zero.
 
-*O que ainda falta no B5:* o mapa de demonstração e os Blueprints de exemplo. O MCP não cria nem salva nível, então isso ou vira trabalho manual no editor, ou exige habilitar o `PythonScriptPlugin` e criar o nível por script.
+**Mapa e Blueprints entraram em 07/09/2026.** `/08_SandboxInventory/Demo/L_InventoryDemo` tem chão, luz, `PlayerStart` e quatro Blueprints de exemplo ligados aos Data Assets: um nó de recurso que dropa pela loot table, uma forja que conhece a receita da tocha, um baú e um drop físico. Tudo dentro do plugin.
+
+O MCP não cria nem salva nível, então o mapa é montado por commandlet Python — script versionado em `scripts/montar_nivel_demo.py`, e o `PythonScriptPlugin` ficou habilitado só para o alvo Editor.
+
+*O que ainda falta no B5:* uma UI de inventário utilizável (o `SBInventoryGridWidget` é C++ sem widget `.uasset`), e um passo a passo de primeiro uso. O mapa abre; o comprador ainda não tem o que clicar.
 
 ### Fora da lista, mas a decidir: a origem do `UnrealMCP`
 

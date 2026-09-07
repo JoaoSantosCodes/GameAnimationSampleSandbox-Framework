@@ -64,7 +64,7 @@ Medi, componente a componente, quantas vezes cada um toca o mundo do jogo — tr
 
 **O que falta:**
 - ~~Itens, receita e loot table de amostra.~~ ✅ 06/09/2026 — seis assets em `/08_SandboxInventory/Demo/`.
-- Mapa de demonstração com baú, drop físico, nó de recurso e bancada — o conteúdo de dados já existe, falta a cena que o coloca em jogo.
+- ~~Mapa de demonstração com baú, drop físico, nó de recurso e bancada.~~ ✅ 07/09/2026 — `L_InventoryDemo` com quatro Blueprints de exemplo ligados aos Data Assets.
 - Uma UI de inventário utilizável. `SBInventoryGridWidget` existe em C++ com 2 funções Blueprint e nenhum widget `.uasset`. Sem grade arrastável, o comprador acha que faltou metade.
 - Desamarrar de `05_SandboxCharacter` (o inventário conversa com atributos) ou embutir a fatia necessária.
 - Fundação `01`–`04` embutida, sem `ModularGameplayActors`.
