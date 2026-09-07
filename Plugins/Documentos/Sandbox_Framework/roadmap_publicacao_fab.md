@@ -229,6 +229,24 @@ Plugins.FileSandboxCore.*                   (21)
 
 A primeira tentativa abortou com `The following action paths are longer than 260 characters`, antes de qualquer problema de código — o projeto estava num caminho fundo demais. Vale como nota na página do produto: **instalar em caminho curto**. Quem puser o projeto em `C:\Users\...\Documents\Unreal Projects\...` bate no mesmo limite do Windows, e a mensagem não deixa óbvio que a causa é o caminho.
 
+#### Refeito em 07/09/2026, agora com conteudo
+
+O portao foi repetido depois que o `08_SandboxInventory` ganhou conteudo, UI e as mudancas de
+C++ no contrato. Resultado:
+
+| Prova | Resultado |
+|---|---|
+| Editor Win64 Development no projeto vazio | ✅ `exit code 0`, do zero |
+| Assets que viajam com o plugin | ✅ **14** (antes: nenhum) |
+| Mapa da demo rodando **no projeto vazio** | ✅ `Bringing World L_InventoryDemo up for play` |
+| Painel de inventario em tela | ✅ `Pushed widget WBP_InventoryPanel_C` + `Successfully spawned HUD layout widget` |
+| Erros ligados a demo | ✅ nenhum |
+
+Isto e a experiencia do comprador reproduzida: projeto novo, plugins copiados, mapa abre e o
+painel aparece. E a metade mecanica do Portao D. A outra metade — **uma pessoa** que nunca viu
+o framework fazendo isso em dez minutos sem perguntar nada — so um humano pode dar, e o guia
+escrito para ela e `Plugins/08_SandboxInventory/LEIAME_PRIMEIRO_USO.md`.
+
 #### O que este portão **não** provou
 
 Compila e os testes passam — não que alguém consiga *usar*. Não há mapa, nem Blueprint de exemplo, nem um asset sequer: o projeto inteiro copiado tem **3,5 MB e zero `.uasset`**. É o B5 intacto, e é o próximo gargalo real.
