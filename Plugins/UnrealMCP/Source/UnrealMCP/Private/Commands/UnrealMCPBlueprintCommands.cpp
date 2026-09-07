@@ -823,6 +823,16 @@ TSharedPtr<FJsonObject> FUnrealMCPBlueprintCommands::HandleCompileBlueprint(cons
     // Compile the blueprint
     FKismetEditorUtilities::CompileBlueprint(Blueprint);
 
+    // O comando respondia "compiled": true mesmo com erro de compilacao — foi assim que um
+    // Widget Blueprint com grafo de binding malformado passou por bom. Agora o status do
+    // proprio Blueprint decide a resposta.
+    if (Blueprint->Status == BS_Error)
+    {
+        return FUnrealMCPCommonUtils::CreateErrorResponse(FString::Printf(
+            TEXT("Blueprint '%s' compilou com erro. Ver o log do editor (LogBlueprint) para a mensagem do compilador."),
+            *BlueprintName));
+    }
+
     // Compilar so mexia em memoria: o .uasset em disco continuava com a versao anterior e o
     // comando ainda respondia "compiled": true.
     const bool bSaved = FUnrealMCPCommonUtils::SaveAssetToDisk(Blueprint);

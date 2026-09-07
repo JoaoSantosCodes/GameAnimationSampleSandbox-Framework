@@ -771,6 +771,31 @@ void USBInventoryComponent::GetDebugDescription_Implementation(TArray<FSBDebugLi
 	}
 }
 
+void USBInventoryComponent::GetInventoryDisplayLines_Implementation(TArray<FText>& OutLines)
+{
+	OutLines.Reset();
+
+	for (const USBItemInstance* Item : GetAllItems())
+	{
+		if (!Item || !Item->ItemDef)
+		{
+			continue;
+		}
+
+		// Item sem nome de exibicao ainda precisa aparecer: cair no nome do asset e melhor
+		// do que sumir da lista e deixar o jogador achar que perdeu o item.
+		FText Nome = Item->ItemDef->DisplayName;
+		if (Nome.IsEmpty())
+		{
+			Nome = FText::FromString(Item->ItemDef->GetName());
+		}
+
+		OutLines.Add(Item->StackCount > 1
+			? FText::Format(NSLOCTEXT("Sandbox", "InventoryLineStack", "{0} x{1}"), Nome, FText::AsNumber(Item->StackCount))
+			: Nome);
+	}
+}
+
 void USBInventoryComponent::NotifyItemInstanceUpdated_Implementation(UObject* ItemInstance)
 {
 	MarkItemInstanceUpdated(Cast<USBItemInstance>(ItemInstance));

@@ -221,6 +221,7 @@ public:
 
 	// ISBInventoryComponentInterface — entrada desacoplada para plugins irmãos
 	virtual void NotifyItemInstanceUpdated_Implementation(UObject* ItemInstance) override;
+	virtual void GetInventoryDisplayLines_Implementation(TArray<FText>& OutLines) override;
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Inventory")
 	bool ServerTransferItem(USBInventoryComponent* TargetInventory, USBItemInstance* ItemInstance, int32 Quantity);

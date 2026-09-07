@@ -132,8 +132,33 @@ TSharedPtr<FJsonObject> FUnrealMCPUMGCommands::HandleCreateUMGWidgetBlueprint(co
 	// Widget Blueprint exige as classes proprias de UMG. A versao anterior pedia
 	// UBlueprint/UBlueprintGeneratedClass, entao o objeto criado nunca era um UWidgetBlueprint e
 	// o Cast abaixo falhava sempre — este comando nunca funcionou, nem com os parametros certos.
+	// O parametro parent_class era anunciado pela ferramenta e ignorado aqui: todo widget
+	// nascia como UUserWidget puro, sem nada da classe pedida. Widget que herda de classe do
+	// framework (USBInventoryGridWidget, por exemplo) era impossivel de criar por comando.
+	UClass* ParentWidgetClass = UUserWidget::StaticClass();
+	FString ParentClassName;
+	if (FUnrealMCPCommonUtils::GetStringParam(Params, {TEXT("parent_class"), TEXT("parent")}, ParentClassName)
+		&& ParentClassName != TEXT("UserWidget"))
+	{
+		UClass* Found = FUnrealMCPCommonUtils::FindClassByNameOrPath(ParentClassName);
+		if (!Found)
+		{
+			return FUnrealMCPCommonUtils::CreateErrorResponse(FString::Printf(
+				TEXT("Classe pai nao encontrada: '%s'. Use nome curto (SBInventoryGridWidget) ou caminho (/Script/SandboxUI.SBInventoryGridWidget)."),
+				*ParentClassName));
+		}
+
+		if (!Found->IsChildOf(UUserWidget::StaticClass()))
+		{
+			return FUnrealMCPCommonUtils::CreateErrorResponse(FString::Printf(
+				TEXT("'%s' nao deriva de UUserWidget e nao serve de pai para Widget Blueprint."), *ParentClassName));
+		}
+
+		ParentWidgetClass = Found;
+	}
+
 	UBlueprint* NewBlueprint = FKismetEditorUtilities::CreateBlueprint(
-		UUserWidget::StaticClass(),
+		ParentWidgetClass,
 		Package,
 		FName(*AssetName),
 		BPTYPE_Normal,

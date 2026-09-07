@@ -33,4 +33,14 @@ class SANDBOXINTERFACES_API ISBInventoryComponentInterface
 public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Inventory")
 	void NotifyItemInstanceUpdated(UObject* ItemInstance);
+
+	/**
+	 * Devolve o conteudo atual ja em texto de exibicao ("Sucata x8").
+	 *
+	 * Existe pelo mesmo motivo do metodo acima, na direcao contraria: a UI (09_SandboxUI)
+	 * precisa mostrar o inventario e nao pode ver USBItemInstance nem USBItemDefinition, que
+	 * pertencem a 08_SandboxInventory. O que atravessa a fronteira e o texto pronto, nao o item.
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Inventory")
+	void GetInventoryDisplayLines(TArray<FText>& OutLines);
 };
