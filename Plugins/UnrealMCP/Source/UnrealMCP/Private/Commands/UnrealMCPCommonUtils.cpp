@@ -4,6 +4,7 @@
 #include "EditorAssetLibrary.h"
 #include "UObject/SavePackage.h"
 #include "Misc/PackageName.h"
+#include "Misc/StringOutputDevice.h"
 #include "GameFramework/Actor.h"
 #include "Engine/Blueprint.h"
 #include "EdGraph/EdGraph.h"
@@ -851,7 +852,34 @@ bool FUnrealMCPCommonUtils::SetObjectProperty(UObject* Object, const FString& Pr
         }
     }
     
-    OutErrorMessage = FString::Printf(TEXT("Unsupported property type: %s for property %s"), 
+    // Recurso final: deixar a propria engine importar o valor a partir de texto.
+    // Cobre o que os ramos acima nao cobrem e que a autoria de conteudo exige:
+    //   FText          "Tocha"
+    //   FName          Tocha
+    //   FGameplayTag   (TagName="Item.Tool.Torch")
+    //   asset          /08_SandboxInventory/Demo/DA_Torch.DA_Torch
+    //   array/struct   ((ItemDef=/Game/X.X,Quantity=2),(ItemDef=/Game/Y.Y,Quantity=1))
+    if (Value.IsValid() && Value->Type == EJson::String)
+    {
+        const FString TextValue = Value->AsString();
+
+        // GWarn escreveria o erro no log e mascararia a falha; queremos o erro de volta.
+        FStringOutputDevice ImportErrors;
+        ImportErrors.SetAutoEmitLineTerminator(true);
+
+        const TCHAR* ImportResult = Property->ImportText_Direct(*TextValue, PropertyAddr, Object, PPF_None, &ImportErrors);
+        if (ImportResult != nullptr && ImportErrors.IsEmpty())
+        {
+            return true;
+        }
+
+        OutErrorMessage = FString::Printf(TEXT("Could not import '%s' into property %s (%s): %s"),
+                                          *TextValue, *PropertyName, *Property->GetClass()->GetName(),
+                                          ImportErrors.IsEmpty() ? TEXT("malformed value") : *ImportErrors);
+        return false;
+    }
+
+    OutErrorMessage = FString::Printf(TEXT("Unsupported property type: %s for property %s (pass the value as a string to import it from text)"),
                                     *Property->GetClass()->GetName(), *PropertyName);
     return false;
 } 

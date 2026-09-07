@@ -107,6 +107,11 @@ TSharedPtr<FJsonObject> FUnrealMCPDataAssetCommands::HandleCreateDataAsset(const
         return FUnrealMCPCommonUtils::CreateErrorResponse(TEXT("Falha ao criar o pacote"));
     }
 
+    // Pacote recem-criado nasce como "parcialmente carregado" e o editor se recusa a salva-lo.
+    // Em /Game o sintoma nao aparece; num mount de plugin, o save falha com
+    // "cannot be saved as it has only been partially loaded" e o asset so existe em memoria.
+    Package->MarkAsFullyLoaded();
+
     FString ShortName = AssetName;
     if (ShortName.Contains(TEXT("/")))
     {
