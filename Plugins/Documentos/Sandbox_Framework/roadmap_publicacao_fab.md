@@ -85,11 +85,17 @@ Autoria, URL de documentação e canal de suporte são campos que a loja exige p
 
 **Resolvido:** `// Copyright 2026 João Santos. All Rights Reserved.` em **598 arquivos** — não os ~275 estimados aqui, porque aquele número contava só os `.h` e o cabeçalho vai também nos `.cpp` e nos `.Build.cs`. A fórmula ficou em inglês, que é a convenção da loja e da própria engine, apesar dos comentários do código estarem em português.
 
-### B5 — Os plugins não têm conteúdo nenhum
+### B5 — Os plugins não têm conteúdo nenhum — 🟡 primeiro conteúdo entrou em 06/09/2026
 
 Todos declaram `CanContainContent: true` e **todos têm zero `.uasset`**. Os 30 assets de demonstração vivem em `Content/SandboxFramework/` do projeto, e o `DefaultEngine.ini` aponta mapa e GameMode padrão para lá.
 
 Plugin de código pode ser vendido sem conteúdo, mas *este* não pode: são 476 funções Blueprint e um sistema de fragmentos de item. Sem um mapa que abra e funcione, o comprador não descobre por onde começar e pede reembolso. Conteúdo de demonstração é trabalho de produto, não sobra do que já existe.
+
+**Primeiro passo dado:** `/08_SandboxInventory/Demo/` tem seis assets — quatro definições de item com nove fragmentos entre elas, uma receita que consome 2× Sucata numa forja e devolve uma Tocha, e uma loot table de três entradas ponderadas. É o primeiro conteúdo que mora **dentro de um plugin** em vez de `/Game`. Autorado por comando, não à mão.
+
+*Achado ao autorar:* o vocabulário de tags de item é praticamente vazio — **uma** tag `Item.*` registrada (`Item.Type.Material`) contra onze tipos de fragmento. Um produto de inventário precisa entregar um conjunto inicial de tags que faça sentido; hoje o comprador começa do zero.
+
+*O que ainda falta no B5:* o mapa de demonstração e os Blueprints de exemplo. O MCP não cria nem salva nível, então isso ou vira trabalho manual no editor, ou exige habilitar o `PythonScriptPlugin` e criar o nível por script.
 
 ### Fora da lista, mas a decidir: a origem do `UnrealMCP`
 

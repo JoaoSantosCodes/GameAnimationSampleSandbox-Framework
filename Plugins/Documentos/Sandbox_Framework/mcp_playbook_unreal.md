@@ -28,6 +28,16 @@ suposição: cada veredito tem chamada real por trás.
 
 ## 2. O que funciona
 
+> [!TIP] Propriedade de qualquer tipo agora se escreve como texto
+> Desde 06/09/2026 o `set_data_asset_property` e as `properties` do `add_instanced_object` aceitam a sintaxe de importacao da engine, o que cobre o que antes era inalcancavel:
+> - `FText` — `Tocha`
+> - `FGameplayTag` — `(TagName="Loot.Rarity.Common")`
+> - `FGameplayTagContainer` — `(GameplayTags=((TagName="Item.Type.Material")))`
+> - referencia a asset — `/08_SandboxInventory/Demo/DA_Item_Scrap.DA_Item_Scrap`
+> - array de struct — `((ItemDef="/caminho.Asset",Quantity=2))`
+>
+> Conteudo de plugin vive em `/<NomeDoPlugin>/...`, nao em `/Game/`. A pasta `Content/` do plugin precisa existir **antes** de o editor abrir, senao o mount nao e registrado.
+
 > [!SUCCESS] 11 defeitos do plugin foram corrigidos em 06/09/2026
 > A primeira versao deste playbook documentava um plugin em que a familia UMG era inacessivel,
 > nenhum Blueprint fora de `/Game/Blueprints/` podia ser spawnado, e erros do servidor chegavam
@@ -357,6 +367,8 @@ correção só tornava a seguinte alcançável.
 | 9 | Widgets não registrados em `WidgetVariableNameToGuidMap` — `ensure` do compilador | `UMGCommands.cpp` |
 | 10 | Botão criado com `NewObject` sobre o CDO, fora da `WidgetTree` | `UMGCommands.cpp` |
 | 11 | `bind_widget_event` passava `nullptr` como propriedade; widgets sem `bIsVariable` | `UMGCommands.cpp` |
+| 12 | `SetObjectProperty` só escrevia bool/int/float/string/enum — nem `FText` passava | `CommonUtils.cpp` |
+| 13 | Pacote novo nascia parcialmente carregado: fora de `/Game` o save era recusado e o comando ainda dizia `success` | `DataAssetCommands.cpp` |
 
 ### O que isso ensina
 
