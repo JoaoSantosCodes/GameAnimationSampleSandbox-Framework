@@ -99,7 +99,9 @@ Plugin de código pode ser vendido sem conteúdo, mas *este* não pode: são 476
 
 O MCP não cria nem salva nível, então o mapa é montado por commandlet Python — script versionado em `scripts/montar_nivel_demo.py`, e o `PythonScriptPlugin` ficou habilitado só para o alvo Editor.
 
-*O que ainda falta no B5:* uma UI de inventário utilizável (o `SBInventoryGridWidget` é C++ sem widget `.uasset`), e um passo a passo de primeiro uso. O mapa abre; o comprador ainda não tem o que clicar.
+**A UI entrou em 07/09/2026.** `WBP_InventoryPanel` herda do `SBInventoryGridWidget` e mostra o conteúdo do inventário sem um único nó de Blueprint: a classe C++ passou a ler o inventário pelo contrato `ISBInventoryComponentInterface` (que ganhou `GetInventoryDisplayLines`, devolvendo texto pronto em vez do item) e escreve num Text Block ligado por nome. `BP_DemoHUD` aponta para o painel, `BP_DemoGameMode` aponta para o HUD, e o World Settings do mapa aponta para o GameMode — abrir e dar Play mostra o painel.
+
+*O que ainda falta no B5:* um passo a passo de primeiro uso escrito, e a régua do Portão D — alguém que nunca viu o framework instalando e tendo inventário funcionando em dez minutos, sem perguntar nada.
 
 ### Fora da lista, mas a decidir: a origem do `UnrealMCP`
 

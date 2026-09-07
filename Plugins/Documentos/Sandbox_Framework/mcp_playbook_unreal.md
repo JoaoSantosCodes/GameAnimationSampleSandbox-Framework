@@ -102,6 +102,12 @@ Antes isso era impossivel: o spawn nao achava o asset recem-criado porque nada g
 **Aceita as duas convencoes de nome**: `widget_name` + `text_block_name` (esquema Python) ou
 `blueprint_name` + `widget_name` (esquema C++).
 
+
+> [!WARNING] `set_text_block_binding` continua quebrado — nao use
+> Ele cria o grafo da funcao de binding com **dois nos de entrada**, e o Blueprint nunca compila: *Expected only one function entry node in graph GetGetX, but found both GetGetX and GetGetX*. Foi contornado, nao consertado.
+>
+> A alternativa e melhor de qualquer forma: declarar no C++ `UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> NomeDoTexto;` e escrever nele por codigo. Property binding e reavaliado pela engine a cada frame; `BindWidget` nao.
+
 ### 2.5 O que continua nao existindo
 
 > [!IMPORTANT] Nivel nao se cria nem se salva por MCP
@@ -378,6 +384,8 @@ correção só tornava a seguinte alcançável.
 | 13 | Pacote novo nascia parcialmente carregado: fora de `/Game` o save era recusado e o comando ainda dizia `success` | `DataAssetCommands.cpp` |
 | 14 | `create_blueprint` procurava a classe pai so em `/Script/Engine` e `/Script/Game`; ao falhar, caia em `AActor` **em silencio** | `BlueprintCommands.cpp` |
 | 15 | `set_blueprint_property` e `compile_blueprint` marcavam como modificado e **nao gravavam** | `BlueprintCommands.cpp` |
+| 16 | `create_umg_widget_blueprint` **ignorava `parent_class`**: todo widget nascia `UUserWidget` puro | `UMGCommands.cpp` |
+| 17 | `compile_blueprint` dizia `compiled: true` sobre Blueprint reprovado pelo compilador | `BlueprintCommands.cpp` |
 
 ### O que isso ensina
 
