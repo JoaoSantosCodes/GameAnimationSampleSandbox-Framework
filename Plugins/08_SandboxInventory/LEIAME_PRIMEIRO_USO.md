@@ -35,7 +35,15 @@ compilação.
 
 ## 2. Abrir a demonstração
 
+> [!IMPORTANT] O Content Browser esconde conteúdo de plugin por padrão
+> A pasta `08_SandboxInventory` não aparece até você ligar isso: no Content Browser, clique no
+> ícone de **filtros** (funil) e marque **Show Plugin Content**. Sem esse passo parece que o
+> pacote veio sem conteúdo nenhum — é o tropeço mais comum na primeira abertura.
+
 `/08_SandboxInventory/Demo/L_InventoryDemo` — abra e dê **Play**.
+
+A primeira abertura do projeto é lenta: shaders compilam do zero e o cache derivado está vazio.
+Alguns minutos são normais; não conclua nada antes de o editor assentar.
 
 O painel de inventário aparece no canto e reage ao conteúdo do inventário do personagem. No
 mapa estão quatro atores, cada um ligado a um Data Asset de exemplo:
@@ -120,7 +128,9 @@ Dito aqui para você não descobrir depois:
 | :--- | :--- |
 | Build aborta falando em 260 caracteres | caminho do projeto fundo demais (§1) |
 | Erro de módulo não encontrado ao compilar | falta um dos sete plugins, ou um plugin de engine não habilitado |
+| A pasta do plugin não aparece no Content Browser | falta marcar **Show Plugin Content** no filtro (§2) |
 | Painel não aparece no Play | o GameMode do mapa não é o `BP_DemoGameMode` |
+| Editor demora muito na primeira abertura | shaders compilando com cache vazio; é esperado (§2) |
 | Painel aparece vazio | o Pawn não tem `SBInventoryComponent` |
 | Item não empilha | `MaxStackCount` é 1 |
 | Item sem peso na capacidade | falta o fragmento `Weight` |
