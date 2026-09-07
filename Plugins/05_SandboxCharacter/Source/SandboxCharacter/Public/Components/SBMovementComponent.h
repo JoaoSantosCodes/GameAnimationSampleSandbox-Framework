@@ -140,15 +140,3 @@ public:
 	USBMovementBehavior* FindAvailableBehaviorByTag(FGameplayTag Tag) const;
 	USBMovementBehavior* FindActiveBehaviorByTag(FGameplayTag Tag) const;
 };
-
-UCLASS()
-class SANDBOXCHARACTER_API USBTestMovementComponent : public USBMovementComponent
-{
-	GENERATED_BODY()
-
-public:
-	UPROPERTY()
-	FGameplayTag LastClientStopBehaviorTag;
-
-	virtual void ClientStopBehavior_Implementation(FGameplayTag BehaviorTag) override;
-};

@@ -31,7 +31,6 @@ public class SandboxInteraction : ModuleRules
 				"SandboxCore",
 				"SandboxCharacter",
 				"ModularGameplay",
-				"ModularGameplayActors"
 			}
 		);
 			

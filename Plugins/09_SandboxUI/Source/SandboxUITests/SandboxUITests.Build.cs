@@ -1,0 +1,30 @@
+using UnrealBuildTool;
+
+// Modulo de testes: tipo UncookedOnly — nunca entra em build cozinhado, logo nunca vai
+// no produto do comprador. E a convencao dominante da propria engine para suites de teste.
+public class SandboxUITests : ModuleRules
+{
+	public SandboxUITests(ReadOnlyTargetRules Target) : base(Target)
+	{
+		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+
+		PrivateDependencyModuleNames.AddRange(
+			new string[]
+			{
+				"Core",
+				"CoreUObject",
+				"Engine",
+				"UMG",
+				"Slate",
+				"SlateCore",
+				"GameplayTags",
+				"ModularGameplay",
+				"SandboxCommon",
+				"SandboxInterfaces",
+				"SandboxAssets",
+				"SandboxCore",
+				"SandboxUI"
+			}
+			);
+	}
+}

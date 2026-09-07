@@ -5,7 +5,7 @@
 #include "SBUITestMockWidget.generated.h"
 
 UCLASS(Blueprintable, BlueprintType)
-class SANDBOXUI_API USBUITestMockWidget : public USBUserWidget
+class USBUITestMockWidget : public USBUserWidget
 {
 	GENERATED_BODY()
 

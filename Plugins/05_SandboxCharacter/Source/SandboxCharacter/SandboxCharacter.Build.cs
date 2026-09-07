@@ -15,7 +15,6 @@ public class SandboxCharacter : ModuleRules
 				"Engine",
 				"GameplayTags",
 				"ModularGameplay",
-				"ModularGameplayActors",
 				"SandboxCommon",
 				"SandboxInterfaces",
 				"SandboxAssets",

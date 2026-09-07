@@ -15,7 +15,6 @@ public class SandboxCore : ModuleRules
 				"Engine",
 				"GameplayTags",
 				"ModularGameplay",
-				"ModularGameplayActors",
 				"EnhancedInput",
 				"SandboxCommon",
 				"SandboxInterfaces",

@@ -3,6 +3,7 @@
 #include "Engine/World.h"
 #include "GameFramework/Character.h"
 #include "Character/SBCharacter.h"
+#include "Tests/SBTestMovementComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"

@@ -1,14 +1,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "ModularCharacter.h"
+#include "Core/SBModularActors.h"
 #include "Interfaces/SBCharacterInterface.h"
 #include "SBCharacter.generated.h"
 
 class USBPawnDataAsset;
 
 UCLASS()
-class SANDBOXCHARACTER_API ASBCharacter : public AModularCharacter, public ISBCharacterInterface
+class SANDBOXCHARACTER_API ASBCharacter : public ASBModularCharacter, public ISBCharacterInterface
 {
 	GENERATED_BODY()
 

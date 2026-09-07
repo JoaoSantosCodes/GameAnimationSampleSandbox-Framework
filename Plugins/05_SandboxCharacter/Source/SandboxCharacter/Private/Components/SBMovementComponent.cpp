@@ -535,11 +535,6 @@ void USBMovementComponent::ClientStopBehavior_Implementation(FGameplayTag Behavi
 	StopBehavior(BehaviorTag, true, true);
 }
 
-void USBTestMovementComponent::ClientStopBehavior_Implementation(FGameplayTag BehaviorTag)
-{
-	LastClientStopBehaviorTag = BehaviorTag;
-	Super::ClientStopBehavior_Implementation(BehaviorTag);
-}
 
 bool USBMovementComponent::ConsumeJumpStamina()
 {

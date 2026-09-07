@@ -1,11 +1,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "ModularGameMode.h"
+#include "Core/SBModularActors.h"
 #include "SBGameMode.generated.h"
 
 UCLASS()
-class SANDBOXCORE_API ASBGameMode : public AModularGameModeBase
+class SANDBOXCORE_API ASBGameMode : public ASBModularGameModeBase
 {
 	GENERATED_BODY()
 

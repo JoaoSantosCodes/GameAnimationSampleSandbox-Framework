@@ -19,6 +19,11 @@
 			"Name": "SandboxInteraction",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "SandboxInteractionTests",
+			"Type": "UncookedOnly",
+			"LoadingPhase": "Default"
 		}
 	],
 	"Plugins": [
@@ -44,10 +49,6 @@
 		},
 		{
 			"Name": "ModularGameplay",
-			"Enabled": true
-		},
-		{
-			"Name": "ModularGameplayActors",
 			"Enabled": true
 		}
 	],

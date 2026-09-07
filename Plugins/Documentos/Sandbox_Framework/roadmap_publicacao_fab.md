@@ -49,21 +49,25 @@ Nada disso é comum em framework de vendedor iniciante. A distância até a loja
 > [!WARNING] Nenhum produto é submetido antes destes cinco
 > Não são polimento — são causa de reprovação na revisão ou de pedido de reembolso.
 
-### B1 — Dependência de `ModularGameplayActors`, que é da Lyra, não da engine
+### B1 — Dependência de `ModularGameplayActors`, que é da Lyra, não da engine — ✅ RESOLVIDO em 06/09/2026
 
 Verificado contra a engine em `D:\Unreal\Unreal Sistema\UE_5.8`: `ModularGameplay`, `GameplayAbilities`, `EnhancedInput`, `PCG`, `SmartObjects`, `StateTree` e `GameplayStateTree` **vêm com a engine**. `ModularGameplayActors` **não vem** — está no repositório porque foi copiado da Lyra. Cinco plugins declaram a dependência em `.Build.cs` (04, 05, 06, 07, 08).
 
 O comprador não tem esse plugin, e redistribuir código da Lyra dentro de um produto pago não é aposta que se faça sem confirmar a licença.
 
-**A boa notícia é o tamanho do problema:** o uso real são **12 referências em 4 arquivos** — `SBGameState.h`, `SBPlayerController.h`, `SBPlayerState.h` e `SBCharacter.h`, todas apenas herdando as classes-base. Essas classes-base não fazem nada além de repassar chamadas ao `UGameFrameworkComponentManager`. Reimplementá-las dentro de `04_SandboxCore` é meio dia de trabalho e elimina a dependência de vez.
+**A boa notícia é o tamanho do problema:** o uso real são **10 referências em 5 arquivos** — `SBGameMode.h`, `SBGameState.h`, `SBPlayerController.h`, `SBPlayerState.h` e `SBCharacter.h`, todas apenas herdando as classes-base. (A primeira medição dizia 4 arquivos: o grep não cobria o nome `AModularGameModeBase`.) Essas classes-base não fazem nada além de repassar chamadas ao `UGameFrameworkComponentManager`. Reimplementá-las dentro de `04_SandboxCore` é meio dia de trabalho e elimina a dependência de vez.
 
-### B2 — 18.300 linhas de teste dentro dos módulos de runtime
+### B2 — 18.300 linhas de teste dentro dos módulos de runtime — ✅ RESOLVIDO em 06/09/2026
 
 112 arquivos de teste vivem em `Private/Tests/` dos módulos de runtime, **sem nenhuma guarda de compilação** (`WITH_DEV_AUTOMATION_TESTS` aparece em zero deles). Em `06_SandboxCombat` e `08_SandboxInventory` isso é 38% e 39% do módulo.
 
 Confirmei na `AutomationTest.h` da 5.8 que as macros têm definição nos dois lados do `#if WITH_AUTOMATION_WORKER` — ou seja, **isto compila em Shipping**, não quebra o build. O problema é outro: o comprador leva 18k linhas de teste dentro do produto dele, e revisor de loja lê isso como produto não preparado para distribuição.
 
-**Correção:** mover os testes para um módulo próprio por plugin (`SandboxInventoryTests`, tipo `DeveloperTool`), declarado no `.uplugin`. A suíte continua rodando igual. *Risco a verificar antes:* algum teste pode incluir header privado do módulo de runtime — nesse caso, ou o header sobe para `Public`, ou o teste passa a usar a API pública.
+**Correção aplicada:** 117 arquivos movidos para sete módulos próprios (`SandboxCoreTests`, `SandboxCharacterTests`, …), tipo **`UncookedOnly`** — não `DeveloperTool` como este documento dizia antes. `UncookedOnly` é a convenção dominante da própria engine para suíte de teste (27 módulos contra 10 na 5.8) e é a garantia mais forte: módulo `UncookedOnly` **nunca entra em build cozinhado**, então o jogo do comprador não carrega teste nenhum.
+
+*O risco levantado aqui não se materializou:* os únicos headers privados incluídos por teste são os próprios helpers de teste (`SBCoreTestTypes.h`, `SBCharacterTestTypes.h`, `SBInventoryTestTypes.h`, `SBCombatTestHelper.h`, `SBInteractionTestTypes.h`), que se mudaram junto. Zero testes dependiam de header privado do produto.
+
+*O que a mudança revelou de brinde:* duas classes que só existem para teste moravam no produto — `USBTestMovementComponent`, declarada **dentro do header público** `SBMovementComponent.h` e implementada no `.cpp` do produto, e `USBUITestMockWidget`, na pasta `Public/Tests/` do `09_SandboxUI`. Cada uma usada por um único teste. Foram para os módulos de teste.
 
 ### B3 — Metadados de vitrine são de rascunho
 
@@ -73,7 +77,7 @@ Autoria, URL de documentação e canal de suporte são campos que a loja exige p
 
 ### B4 — Nenhum arquivo tem cabeçalho de copyright
 
-~275 arquivos começam direto em `#pragma once`. Nenhuma linha de copyright em nenhum. É exigência de praxe da revisão e é a única defesa se o código aparecer republicado. Correção mecânica, script de um parágrafo — mas depende da decisão de marca (§4).
+~275 arquivos começam direto em `#pragma once`. Nenhuma linha de copyright em nenhum. É exigência de praxe da revisão e é a única defesa se o código aparecer republicado. Correção mecânica, script de um parágrafo. **Não depende da decisão de marca** (§4), ao contrário do que este documento afirmava: o detentor do copyright é a pessoa ou empresa, não o nome do produto.
 
 ### B5 — Os plugins não têm conteúdo nenhum
 
@@ -156,8 +160,8 @@ Cada fase tem um portão verificável. Sem o portão fechado, a fase seguinte n�
 
 ### Fase B — Higiene de distribuição *(aplica-se a todos os produtos)*
 
-1. B1: reimplementar as quatro classes-base e remover `ModularGameplayActors` dos cinco `.Build.cs`.
-2. B2: extrair os testes para módulos `DeveloperTool` por plugin.
+1. ~~B1: reimplementar as classes-base e remover `ModularGameplayActors` dos cinco `.Build.cs`.~~ ✅ 06/09/2026 — `SBModularActors.h/.cpp` em `04_SandboxCore`; build verde e 446 specs verdes depois da troca.
+2. ~~B2: extrair os testes para módulos próprios por plugin.~~ ✅ 06/09/2026 — 117 arquivos em sete módulos `UncookedOnly`.
 3. B3: preencher os doze `.uplugin`; trocar `WhitelistPlatforms` por `PlatformAllowList`.
 4. B4: cabeçalho de copyright nos ~275 arquivos.
 5. Definir a matriz de versões da engine a suportar — cada versão a mais multiplica build, teste e revisão; comece por **uma**.

@@ -33,7 +33,6 @@ public class SandboxInventory : ModuleRules
 				"SandboxCharacter",
 				"NetCore",
 				"ModularGameplay",
-				"ModularGameplayActors",
 				"PCG"
 			}
 		);
