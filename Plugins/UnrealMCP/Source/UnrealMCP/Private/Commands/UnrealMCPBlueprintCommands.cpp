@@ -230,9 +230,14 @@ TSharedPtr<FJsonObject> FUnrealMCPBlueprintCommands::HandleAddComponentToBluepri
         // Compile the blueprint
         FKismetEditorUtilities::CompileBlueprint(Blueprint);
 
+        // Compilar mexe em memoria; sem gravar, o componente sumia ao fechar o editor e o
+        // comando respondia "success" do mesmo jeito.
+        const bool bSaved = FUnrealMCPCommonUtils::SaveAssetToDisk(Blueprint);
+
         TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
         ResultObj->SetStringField(TEXT("component_name"), ComponentName);
         ResultObj->SetStringField(TEXT("component_type"), ComponentType);
+        ResultObj->SetBoolField(TEXT("saved_to_disk"), bSaved);
         return ResultObj;
     }
 
@@ -469,6 +474,7 @@ TSharedPtr<FJsonObject> FUnrealMCPBlueprintCommands::HandleSetComponentProperty(
                 // Mark the blueprint as modified
                 UE_LOG(LogTemp, Log, TEXT("SetComponentProperty - Successfully set SpringArm property %s"), *PropertyName);
                 FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
+                FUnrealMCPCommonUtils::SaveAssetToDisk(Blueprint);
 
                 TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
                 ResultObj->SetStringField(TEXT("component"), ComponentName);
@@ -709,6 +715,7 @@ TSharedPtr<FJsonObject> FUnrealMCPBlueprintCommands::HandleSetComponentProperty(
             UE_LOG(LogTemp, Log, TEXT("SetComponentProperty - Successfully set property %s on component %s"), 
                 *PropertyName, *ComponentName);
             FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
+            FUnrealMCPCommonUtils::SaveAssetToDisk(Blueprint);
 
             TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
             ResultObj->SetStringField(TEXT("component"), ComponentName);
@@ -798,6 +805,7 @@ TSharedPtr<FJsonObject> FUnrealMCPBlueprintCommands::HandleSetPhysicsProperties(
 
     // Mark the blueprint as modified
     FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
+    FUnrealMCPCommonUtils::SaveAssetToDisk(Blueprint);
 
     TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
     ResultObj->SetStringField(TEXT("component"), ComponentName);
@@ -939,6 +947,7 @@ TSharedPtr<FJsonObject> FUnrealMCPBlueprintCommands::HandleSetBlueprintProperty(
         {
             // Mark the blueprint as modified
             FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
+            FUnrealMCPCommonUtils::SaveAssetToDisk(Blueprint);
 
             // Marcar como modificado nao grava. Sem este save, a propriedade existia so na
             // sessao aberta do editor e sumia ao fechar, com o comando dizendo "success".
@@ -1026,6 +1035,7 @@ TSharedPtr<FJsonObject> FUnrealMCPBlueprintCommands::HandleSetStaticMeshProperti
 
     // Mark the blueprint as modified
     FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
+    FUnrealMCPCommonUtils::SaveAssetToDisk(Blueprint);
 
     TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
     ResultObj->SetStringField(TEXT("component"), ComponentName);
@@ -1144,6 +1154,7 @@ TSharedPtr<FJsonObject> FUnrealMCPBlueprintCommands::HandleSetPawnProperties(con
     if (bAnyPropertiesSet)
     {
         FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
+        FUnrealMCPCommonUtils::SaveAssetToDisk(Blueprint);
     }
     else if (ResultsObj->Values.Num() == 0)
     {

@@ -160,6 +160,18 @@ struct FSBPendingInventoryActivation
 	float QueueTime = 0.0f;
 };
 
+USTRUCT(BlueprintType)
+struct FSBStartingItem
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory")
+	TObjectPtr<USBItemDefinition> ItemDef = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory", meta = (ClampMin = "1"))
+	int32 Quantity = 1;
+};
+
 UCLASS(BlueprintType, Blueprintable, meta = (BlueprintSpawnableComponent))
 class SANDBOXINVENTORY_API USBInventoryComponent : public UGameFrameworkComponent, public ISBComponentInterface, public ISBSaveInterface, public ISBDebugInterface, public ISBInventoryComponentInterface
 {
@@ -221,7 +233,10 @@ public:
 
 	// ISBInventoryComponentInterface — entrada desacoplada para plugins irmãos
 	virtual void NotifyItemInstanceUpdated_Implementation(UObject* ItemInstance) override;
-	virtual void GetInventoryDisplayLines_Implementation(TArray<FText>& OutLines) override;
+	virtual void GetInventoryDisplayEntries_Implementation(TArray<FSBInventoryDisplayEntry>& OutEntries) override;
+
+	/** Cor do slot para um item sem icone, tirada do fragmento de raridade. */
+	FLinearColor RarityColorFor(const class USBItemDefinition* Def) const;
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Inventory")
 	bool ServerTransferItem(USBInventoryComponent* TargetInventory, USBItemInstance* ItemInstance, int32 Quantity);
@@ -242,7 +257,20 @@ public:
 	void DeactivateArmorModifiers(USBItemInstance* ItemInstance);
 
 protected:
+	/**
+	 * Kit inicial: itens concedidos ao dono quando o inventario entra em jogo.
+	 *
+	 * So o servidor concede. Existe porque todo jogo com inventario precisa disto no primeiro
+	 * dia, e sem ele o unico caminho era escrever grafo de Blueprint para cada personagem.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory")
+	TArray<FSBStartingItem> StartingItems;
+
+protected:
 	virtual void BeginPlay() override;
+
+	/** Concede o kit inicial. Chamado em BeginPlay, apenas no servidor. */
+	void GrantStartingItems();
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	UFUNCTION()

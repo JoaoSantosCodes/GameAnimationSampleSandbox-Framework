@@ -3,7 +3,34 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
+#include "Engine/Texture2D.h"
 #include "SBInventoryComponentInterface.generated.h"
+
+/**
+ * Uma linha do inventario pronta para desenhar.
+ *
+ * Existe para que a UI (09_SandboxUI) monte a grade sem enxergar USBItemInstance nem
+ * USBItemDefinition, que pertencem a 08_SandboxInventory: o que atravessa a fronteira e o
+ * dado de exibicao, nao o item.
+ */
+USTRUCT(BlueprintType)
+struct FSBInventoryDisplayEntry
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
+	FText Name;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
+	int32 StackCount = 1;
+
+	/** Vazio quando o item nao tem arte; nesse caso o slot cai na cor de raridade. */
+	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
+	TSoftObjectPtr<UTexture2D> Icon;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
+	FLinearColor RarityColor = FLinearColor(0.55f, 0.55f, 0.55f, 1.0f);
+};
 
 UINTERFACE(MinimalAPI, BlueprintType)
 class USBInventoryComponentInterface : public UInterface
@@ -35,12 +62,11 @@ public:
 	void NotifyItemInstanceUpdated(UObject* ItemInstance);
 
 	/**
-	 * Devolve o conteudo atual ja em texto de exibicao ("Sucata x8").
+	 * Devolve o conteudo atual em forma de exibicao: nome, quantidade, icone e cor.
 	 *
-	 * Existe pelo mesmo motivo do metodo acima, na direcao contraria: a UI (09_SandboxUI)
-	 * precisa mostrar o inventario e nao pode ver USBItemInstance nem USBItemDefinition, que
-	 * pertencem a 08_SandboxInventory. O que atravessa a fronteira e o texto pronto, nao o item.
+	 * Mesma razao do metodo acima, na direcao contraria — a UI precisa mostrar o inventario e
+	 * nao pode ver as classes de item.
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Inventory")
-	void GetInventoryDisplayLines(TArray<FText>& OutLines);
+	void GetInventoryDisplayEntries(TArray<FSBInventoryDisplayEntry>& OutEntries);
 };

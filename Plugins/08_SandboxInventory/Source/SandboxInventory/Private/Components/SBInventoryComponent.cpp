@@ -7,6 +7,7 @@
 #include "Items/SBItemFragment_Upgrade.h"
 #include "Items/SBItemFragment_Durability.h"
 #include "Items/SBItemFragment_Weight.h"
+#include "Items/SBItemFragment_Rarity.h"
 #include "Components/SBAttributeComponent.h"
 #include "Components/SBStateComponent.h"
 #include "Subsystems/SBEventSubsystem.h"
@@ -19,6 +20,30 @@
 #include "Subsystems/SBSaveSubsystemConcrete.h"
 #include "Serialization/ObjectAndNameAsStringProxyArchive.h"
 #include "TimerManager.h"
+
+namespace
+{
+	/**
+	 * Cor do slot quando o item nao tem icone. As tags de raridade sao as unicas registradas
+	 * no framework hoje; qualquer outra cai no cinza neutro.
+	 */
+	FLinearColor RarityColorFromTag(const FGameplayTag& Tag)
+	{
+		static const FName Comum(TEXT("Loot.Rarity.Common"));
+		static const FName Incomum(TEXT("Loot.Rarity.Uncommon"));
+		static const FName Raro(TEXT("Loot.Rarity.Rare"));
+		static const FName Epico(TEXT("Loot.Rarity.Epic"));
+		static const FName Lendario(TEXT("Loot.Rarity.Legendary"));
+
+		const FName Nome = Tag.GetTagName();
+		if (Nome == Incomum)  return FLinearColor(0.35f, 0.75f, 0.35f, 1.0f);
+		if (Nome == Raro)     return FLinearColor(0.30f, 0.55f, 0.95f, 1.0f);
+		if (Nome == Epico)    return FLinearColor(0.65f, 0.35f, 0.90f, 1.0f);
+		if (Nome == Lendario) return FLinearColor(0.95f, 0.65f, 0.20f, 1.0f);
+		if (Nome == Comum)    return FLinearColor(0.60f, 0.60f, 0.60f, 1.0f);
+		return FLinearColor(0.45f, 0.45f, 0.45f, 1.0f);
+	}
+}
 
 bool FSBInventoryEntry::NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
 {
@@ -771,9 +796,21 @@ void USBInventoryComponent::GetDebugDescription_Implementation(TArray<FSBDebugLi
 	}
 }
 
-void USBInventoryComponent::GetInventoryDisplayLines_Implementation(TArray<FText>& OutLines)
+FLinearColor USBInventoryComponent::RarityColorFor(const USBItemDefinition* Def) const
 {
-	OutLines.Reset();
+	if (!Def)
+	{
+		return FLinearColor(0.45f, 0.45f, 0.45f, 1.0f);
+	}
+
+	const USBItemFragment* Fragmento = Def->FindFragmentByClass(USBItemFragment_Rarity::StaticClass());
+	const USBItemFragment_Rarity* Raridade = Cast<USBItemFragment_Rarity>(Fragmento);
+	return Raridade ? RarityColorFromTag(Raridade->RarityTag) : FLinearColor(0.45f, 0.45f, 0.45f, 1.0f);
+}
+
+void USBInventoryComponent::GetInventoryDisplayEntries_Implementation(TArray<FSBInventoryDisplayEntry>& OutEntries)
+{
+	OutEntries.Reset();
 
 	for (const USBItemInstance* Item : GetAllItems())
 	{
@@ -782,17 +819,21 @@ void USBInventoryComponent::GetInventoryDisplayLines_Implementation(TArray<FText
 			continue;
 		}
 
-		// Item sem nome de exibicao ainda precisa aparecer: cair no nome do asset e melhor
-		// do que sumir da lista e deixar o jogador achar que perdeu o item.
-		FText Nome = Item->ItemDef->DisplayName;
-		if (Nome.IsEmpty())
+		FSBInventoryDisplayEntry Entrada;
+
+		// Item sem nome de exibicao ainda precisa aparecer: cair no nome do asset e melhor do
+		// que sumir da grade e deixar o jogador achar que perdeu o item.
+		Entrada.Name = Item->ItemDef->DisplayName;
+		if (Entrada.Name.IsEmpty())
 		{
-			Nome = FText::FromString(Item->ItemDef->GetName());
+			Entrada.Name = FText::FromString(Item->ItemDef->GetName());
 		}
 
-		OutLines.Add(Item->StackCount > 1
-			? FText::Format(NSLOCTEXT("Sandbox", "InventoryLineStack", "{0} x{1}"), Nome, FText::AsNumber(Item->StackCount))
-			: Nome);
+		Entrada.StackCount = Item->StackCount;
+		Entrada.Icon = Item->ItemDef->Icon;
+		Entrada.RarityColor = RarityColorFor(Item->ItemDef);
+
+		OutEntries.Add(MoveTemp(Entrada));
 	}
 }
 
@@ -825,6 +866,7 @@ void USBInventoryComponent::MarkItemInstanceUpdated(USBItemInstance* ItemInstanc
 
 #include "DataAssets/SBQuestDataAsset.h"
 
+
 void USBInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
@@ -839,6 +881,26 @@ void USBInventoryComponent::BeginPlay()
 		);
 	}
 
+	GrantStartingItems();
+}
+
+void USBInventoryComponent::GrantStartingItems()
+{
+	// So o servidor concede: em cliente isto duplicaria o kit assim que a replicacao chegasse.
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
+	for (const FSBStartingItem& Inicial : StartingItems)
+	{
+		if (!Inicial.ItemDef || Inicial.Quantity <= 0)
+		{
+			continue;
+		}
+
+		ServerAddItem(Inicial.ItemDef, Inicial.Quantity);
+	}
 }
 
 void USBInventoryComponent::OnPostInitialize_Implementation()
