@@ -76,9 +76,20 @@ TSharedPtr<FJsonObject> FUnrealMCPBlueprintCommands::HandleCreateBlueprint(const
         return FUnrealMCPCommonUtils::CreateErrorResponse(TEXT("Missing 'name' parameter"));
     }
 
-    // Check if blueprint already exists
+    // Caminho completo em 'name' manda no destino, como em create_data_asset. Sem isto, todo
+    // Blueprint nasce em /Game/Blueprints/ e conteudo de plugin — que precisa morar em
+    // /<NomePlugin>/ para ser vendavel — fica inalcancavel.
     FString PackagePath = TEXT("/Game/Blueprints/");
     FString AssetName = BlueprintName;
+    if (BlueprintName.StartsWith(TEXT("/")))
+    {
+        FString Left;
+        if (BlueprintName.Split(TEXT("/"), &Left, &AssetName, ESearchCase::IgnoreCase, ESearchDir::FromEnd))
+        {
+            PackagePath = Left + TEXT("/");
+        }
+    }
+
     if (UEditorAssetLibrary::DoesAssetExist(PackagePath + AssetName))
     {
         return FUnrealMCPCommonUtils::CreateErrorResponse(FString::Printf(TEXT("Blueprint already exists: %s"), *BlueprintName));
@@ -87,62 +98,42 @@ TSharedPtr<FJsonObject> FUnrealMCPBlueprintCommands::HandleCreateBlueprint(const
     // Create the blueprint factory
     UBlueprintFactory* Factory = NewObject<UBlueprintFactory>();
     
-    // Handle parent class
+    // Classe pai. O resolvedor antigo so olhava /Script/Engine e /Script/Game, entao nenhuma
+    // classe de plugin era encontrada — e, pior, a falha caia em AActor em silencio: o Blueprint
+    // nascia sem nenhuma das propriedades esperadas e o comando respondia "success".
     FString ParentClass;
     Params->TryGetStringField(TEXT("parent_class"), ParentClass);
-    
-    // Default to Actor if no parent class specified
+
     UClass* SelectedParentClass = AActor::StaticClass();
-    
-    // Try to find the specified parent class
     if (!ParentClass.IsEmpty())
     {
-        FString ClassName = ParentClass;
-        if (!ClassName.StartsWith(TEXT("A")))
+        UClass* FoundClass = FUnrealMCPCommonUtils::FindClassByNameOrPath(ParentClass);
+        if (!FoundClass)
         {
-            ClassName = TEXT("A") + ClassName;
-        }
-        
-        // First try direct StaticClass lookup for common classes
-        UClass* FoundClass = nullptr;
-        if (ClassName == TEXT("APawn"))
-        {
-            FoundClass = APawn::StaticClass();
-        }
-        else if (ClassName == TEXT("AActor"))
-        {
-            FoundClass = AActor::StaticClass();
-        }
-        else
-        {
-            // Try loading the class using LoadClass which is more reliable than FindObject
-            const FString ClassPath = FString::Printf(TEXT("/Script/Engine.%s"), *ClassName);
-            FoundClass = LoadClass<AActor>(nullptr, *ClassPath);
-            
-            if (!FoundClass)
-            {
-                // Try alternate paths if not found
-                const FString GameClassPath = FString::Printf(TEXT("/Script/Game.%s"), *ClassName);
-                FoundClass = LoadClass<AActor>(nullptr, *GameClassPath);
-            }
+            return FUnrealMCPCommonUtils::CreateErrorResponse(FString::Printf(
+                TEXT("Classe pai nao encontrada: '%s'. Use nome curto (SBResourceNode) ou caminho (/Script/SandboxInventory.SBResourceNode)."),
+                *ParentClass));
         }
 
-        if (FoundClass)
+        if (!FoundClass->IsChildOf(AActor::StaticClass()))
         {
-            SelectedParentClass = FoundClass;
-            UE_LOG(LogTemp, Log, TEXT("Successfully set parent class to '%s'"), *ClassName);
+            return FUnrealMCPCommonUtils::CreateErrorResponse(FString::Printf(
+                TEXT("'%s' nao deriva de AActor e nao serve de pai para Blueprint de ator."), *ParentClass));
         }
-        else
-        {
-            UE_LOG(LogTemp, Warning, TEXT("Could not find specified parent class '%s' at paths: /Script/Engine.%s or /Script/Game.%s, defaulting to AActor"), 
-                *ClassName, *ClassName, *ClassName);
-        }
+
+        SelectedParentClass = FoundClass;
+        UE_LOG(LogTemp, Log, TEXT("Classe pai resolvida: '%s'"), *FoundClass->GetPathName());
     }
-    
+
     Factory->ParentClass = SelectedParentClass;
 
     // Create the blueprint
     UPackage* Package = CreatePackage(*(PackagePath + AssetName));
+
+    // Mesmo motivo do create_data_asset: pacote novo nasce parcialmente carregado e o editor
+    // recusa salvar. So aparece fora de /Game, que e justamente onde vive conteudo de plugin.
+    Package->MarkAsFullyLoaded();
+
     UBlueprint* NewBlueprint = Cast<UBlueprint>(Factory->FactoryCreateNew(UBlueprint::StaticClass(), Package, *AssetName, RF_Standalone | RF_Public, nullptr, GWarn));
 
     if (NewBlueprint)
@@ -832,9 +823,14 @@ TSharedPtr<FJsonObject> FUnrealMCPBlueprintCommands::HandleCompileBlueprint(cons
     // Compile the blueprint
     FKismetEditorUtilities::CompileBlueprint(Blueprint);
 
+    // Compilar so mexia em memoria: o .uasset em disco continuava com a versao anterior e o
+    // comando ainda respondia "compiled": true.
+    const bool bSaved = FUnrealMCPCommonUtils::SaveAssetToDisk(Blueprint);
+
     TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
     ResultObj->SetStringField(TEXT("name"), BlueprintName);
     ResultObj->SetBoolField(TEXT("compiled"), true);
+    ResultObj->SetBoolField(TEXT("saved_to_disk"), bSaved);
     return ResultObj;
 }
 
@@ -934,9 +930,14 @@ TSharedPtr<FJsonObject> FUnrealMCPBlueprintCommands::HandleSetBlueprintProperty(
             // Mark the blueprint as modified
             FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
 
+            // Marcar como modificado nao grava. Sem este save, a propriedade existia so na
+            // sessao aberta do editor e sumia ao fechar, com o comando dizendo "success".
+            const bool bSaved = FUnrealMCPCommonUtils::SaveAssetToDisk(Blueprint);
+
             TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
             ResultObj->SetStringField(TEXT("property"), PropertyName);
             ResultObj->SetBoolField(TEXT("success"), true);
+            ResultObj->SetBoolField(TEXT("saved_to_disk"), bSaved);
             return ResultObj;
         }
         else
